@@ -1,0 +1,89 @@
+/*
+ * TopBio — tokens de marca
+ * ────────────────────────
+ * Espelho fiel de site-standalone/css/tne-base.css (site institucional).
+ * NÃO inventar cores aqui. Se a marca mudar, muda lá primeiro e replica-se.
+ *
+ * Os tokens --station-* são exclusivos do quiosque: um ecrã tátil a 1 metro de
+ * distância precisa de tipos e alvos maiores do que um site visto ao colo.
+ */
+
+:root {
+  /* ---- Verdes ---- */
+  --tne-green: #004a3c;
+  --tne-green-dark: #002e26;
+  --tne-green-hover: #005c4b;
+
+  /* ---- Dourados ---- */
+  --tne-gold: #ca9649;
+  --tne-gold-light: #e8b96a;
+
+  /* ---- Cremes ---- */
+  --tne-cream: #e8e0cd;
+  --tne-cream-light: #f5f2eb;
+
+  /* ---- Texto ---- */
+  --tne-text: #1a1a1a;
+  --tne-text-muted: #5a5a5a;
+  --tne-text-subtle: #8a8a8a;
+  --tne-white: #ffffff;
+
+  /* ---- Tipografia ---- */
+  --tne-font-primary: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --tne-font-accent: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+
+  --tne-weight-regular: 400;
+  --tne-weight-semibold: 600;
+  --tne-weight-bold: 700;
+  --tne-weight-extrabold: 800;
+
+  /* ---- Espaçamento ---- */
+  --tne-space-xs: 8px;
+  --tne-space-sm: 16px;
+  --tne-space-md: 24px;
+  --tne-space-lg: 32px;
+  --tne-space-xl: 48px;
+  --tne-space-2xl: 64px;
+  --tne-space-3xl: 96px;
+
+  /* ---- Raios ---- */
+  --tne-radius-sm: 4px;
+  --tne-radius-md: 8px;
+  --tne-radius-lg: 16px;
+  --tne-radius-xl: 22px;
+  --tne-radius-pill: 999px;
+
+  /* ---- Sombras ---- */
+  --tne-shadow-sm: 0 2px 4px rgba(0, 30, 24, 0.08);
+  --tne-shadow-md: 0 8px 24px -8px rgba(0, 30, 24, 0.35);
+  --tne-shadow-lg: 0 24px 56px -24px rgba(0, 30, 24, 0.55);
+  --tne-shadow-gold: 0 4px 16px rgba(202, 150, 73, 0.3);
+
+  /* ---- Movimento ---- */
+  --tne-ease-default: cubic-bezier(0.32, 0.72, 0, 1);
+  --tne-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --tne-ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --tne-duration-quick: 220ms;
+  --tne-duration-normal: 400ms;
+  --tne-duration-slow: 600ms;
+
+  /* ======================================================================
+   * Tokens exclusivos do quiosque
+   * ====================================================================== */
+
+  /* Escala tipográfica pensada para leitura a ~1 m, não a ~40 cm. */
+  --station-display: clamp(3rem, 7vw, 6rem);
+  --station-h1: clamp(2.5rem, 5.5vw, 4.5rem);
+  --station-h2: clamp(1.75rem, 3.5vw, 2.75rem);
+  --station-h3: clamp(1.375rem, 2.4vw, 1.875rem);
+  --station-body: clamp(1.0625rem, 1.5vw, 1.375rem);
+  --station-small: clamp(0.9375rem, 1.1vw, 1.0625rem);
+  --station-eyebrow: clamp(0.8125rem, 1vw, 0.9375rem);
+
+  /* Alvo tátil mínimo. 88px é o mínimo confortável para um dedo num ecrã
+     vertical com a pessoa de pé — bem acima dos 44px de mobile. */
+  --station-touch-min: 88px;
+  --station-gutter: clamp(24px, 4vw, 72px);
+  --station-max-width: 1400px;
+}

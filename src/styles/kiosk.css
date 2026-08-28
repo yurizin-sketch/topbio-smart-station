@@ -1,0 +1,1005 @@
+/*
+ * TopBio Smart Station — layout e componentes do quiosque.
+ * Depende de tokens.css. Nenhum valor de marca é redefinido aqui.
+ */
+
+/* ── Reset mínimo, orientado a quiosque ──────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--tne-font-primary);
+  font-size: var(--station-body);
+  line-height: 1.55;
+  color: var(--tne-text);
+  background: var(--tne-green-dark);
+
+  /* Num quiosque, seleção de texto e menus de contexto só servem para o
+     cliente ficar preso num estado que não sabe desfazer. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  /* Elimina o atraso de 300 ms e o duplo-toque para zoom. */
+  touch-action: manipulation;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+:focus-visible {
+  outline: 3px solid var(--tne-gold);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Moldura da estação ──────────────────────────────────────────────── */
+
+.station {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--tne-cream-light);
+  overflow: hidden;
+}
+
+.station--dark {
+  background: var(--tne-green-dark);
+  color: var(--tne-white);
+}
+
+.station__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tne-space-md);
+  padding: var(--tne-space-sm) var(--station-gutter);
+  background: var(--tne-green-dark);
+  color: var(--tne-white);
+  flex: 0 0 auto;
+}
+
+.station__logo {
+  height: clamp(32px, 3.4vw, 52px);
+  width: auto;
+}
+
+.station__bar-actions {
+  display: flex;
+  gap: var(--tne-space-xs);
+}
+
+.station__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+.station__inner {
+  width: 100%;
+  max-width: var(--station-max-width);
+  margin: 0 auto;
+  padding: var(--tne-space-xl) var(--station-gutter) var(--tne-space-2xl);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.station__legal {
+  flex: 0 0 auto;
+  padding: var(--tne-space-sm) var(--station-gutter);
+  text-align: center;
+  font-size: var(--station-small);
+  color: var(--tne-text-subtle);
+  background: var(--tne-cream);
+}
+
+.station--dark .station__legal {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Tarja de pré-produção: deliberadamente feia, para ninguém se esquecer
+   de a desligar antes de a estação ir para a rua. */
+.station__draft {
+  flex: 0 0 auto;
+  padding: 0.35rem var(--station-gutter);
+  text-align: center;
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tne-green-dark);
+  background: var(--tne-gold-light);
+}
+
+/* ── Tipografia ──────────────────────────────────────────────────────── */
+
+.eyebrow {
+  font-size: var(--station-eyebrow);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tne-gold);
+  margin: 0 0 var(--tne-space-sm);
+}
+
+.display,
+.title {
+  font-family: var(--tne-font-accent);
+  font-weight: var(--tne-weight-regular);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.display {
+  font-size: var(--station-display);
+}
+
+.title {
+  font-size: var(--station-h1);
+}
+
+.subtitle {
+  font-size: var(--station-h3);
+  color: var(--tne-text-muted);
+  margin: var(--tne-space-md) 0 0;
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+
+.station--dark .subtitle {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.section-label {
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tne-text-subtle);
+  margin: 0 0 var(--tne-space-xs);
+}
+
+/* ── Botões ──────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tne-space-sm);
+  min-height: var(--station-touch-min);
+  padding: 0 var(--tne-space-xl);
+  border-radius: var(--tne-radius-pill);
+  font-size: var(--station-h3);
+  font-weight: var(--tne-weight-semibold);
+  transition:
+    transform var(--tne-duration-quick) var(--tne-ease-snappy),
+    box-shadow var(--tne-duration-quick) var(--tne-ease-snappy),
+    background-color var(--tne-duration-quick) var(--tne-ease-snappy);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn--primary {
+  background: var(--tne-gold);
+  color: var(--tne-green-dark);
+  box-shadow: var(--tne-shadow-gold);
+}
+
+.btn--primary:hover {
+  background: var(--tne-gold-light);
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--tne-green);
+  border: 2px solid var(--tne-green);
+}
+
+.station--dark .btn--secondary {
+  color: var(--tne-white);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--tne-white);
+  min-height: 56px;
+  width: 56px;
+  padding: 0;
+  border-radius: var(--tne-radius-md);
+  font-size: 1.25rem;
+}
+
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* ── Grelhas de escolha ──────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  gap: var(--tne-space-md);
+  margin-top: var(--tne-space-xl);
+}
+
+/* Oito objetivos entram num 4×2 certinho. Colunas fixas em vez de auto-fit
+   porque num ecrã largo o auto-fit dava seis numa linha e dois órfãos na
+   seguinte — e num quiosque não há scroll para esconder o desalinho. */
+.grid--goals {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 900px) {
+  .grid--goals {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.grid--pair {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.grid--products {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+/* ── Cartões ─────────────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tne-space-xs);
+  padding: var(--tne-space-lg);
+  min-height: 200px;
+  text-align: left;
+  background: var(--tne-white);
+  border: 2px solid transparent;
+  border-radius: var(--tne-radius-lg);
+  box-shadow: var(--tne-shadow-sm);
+  transition:
+    transform var(--tne-duration-quick) var(--tne-ease-default),
+    box-shadow var(--tne-duration-quick) var(--tne-ease-default),
+    border-color var(--tne-duration-quick) var(--tne-ease-default);
+}
+
+.card:hover:not([disabled]) {
+  transform: translateY(-4px);
+  border-color: var(--tne-gold);
+  box-shadow: var(--tne-shadow-md);
+}
+
+.card:active:not([disabled]) {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.card[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.card__index {
+  position: absolute;
+  top: var(--tne-space-md);
+  right: var(--tne-space-lg);
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  color: var(--tne-gold);
+  letter-spacing: 0.08em;
+}
+
+.card__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: var(--tne-space-xs);
+}
+
+.card__title {
+  font-family: var(--tne-font-accent);
+  font-size: var(--station-h3);
+  margin: 0;
+  color: var(--tne-green-dark);
+}
+
+.card__text {
+  font-size: var(--station-small);
+  color: var(--tne-text-muted);
+  margin: 0;
+}
+
+.card__media {
+  aspect-ratio: 1;
+  width: 100%;
+  object-fit: cover;
+  border-radius: var(--tne-radius-md);
+  background: var(--tne-cream);
+}
+
+.card__price {
+  margin-top: auto;
+  padding-top: var(--tne-space-sm);
+  font-size: var(--station-h3);
+  font-weight: var(--tne-weight-bold);
+  color: var(--tne-green);
+}
+
+/* ── Badges de stock ─────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tne-space-xs);
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: var(--tne-radius-pill);
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-semibold);
+}
+
+.badge--in-stock {
+  background: rgba(0, 74, 60, 0.1);
+  color: var(--tne-green);
+}
+
+.badge--low-stock {
+  background: rgba(202, 150, 73, 0.18);
+  color: #7a5620;
+}
+
+.badge--out {
+  background: rgba(90, 90, 90, 0.12);
+  color: var(--tne-text-muted);
+}
+
+/* ── Detalhe de produto ──────────────────────────────────────────────── */
+
+.detail {
+  display: grid;
+  gap: var(--tne-space-xl);
+  margin-top: var(--tne-space-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  align-items: start;
+}
+
+.detail__figure {
+  position: relative;
+  border-radius: var(--tne-radius-lg);
+  overflow: hidden;
+  background: var(--tne-cream);
+}
+
+.detail__slot {
+  position: absolute;
+  left: var(--tne-space-md);
+  right: var(--tne-space-md);
+  bottom: var(--tne-space-md);
+  padding: var(--tne-space-sm) var(--tne-space-md);
+  border-radius: var(--tne-radius-md);
+  background: rgba(0, 46, 38, 0.92);
+  color: var(--tne-white);
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-semibold);
+}
+
+/* O badge nasceu para fundos claros. Dentro da tarja escura da fotografia
+   ficava verde sobre verde — aqui inverte-se. */
+.detail__slot .badge,
+.detail__slot .badge--in-stock,
+.detail__slot .badge--low-stock,
+.detail__slot .badge--out {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--tne-white);
+}
+
+.spec {
+  padding: var(--tne-space-md) 0;
+  border-top: 1px solid var(--tne-cream);
+}
+
+.spec__value {
+  margin: 0;
+  color: var(--tne-text-muted);
+}
+
+.tabs {
+  margin: var(--tne-space-md) 0;
+}
+
+.tabs__strip {
+  display: flex;
+  gap: var(--tne-space-xs);
+  border-bottom: 1px solid var(--tne-cream);
+}
+
+/* Alvo de toque grande: quem está de pé usa o polegar, não o rato. */
+.tabs__btn {
+  padding: 14px 20px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--station-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tne-text-muted);
+  cursor: pointer;
+}
+
+.tabs__btn--on {
+  border-bottom-color: var(--tne-gold);
+  color: var(--tne-green);
+}
+
+/* Altura mínima para que trocar de separador não faça saltar o botão de
+   comprar por baixo. */
+.tabs__panel {
+  min-height: 96px;
+  padding-top: var(--tne-space-md);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tne-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 8px 16px;
+  border: 1px solid var(--tne-cream);
+  border-radius: var(--tne-radius-pill);
+  background: var(--tne-white);
+  font-size: var(--station-small);
+  color: var(--tne-green);
+}
+
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tne-space-md);
+  margin-top: var(--tne-space-lg);
+  padding-top: var(--tne-space-lg);
+  border-top: 1px solid var(--tne-cream);
+}
+
+.price {
+  font-size: var(--station-h1);
+  font-weight: var(--tne-weight-bold);
+  font-family: var(--tne-font-accent);
+  color: var(--tne-green);
+  line-height: 1;
+}
+
+/* ── Pagamento ───────────────────────────────────────────────────────── */
+
+.pay {
+  display: grid;
+  gap: var(--tne-space-xl);
+  margin-top: var(--tne-space-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  align-items: start;
+}
+
+.panel {
+  padding: var(--tne-space-xl);
+  background: var(--tne-white);
+  border-radius: var(--tne-radius-lg);
+  box-shadow: var(--tne-shadow-sm);
+}
+
+.phone-display {
+  display: flex;
+  align-items: center;
+  gap: var(--tne-space-sm);
+  min-height: 96px;
+  padding: 0 var(--tne-space-md);
+  margin-bottom: var(--tne-space-md);
+  border: 2px solid var(--tne-cream);
+  border-radius: var(--tne-radius-md);
+  background: var(--tne-cream-light);
+  font-size: var(--station-h2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.phone-display__prefix {
+  color: var(--tne-text-subtle);
+}
+
+.phone-display__caret {
+  width: 3px;
+  height: 1.1em;
+  background: var(--tne-gold);
+  animation: station-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes station-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--tne-space-sm);
+}
+
+.numpad__key {
+  min-height: var(--station-touch-min);
+  border-radius: var(--tne-radius-md);
+  background: var(--tne-cream-light);
+  border: 1px solid var(--tne-cream);
+  font-size: var(--station-h2);
+  font-weight: var(--tne-weight-semibold);
+  color: var(--tne-green-dark);
+  transition: background-color var(--tne-duration-quick) var(--tne-ease-snappy);
+}
+
+.numpad__key:active {
+  background: var(--tne-gold);
+}
+
+.qr {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  padding: var(--tne-space-md);
+  background: var(--tne-white);
+  border-radius: var(--tne-radius-md);
+}
+
+/* ── Passos ──────────────────────────────────────────────────────────── */
+
+.steps {
+  display: flex;
+  gap: var(--tne-space-sm);
+  margin-top: var(--tne-space-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.steps__item {
+  flex: 1;
+  padding-top: var(--tne-space-sm);
+  border-top: 4px solid var(--tne-cream);
+  font-size: var(--station-small);
+  color: var(--tne-text-subtle);
+}
+
+.steps__item--active {
+  border-top-color: var(--tne-gold);
+  color: var(--tne-green);
+  font-weight: var(--tne-weight-semibold);
+}
+
+.steps__item--done {
+  border-top-color: var(--tne-green);
+  color: var(--tne-green);
+}
+
+/* ── Ticket ──────────────────────────────────────────────────────────── */
+
+.ticket-code {
+  display: block;
+  margin: var(--tne-space-lg) 0;
+  font-family: var(--tne-font-accent);
+  font-size: clamp(3.5rem, 9vw, 7rem);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.12em;
+  color: var(--tne-gold);
+  line-height: 1;
+}
+
+/* ── Sucesso ─────────────────────────────────────────────────────────── */
+
+.finish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tne-space-md);
+  flex: 1;
+  text-align: center;
+}
+
+.finish__seal {
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--tne-gold);
+  color: var(--tne-green-dark);
+  font-size: 4rem;
+  animation: station-pop var(--tne-duration-slow) var(--tne-ease-soft) both;
+}
+
+@keyframes station-pop {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.countdown {
+  font-size: var(--station-small);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Ecrã de atração ─────────────────────────────────────────────────── */
+
+.attract {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1;
+  padding: var(--station-gutter);
+  isolation: isolate;
+}
+
+.attract__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 78% 22%,
+      rgba(202, 150, 73, 0.28) 0%,
+      transparent 62%
+    ),
+    linear-gradient(155deg, var(--tne-green) 0%, var(--tne-green-dark) 62%);
+}
+
+.attract__watermark {
+  position: absolute;
+  right: -8%;
+  bottom: -14%;
+  width: min(62vw, 720px);
+  opacity: 0.06;
+  transform: rotate(-8deg);
+}
+
+.attract__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tne-space-xs);
+  margin-top: var(--tne-space-lg);
+  font-size: var(--station-small);
+  color: rgba(255, 255, 255, 0.6);
+  animation: station-breathe 2.6s var(--tne-ease-soft) infinite;
+}
+
+@keyframes station-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Transição entre ecrãs ───────────────────────────────────────────── */
+
+.enter {
+  animation: station-enter var(--tne-duration-normal) var(--tne-ease-soft) both;
+}
+
+@keyframes station-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Estados de sistema ──────────────────────────────────────────────── */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--tne-space-sm);
+  padding: var(--tne-space-md);
+  border-radius: var(--tne-radius-md);
+  font-size: var(--station-small);
+}
+
+.notice--warn {
+  background: rgba(202, 150, 73, 0.15);
+  color: #7a5620;
+}
+
+.notice--error {
+  background: rgba(165, 56, 46, 0.12);
+  color: #8c2f26;
+}
+
+.notice--info {
+  background: rgba(0, 74, 60, 0.08);
+  color: var(--tne-green);
+}
+
+/* ── Retrato: a orientação provável do ecrã final ────────────────────── */
+
+@media (orientation: portrait) {
+  .grid--goals,
+  .grid--products {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  }
+
+  .detail,
+  .pay {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Painel do balcão (/staff)
+
+   Fundo escuro de propósito: é o sinal imediato de que este ecrã não é para o
+   cliente. Se alguém o vir de relance à porta da loja, percebe que está no
+   sítio errado antes de tocar em nada.
+   --------------------------------------------------------------------------- */
+
+.staff__pin,
+.staff__search {
+  display: flex;
+  gap: var(--tne-space-sm);
+  margin: var(--tne-space-lg) 0;
+  max-width: 520px;
+}
+
+.staff__input {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.25rem;
+}
+
+.staff__input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.staff__input:focus-visible {
+  outline: 2px solid var(--tne-gold);
+  outline-offset: 2px;
+}
+
+/* Códigos são sempre maiúsculas e nunca ambíguos: monoespaçado evita ler um
+   5 onde está um S com o cliente à espera. */
+.staff__input--code {
+  font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.staff__feedback {
+  margin: var(--tne-space-sm) 0;
+  font-size: var(--station-small);
+}
+
+.staff__feedback--ok {
+  color: var(--tne-gold);
+}
+
+.staff__feedback--warn {
+  color: #f0a68c;
+}
+
+.staff__card {
+  margin: var(--tne-space-lg) 0;
+  padding: var(--tne-space-lg);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  max-width: 620px;
+}
+
+.staff__card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--tne-space-md);
+  flex-wrap: wrap;
+}
+
+.staff__tag {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.staff__tag--owes {
+  background: var(--tne-gold);
+  color: var(--tne-green);
+}
+
+.staff__tag--paid {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.staff__product {
+  margin-top: var(--tne-space-md);
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+/* O valor a cobrar é o número que não pode ser lido mal. */
+.staff__amount {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: var(--tne-gold);
+  line-height: 1.1;
+}
+
+.staff__where {
+  margin-top: var(--tne-space-xs);
+  font-size: var(--station-small);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.staff__actions {
+  display: flex;
+  gap: var(--tne-space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--tne-space-lg);
+}
+
+.staff__queue {
+  margin-top: var(--tne-space-2xl);
+}
+
+.staff__empty {
+  margin-top: var(--tne-space-sm);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.staff__list {
+  list-style: none;
+  margin: var(--tne-space-sm) 0 0;
+  padding: 0;
+  max-width: 620px;
+}
+
+/* A fila existe para não ter de se escrever o código: ao balcão, tocar na linha
+   certa é mais rápido e engana-se menos do que teclar. */
+.staff__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--tne-space-md);
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--station-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.staff__row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.staff__row-code {
+  font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+  letter-spacing: 0.08em;
+  color: var(--tne-gold);
+}
+
+.staff__row-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff__row-state {
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+/* O código do cliente é enorme de propósito no ticket — lê-se de longe, de pé.
+   Ao balcão o funcionário tem-no à frente do nariz e o que precisa de ver sem
+   rolar é o valor a cobrar e o botão. Aqui o código encolhe. */
+.staff__card .ticket-code {
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+/* Os dois botões não cabiam lado a lado e "Cancelar pedido" partia a meio.
+   Um rótulo cortado num botão que cancela uma venda não é aceitável. */
+.staff__actions .btn {
+  white-space: nowrap;
+}
+
+.staff__card,
+.staff__list {
+  max-width: 760px;
+}
+
+/* Produto ainda sem fotografia. Fica um cartão bege com a marca de água da
+   casa — lê-se como «foto a caminho», nunca como avaria da máquina. */
+.media-empty {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(196, 154, 74, 0.14), transparent 62%),
+    var(--tne-cream);
+}

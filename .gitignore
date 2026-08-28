@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# Mockups de origem: são ficheiros de 10 MB cada e não fazem falta para
+# arrancar a estação — o que conta são os .webp já gerados em
+# public/products, esses sim versionados. Regenerar com
+# `node scripts/build-product-images.mjs` a partir de uma destas pastas.
+Product/
+
+# Configuração local do Claude Code (aponta para um proxy na máquina).
+.claude/
+
+*.local
+.DS_Store
+Thumbs.db

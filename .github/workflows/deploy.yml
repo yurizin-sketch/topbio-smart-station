@@ -1,0 +1,53 @@
+# Publica a estação no GitHub Pages a cada envio para a main.
+#
+# O build usa `base: './'` (ver vite.config.ts), por isso não é preciso dizer
+# aqui o nome do repositório: os caminhos são relativos e funcionam em
+# qualquer subpasta.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicação de cada vez; se houver duas seguidas, a mais recente ganha.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run build` corre o tsc antes do vite: um erro de tipos trava a
+      # publicação em vez de chegar ao ecrã da loja.
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
