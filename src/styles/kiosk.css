@@ -691,7 +691,15 @@ img {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  /*
+   * Centrado nos dois eixos. Estava encostado ao fundo e à esquerda, o que
+   * resulta bem num monitor ao baixo mas deixa metade do vidro vazio num
+   * ecrã ao alto — foi o que se viu na estação já montada. Centrar serve os
+   * dois formatos sem termos de adivinhar o rácio do ecrã de cada loja.
+   */
+  justify-content: center;
+  align-items: center;
+  text-align: center;
   flex: 1;
   padding: var(--station-gutter);
   isolation: isolate;

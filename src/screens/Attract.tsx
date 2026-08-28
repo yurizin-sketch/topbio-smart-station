@@ -54,8 +54,6 @@ export function Attract() {
           alt="TopBio Europa"
           style={{
             display: 'block',
-            alignSelf: 'flex-start',
-            marginRight: 'auto',
             marginBottom: 'var(--tne-space-lg)',
           }}
         />
