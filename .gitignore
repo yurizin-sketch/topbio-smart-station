@@ -10,6 +10,12 @@ Product/
 # Configuração local do Claude Code (aponta para um proxy na máquina).
 .claude/
 
+# Configuração da máquina, incluindo `.env.local`. Este repositório é público:
+# nada que aponte para uma chave pode entrar nele.
 *.local
+.env
+.env.*
+!.env.example
+
 .DS_Store
 Thumbs.db

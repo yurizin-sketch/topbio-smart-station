@@ -20,6 +20,10 @@ export type StationEvent =
   | { type: 'payment_confirmed'; orderId: string }
   | { type: 'payment_failed'; orderId: string; reason: string }
   | { type: 'session_timeout'; screen: string }
+  /** A assistente falou primeiro, porque a câmara viu chegar alguém. */
+  | { type: 'assistant_greeted' }
+  /** O cliente tocou numa das respostas que ela ofereceu. */
+  | { type: 'assistant_choice'; value: string }
 
 export interface TelemetrySink {
   send(event: StationEvent & { stationId: string; at: number }): void

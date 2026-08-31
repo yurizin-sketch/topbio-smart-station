@@ -1112,7 +1112,8 @@ img {
   .station__legal,
   .btn,
   .attract__backdrop,
-  .steps {
+  .steps,
+  .assistant {
     display: none !important;
   }
 
@@ -1131,4 +1132,483 @@ img {
     box-shadow: none;
     page-break-inside: avoid;
   }
+}
+
+/* ═══ A Bia, a assistente ══════════════════════════════════════════════════
+
+   Fica colada ao canto e por cima de tudo. Duas regras que vale a pena
+   guardar: `pointer-events: none` no contentor e `auto` só no que se toca —
+   sem isto a metade transparente da caixa engolia toques destinados ao ecrã
+   por baixo, e o cliente carregava num botão que não reagia.
+
+   E tudo se cala com `prefers-reduced-motion`: há quem fique enjoado com
+   movimento, e uma personagem que respira o dia todo é movimento a sério.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.assistant {
+  position: fixed;
+  right: var(--station-gutter);
+  /* Levantada acima da tarja legal.
+     A tarja é uma faixa de largura inteira colada ao fundo, e sem esta folga a
+     Bia assentava-lhe em cima — o aviso obrigatório dos suplementos ficava por
+     baixo de uma personagem a acenar. Cinco rem chegam para as duas linhas em
+     que a tarja costuma cair. */
+  bottom: calc(var(--station-gutter) + 5rem);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--tne-space-sm);
+  max-width: min(420px, calc(100vw - 2 * var(--station-gutter)));
+  pointer-events: none;
+}
+
+.assistant > * {
+  pointer-events: auto;
+}
+
+/* No repouso ela deixa de ser um autocolante no canto.
+   Empilhada, a personagem mais o balão medem mais de 400px e assentavam em
+   cima do “Toque para começar” — a estação ficava com dois convites a
+   disputar o mesmo sítio. Lado a lado, e centrados na faixa vazia entre o
+   botão e a tarja legal, cabem os dois sem se tocarem. */
+.assistant--resting {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  display: grid;
+  /* Largura explícita e não "encolhe-ate-caber": num contentor fixo sem
+     largura, a coluna do balão colapsava para 150px e o texto saía em torre. */
+  width: min(760px, calc(100vw - 2 * var(--station-gutter)));
+  /* O max-width de 420px da regra base ganhava a este width. */
+  max-width: none;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  justify-items: end;
+  gap: var(--tne-space-md);
+}
+
+.assistant--resting .assistant__unlock,
+.assistant--resting .assistant__privacy {
+  grid-column: 1 / -1;
+}
+
+/* De lado, o bico do balão muda de parede. */
+.assistant--resting .assistant__bubble::after {
+  right: -9px;
+  bottom: 56px;
+  border-radius: 0 var(--tne-radius-sm) 0 0;
+}
+
+/* ── O balão ───────────────────────────────────────────────────────────── */
+
+.assistant__bubble {
+  position: relative;
+  background: var(--tne-white);
+  color: var(--tne-text);
+  border-radius: var(--tne-radius-xl);
+  box-shadow: var(--tne-shadow-lg);
+  padding: var(--tne-space-md) var(--tne-space-lg);
+  animation: assistant-in var(--tne-duration-normal) var(--tne-ease-soft) both;
+}
+
+/* O bico do balão, a apontar à personagem. Sem ele o texto podia ser de
+   qualquer coisa; com ele, é ela a falar. */
+.assistant__bubble::after {
+  content: '';
+  position: absolute;
+  right: 46px;
+  bottom: -9px;
+  width: 20px;
+  height: 20px;
+  background: var(--tne-white);
+  transform: rotate(45deg);
+  border-radius: 0 0 var(--tne-radius-sm) 0;
+}
+
+@keyframes assistant-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+.assistant__say {
+  margin: 0;
+  font-size: var(--station-body);
+  line-height: 1.45;
+  font-weight: var(--tne-weight-semibold);
+  max-width: 34ch;
+}
+
+.assistant__close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  border: 0;
+  background: none;
+  color: var(--tne-text-subtle);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* ── As respostas tocáveis ─────────────────────────────────────────────────
+
+   Botões em vez de teclado: num tablet de loja ninguém escreve, e uma resposta
+   a um toque é uma resposta que acontece. */
+
+.assistant__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tne-space-xs);
+  margin-top: var(--tne-space-md);
+}
+
+.assistant__choice {
+  border: 1.5px solid var(--tne-green);
+  background: var(--tne-white);
+  color: var(--tne-green);
+  border-radius: var(--tne-radius-pill);
+  /* Alto que chegue para um polegar acertar sem pensar. */
+  padding: 12px 20px;
+  font: inherit;
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-semibold);
+  cursor: pointer;
+  transition:
+    background var(--tne-duration-quick) var(--tne-ease-snappy),
+    color var(--tne-duration-quick) var(--tne-ease-snappy);
+}
+
+.assistant__choice:active {
+  background: var(--tne-green);
+  color: var(--tne-white);
+}
+
+/* ── A pensar ─────────────────────────────────────────────────────────────
+
+   Enquanto o modelo responde. Sem isto, o silêncio de dois segundos entre a
+   pergunta e a resposta lê-se como avaria. */
+
+.assistant__thinking {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.assistant__thinking span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tne-green);
+  opacity: 0.35;
+  animation: assistant-dot 1.2s var(--tne-ease-default) infinite;
+}
+
+.assistant__thinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.assistant__thinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes assistant-dot {
+  30% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+/* ── A personagem e o botão de som ─────────────────────────────────────── */
+
+.assistant__dock {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tne-space-xs);
+}
+
+.assistant__avatar {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.assistant__mute {
+  border: 0;
+  background: rgba(0, 74, 60, 0.9);
+  color: var(--tne-white);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: var(--tne-shadow-sm);
+}
+
+.assistant__mute--off {
+  background: var(--tne-text-subtle);
+}
+
+.assistant__privacy {
+  margin: 0;
+  max-width: 30ch;
+  text-align: right;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.assistant__unlock {
+  margin: 0;
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-semibold);
+  color: var(--tne-cream);
+  background: rgba(0, 46, 38, 0.75);
+  padding: 8px 16px;
+  border-radius: var(--tne-radius-pill);
+}
+
+/* ═══ O desenho da Bia ═════════════════════════════════════════════════════
+
+   Três animações a correr ao mesmo tempo com períodos que não batem certo uns
+   com os outros — 4s, 5,1s e 6,4s. É isso que impede o olho de apanhar o
+   ciclo e de ver um GIF em vez de alguém.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.bia {
+  display: block;
+  overflow: visible;
+}
+
+.bia__ring {
+  fill: none;
+  stroke: var(--tne-gold);
+  stroke-width: 2.5;
+}
+
+.bia__halo {
+  fill: var(--tne-gold);
+  opacity: 0;
+  transform-origin: 60px 60px;
+}
+
+.bia--speaking .bia__halo {
+  animation: bia-halo 1.6s var(--tne-ease-default) infinite;
+}
+
+@keyframes bia-halo {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.28;
+    transform: scale(1.09);
+  }
+}
+
+.bia__shoulders {
+  fill: var(--tne-cream);
+}
+
+.bia__face {
+  fill: #f6dcc4;
+}
+
+.bia__hair {
+  fill: #2f2119;
+}
+
+.bia__eyes ellipse {
+  fill: #2f2119;
+}
+
+.bia__brows path {
+  fill: none;
+  stroke: #2f2119;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.bia__blush {
+  fill: #e79c8a;
+  opacity: 0.5;
+}
+
+.bia__neck {
+  fill: #ecc6a6;
+}
+
+.bia__ear {
+  fill: #f6dcc4;
+}
+
+.bia__collar {
+  fill: var(--tne-green);
+  opacity: 0.85;
+}
+
+.bia__glint {
+  fill: #ffffff;
+}
+
+/* Duas bocas, uma de cada vez. O sorriso vive parado; a boca aberta só existe
+   enquanto ela fala. Trocar opacidade em vez de esticar uma forma só evita que
+   o sorriso se deforme em careta a meio da frase. */
+.bia__smile {
+  fill: none;
+  stroke: #8c3b3b;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.bia__open {
+  fill: #8c3b3b;
+  opacity: 0;
+  transform-origin: 60px 70px;
+}
+
+.bia--speaking .bia__smile {
+  opacity: 0;
+}
+
+.bia--speaking .bia__open {
+  opacity: 1;
+}
+
+/* Respirar. O corpo todo, muito pouco — 1,5% de escala é quase nada, e é o que
+   separa um boneco de um autocolante. */
+.bia__body {
+  transform-origin: 60px 110px;
+  animation: bia-breathe 4s var(--tne-ease-default) infinite;
+}
+
+@keyframes bia-breathe {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.015) translateY(-1.5px);
+  }
+}
+
+/* Oscilar a cabeça. Vive à parte do respirar para os dois se somarem. */
+.bia__head {
+  transform-origin: 60px 84px;
+  animation: bia-sway 5.1s var(--tne-ease-default) infinite;
+}
+
+@keyframes bia-sway {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+
+/* Piscar. Rápido e raro, como piscar mesmo. */
+.bia__eyes {
+  transform-origin: 60px 55px;
+  animation: bia-blink 6.4s step-end infinite;
+}
+
+@keyframes bia-blink {
+  0%,
+  96%,
+  100% {
+    transform: scaleY(1);
+  }
+  97%,
+  99% {
+    transform: scaleY(0.12);
+  }
+}
+
+/* A falar: a boca abre e fecha e a cabeça acelera. Não é sincronização labial
+   — para isso era preciso ler o áudio — mas ao metro de distância a que o
+   cliente está, convence. */
+.bia--speaking .bia__open {
+  animation: bia-talk 0.32s var(--tne-ease-default) infinite;
+}
+
+@keyframes bia-talk {
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    /* Sem exageros: acima de 1,4 a boca abre de espanto e a personagem passa
+       a parecer que está a gritar com o cliente. */
+    transform: scaleY(1.35);
+  }
+}
+
+.bia--speaking .bia__head {
+  animation-duration: 2.6s;
+}
+
+/* A pensar: as sobrancelhas sobem. É onde vive metade de uma expressão. */
+.bia--thinking .bia__brows {
+  animation: bia-wonder 1.4s var(--tne-ease-default) infinite;
+}
+
+@keyframes bia-wonder {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+/* Quem pediu menos movimento ao sistema fica com uma ilustração parada. */
+@media (prefers-reduced-motion: reduce) {
+  .bia__body,
+  .bia__head,
+  .bia__eyes,
+  .bia__open,
+  .bia__brows,
+  .bia__halo,
+  .assistant__bubble,
+  .assistant__thinking span {
+    animation: none;
+  }
+}
+
+/* Diagnóstico da assistente, no painel do balcão. Discreto: é para consultar
+   quando alguma coisa não está bem, não para olhar o dia todo. */
+.staff__diag {
+  margin-top: var(--tne-space-xl);
+  padding-top: var(--tne-space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 0.75;
+}
+
+.staff__diag-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tne-space-md) var(--tne-space-xl);
+  margin: var(--tne-space-sm) 0 0;
+}
+
+.staff__diag-lines dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+}
+
+.staff__diag-lines dd {
+  margin: 2px 0 0;
+  font-weight: var(--tne-weight-semibold);
 }

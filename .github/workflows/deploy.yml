@@ -36,6 +36,15 @@ jobs:
       # `npm run build` corre o tsc antes do vite: um erro de tipos trava a
       # publicação em vez de chegar ao ecrã da loja.
       - run: npm run build
+        env:
+          # O endereço do worker que faz a Bia pensar (ver `server/README.md`).
+          #
+          # É um endereço, não uma chave: pode aparecer no JavaScript público
+          # sem risco. A chave da API fica no Cloudflare e não sai de lá.
+          #
+          # Enquanto este secret não existir, o valor é vazio e a estação usa as
+          # falas escritas. Não parte nada.
+          VITE_ASSISTANT_URL: ${{ secrets.VITE_ASSISTANT_URL }}
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

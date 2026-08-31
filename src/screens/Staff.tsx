@@ -13,6 +13,8 @@ import {
   type StoredOrder,
 } from '../services/orders'
 import type { Product } from '../types'
+import { useAssistant } from '../state/assistant'
+import { assistantIsLive } from '../services/assistant'
 
 /**
  * Painel do balcão.
@@ -204,6 +206,8 @@ export function Staff() {
           </ul>
         )}
       </section>
+
+      <AssistantDiagnostics />
     </Frame>
   )
 }
@@ -265,5 +269,43 @@ function OrderCard({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * O estado da Bia, para quem instala o tablet.
+ *
+ * Sem isto, quem monta a estação na loja não tem como saber se a câmara ficou
+ * a apontar para o sítio certo ou para o teto, nem porque é que ela está muda.
+ * São três linhas que poupam um telefonema.
+ */
+function AssistantDiagnostics() {
+  const { present, presenceFailure, needsUnlock, muted } = useAssistant()
+
+  // A câmara só arranca depois do primeiro toque do dia. Enquanto isso não
+  // acontecer, dizer "A ligar…" seria mentira — ninguém está a ligar nada.
+  const camera = needsUnlock
+    ? 'À espera do primeiro toque'
+    : (presenceFailure ??
+      (present === null ? 'A ligar…' : present ? 'Está alguém à frente' : 'Balcão livre'))
+
+  return (
+    <section className="staff__diag">
+      <h2 className="section-label">Assistente</h2>
+      <dl className="staff__diag-lines">
+        <div>
+          <dt>Câmara</dt>
+          <dd>{camera}</dd>
+        </div>
+        <div>
+          <dt>Voz</dt>
+          <dd>{muted ? 'Som desligado' : needsUnlock ? 'Falta um toque no ecrã' : 'Pronta'}</dd>
+        </div>
+        <div>
+          <dt>Cérebro</dt>
+          <dd>{assistantIsLive() ? 'Modelo ligado' : 'Falas escritas (sem servidor)'}</dd>
+        </div>
+      </dl>
+    </section>
   )
 }

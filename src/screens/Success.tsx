@@ -29,7 +29,7 @@ export function Success() {
     }
     // O pagamento já foi confirmado pelo servidor antes de chegar aqui. Isto
     // só fixa o estado na sessão para o pedido aparecer na fila do balcão.
-    setOrderStatus('paid')
+    if (order.status !== 'paid') setOrderStatus('paid')
   }, [order, product, navigate, setOrderStatus])
 
   if (!order || !product) return null

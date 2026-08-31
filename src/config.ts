@@ -67,6 +67,32 @@ export const config = {
   /** Prefixo telefónico. Portugal. */
   phoneCountryCode: '+351',
   phoneDigits: 9,
+
+  /** A assistente que fala com o cliente. */
+  assistant: {
+    /**
+     * Onde é que ela pensa.
+     *
+     * Vazio = falas escritas, sem servidor e sem custo. Preenchido = o nosso
+     * worker, que é quem tem a chave da API. A chave nunca entra aqui: este
+     * repositório é público.
+     */
+    endpoint: import.meta.env.VITE_ASSISTANT_URL ?? '',
+
+    /** Depois disto desistimos do modelo e dizemos a fala escrita. */
+    timeoutMs: 6_000,
+
+    /** Quantas trocas de palavras é que ela leva consigo. */
+    historyTurns: 8,
+
+    /**
+     * Silêncio entre saudações à mesma pessoa.
+     *
+     * Sem isto, quem ficasse ao balcão a decidir levava com "olá" de dez em
+     * dez segundos.
+     */
+    greetCooldownMs: 45_000,
+  },
 } as const
 
 export function formatPrice(cents: number): string {

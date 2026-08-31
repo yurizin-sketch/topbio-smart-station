@@ -58,10 +58,21 @@ function reducer(state: SessionState, action: Action): SessionState {
     case 'order_created':
       return { ...state, order: action.order }
 
-    case 'order_updated':
-      return state.order
-        ? { ...state, order: { ...state.order, ...action.patch } }
-        : state
+    case 'order_updated': {
+      if (!state.order) return state
+      // Mesma guarda do `reset`, pela mesma razão.
+      //
+      // O ecrã de sucesso marca a encomenda como paga num efeito que depende da
+      // encomenda. Sem esta verificação o reducer devolvia sempre um objeto
+      // novo, o efeito via uma encomenda "diferente" e voltava a marcar — o
+      // tablet ficava preso num ciclo até o separador congelar.
+      const order = state.order
+      const changed = (Object.keys(action.patch) as (keyof Order)[]).some(
+        (key) => action.patch[key] !== order[key],
+      )
+      if (!changed) return state
+      return { ...state, order: { ...order, ...action.patch } }
+    }
 
     case 'reset':
       // Nada de cliente por limpar — devolvemos o mesmo objeto.

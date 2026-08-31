@@ -1,0 +1,25 @@
+name = "topbio-assistente"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+# Quem pode falar com este endereço. Sem isto, qualquer site do mundo pode
+# gastar a nossa quota da API a partir do navegador de qualquer pessoa.
+#
+# A origem do GitHub Pages é o domínio, sem o caminho do repositório:
+# https://yurizin-sketch.github.io — e não .../topbio-smart-station.
+ALLOWED_ORIGINS = "https://yurizin-sketch.github.io,http://localhost:5173"
+
+# O modelo. Sonnet 5 é o equilíbrio certo para isto: responde numa fração de
+# segundo e escreve português de Portugal decente.
+#
+# Se a conta ficar cara, "claude-haiku-4-5-20251001" custa uma fração e para
+# duas frases e três botões a diferença quase não se nota.
+MODEL = "claude-sonnet-5"
+
+# A chave NÃO vem aqui. Este ficheiro está no repositório e o repositório é
+# público. A chave entra uma vez por:
+#
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#
+# e fica guardada no Cloudflare, cifrada, sem forma de ser lida de volta.
