@@ -685,6 +685,33 @@ img {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* O aviso de fecho tem de se ver de pé, a um braço de distância, mas sem
+   gritar: quem está a copiar o código não pode achar que perdeu a compra. */
+.finish__countdown {
+  margin-top: var(--tne-space-sm);
+  font-size: var(--station-small);
+  font-weight: 600;
+  color: var(--tne-gold);
+  animation: station-fade var(--tne-duration-slow) var(--tne-ease-soft) both;
+}
+
+.finish__countdown span {
+  display: block;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@keyframes station-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Ecrã de atração ─────────────────────────────────────────────────── */
 
 .attract {

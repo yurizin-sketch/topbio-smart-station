@@ -45,8 +45,17 @@ export const config = {
    */
   staffPin: '2468',
 
-  /** Ecrã de sucesso: tempo até reiniciar sozinho. */
-  successResetMs: 12_000,
+  /**
+   * Ecrã do código: tempo até reiniciar sozinho.
+   *
+   * Chega para anotar o código com calma e é curto que baste para o próximo
+   * cliente não encontrar a compra de outra pessoa no ecrã. Qualquer toque
+   * volta a pôr a contagem no início.
+   */
+  successResetMs: 40_000,
+
+  /** Últimos segundos, em que o ecrã avisa que vai fechar. */
+  successWarnMs: 10_000,
 
   /** Quanto tempo o MB WAY espera pela confirmação do cliente. */
   mbwayTimeoutMs: 180_000,

@@ -28,10 +28,11 @@ export interface Voice {
 
 /** Preferência de vozes, da melhor para a pior. */
 function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
-  // Português de Portugal primeiro, sempre. A diferença para pt-BR ouve-se à
-  // primeira sílaba e numa loja em Portugal soa a call center estrangeiro.
+  // Português do Brasil primeiro, por escolha da loja. Também é a voz
+  // portuguesa mais fácil de encontrar: quase todo o Android e Chrome traz
+  // pt-BR de origem, enquanto o pt-PT falta em muitos aparelhos.
   return (
-    voices.find((v) => v.lang.replace('_', '-').toLowerCase() === 'pt-pt') ??
+    voices.find((v) => v.lang.replace('_', '-').toLowerCase() === 'pt-br') ??
     voices.find((v) => v.lang.toLowerCase().startsWith('pt')) ??
     null
   )
@@ -79,7 +80,7 @@ class WebSpeechVoice implements Voice {
 
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.voice = this.voice
-    utterance.lang = this.voice?.lang ?? 'pt-PT'
+    utterance.lang = this.voice?.lang ?? 'pt-BR'
     // Ligeiramente mais devagar do que a predefinição: numa loja com música e
     // conversa, a velocidade normal perde-se.
     utterance.rate = 0.95
