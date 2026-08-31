@@ -60,12 +60,20 @@ export interface Assistant {
 
 /* ──────────────────────────────────────────────────────────────────────────
    Falas escritas
+
+   Atenção ao idioma: **só o que a Bia diz é português do Brasil**. Foi escolha
+   da loja e combina com a voz dela (ver `pickVoice` em `voice.ts`). Todo o
+   resto — botões, títulos, avisos, a tarja legal — continua em português
+   europeu, porque é a estação a falar com clientes portugueses, não ela.
+
+   Ou seja: aqui dentro escreve-se "tela", "você está vendo", "o app". Em
+   qualquer outro ficheiro escreve-se "ecrã", "está a ver", "a app".
    ────────────────────────────────────────────────────────────────────────── */
 
 const OPENINGS: [string, ...string[]] = [
-  'Olá! Sou a Bia. Posso ajudar a escolher?',
-  'Bem-vindo à TopBio. Quer que o ajude a escolher?',
-  'Olá! Se quiser, ajudo-o a encontrar o que procura.',
+  'Oi! Eu sou a Bia. Posso te ajudar a escolher?',
+  'Bem-vindo à TopBio. Quer que eu te ajude a escolher?',
+  'Oi! Se quiser, eu te ajudo a achar o que você procura.',
 ]
 
 const GOAL_CHOICES: AssistantChoice[] = [
@@ -83,15 +91,15 @@ const GOAL_CHOICES: AssistantChoice[] = [
  * rotina" e nunca "para o seu problema".
  */
 const LINES: Record<string, string> = {
-  attract: 'Olá! Sou a Bia. Posso ajudar a escolher?',
-  goals: 'Diga-me o que procura e eu mostro-lhe as opções da casa.',
-  recommendations: 'Aqui está o que temos para isso. Quer saber mais de algum?',
-  catalog: 'Este é o catálogo todo. Se preferir, diga-me o que procura.',
-  product: 'Se quiser levar, é só tocar em comprar. Levanta ao balcão.',
-  checkout: 'Pode pagar por MB WAY ou no balcão. Como prefere?',
-  mbway: 'Leia o código com a app MB WAY. Eu espero.',
-  ticket: 'Leve este código ao balcão. O colega trata do resto.',
-  success: 'Está pago. Mostre o comprovante ao balcão e é seu.',
+  attract: 'Oi! Eu sou a Bia. Posso te ajudar a escolher?',
+  goals: 'Me diz o que você procura que eu mostro as opções da casa.',
+  recommendations: 'Aqui está o que a gente tem pra isso. Quer saber mais de algum?',
+  catalog: 'Esse é o catálogo todo. Se preferir, me diz o que você procura.',
+  product: 'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
+  checkout: 'Você pode pagar por MB WAY ou no balcão. Como prefere?',
+  mbway: 'Leia o código com o app MB WAY. Eu espero.',
+  ticket: 'Leve esse código no balcão. O colega resolve o resto.',
+  success: 'Está pago. Mostre o comprovante no balcão e é seu.',
 }
 
 class ScriptedAssistant implements Assistant {
@@ -106,7 +114,7 @@ class ScriptedAssistant implements Assistant {
   async reply(context: AssistantContext, said: string): Promise<AssistantTurn> {
     const known = LINES[context.screen]
     if (said === 'browse') {
-      return { say: 'Com certeza. Veja à vontade, estou aqui se precisar.', choices: [] }
+      return { say: 'Claro. Fique à vontade, estou aqui se precisar.', choices: [] }
     }
     // A fala do ecrã onde a pessoa está. Se for um ecrã sem fala escrita,
     // calamo-nos: uma assistente que fala por falar é pior que uma calada.
