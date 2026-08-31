@@ -1167,37 +1167,61 @@ img {
   pointer-events: auto;
 }
 
-/* No repouso ela deixa de ser um autocolante no canto.
-   Empilhada, a personagem mais o balão medem mais de 400px e assentavam em
-   cima do “Toque para começar” — a estação ficava com dois convites a
-   disputar o mesmo sítio. Lado a lado, e centrados na faixa vazia entre o
-   botão e a tarja legal, cabem os dois sem se tocarem. */
+/* No repouso ela cresce, mas não sai do canto.
+   Já a experimentei centrada na faixa entre o botão e a tarja legal: fica
+   bem num tablet ao alto e assenta em cima do “Toque para começar” em
+   qualquer ecrã mais baixo, porque essa faixa encolhe com a altura. O canto
+   direito está vazio em todos os formatos — é o único sítio que nunca
+   disputa espaço com o convite principal. */
 .assistant--resting {
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  display: grid;
-  /* Largura explícita e não "encolhe-ate-caber": num contentor fixo sem
-     largura, a coluna do balão colapsava para 150px e o texto saía em torre. */
-  width: min(760px, calc(100vw - 2 * var(--station-gutter)));
-  /* O max-width de 420px da regra base ganhava a este width. */
-  max-width: none;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  justify-items: end;
   gap: var(--tne-space-md);
 }
 
-.assistant--resting .assistant__unlock,
-.assistant--resting .assistant__privacy {
-  grid-column: 1 / -1;
+/* No canto, o balão aberto ainda alcançava o “Toque para começar”, que está
+   centrado. O botão mede 412px, portanto o espaço livre à direita dele é
+   `50vw - 206px - goteira`, menos uma folga: o balão nunca passa disso. O
+   mínimo de 280px é o ponto em que o texto ainda sai em linhas e não em
+   torre. */
+@media (max-height: 999px) {
+  .assistant--resting {
+    max-width: clamp(280px, calc(50vw - 214px - var(--station-gutter)), 420px);
+  }
 }
 
-/* De lado, o bico do balão muda de parede. */
-.assistant--resting .assistant__bubble::after {
-  right: -9px;
-  bottom: 56px;
-  border-radius: 0 var(--tne-radius-sm) 0 0;
+/* Só num ecrã alto — o tablet ao alto da loja — é que existe uma faixa vazia
+   entre o botão e a tarja legal. Aí a Bia sai do canto e ocupa-a de lado:
+   balão à esquerda, personagem à direita, os dois a caber sem tocar no
+   “Toque para começar”. Empilhados não cabiam: 458px de altura contra os
+   390px da faixa. Em ecrãs mais baixos esta faixa não existe e ela fica no
+   canto, que está vazio em qualquer formato. */
+@media (min-height: 1000px) {
+  .assistant--resting {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    display: grid;
+    /* Largura explícita e não "encolhe-até-caber": num contentor fixo sem
+       largura, a coluna do balão colapsava para 150px e o texto saía em
+       torre. */
+    width: min(760px, calc(100vw - 2 * var(--station-gutter)));
+    /* O max-width de 420px da regra base ganhava a este width. */
+    max-width: none;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    justify-items: end;
+  }
+
+  .assistant--resting .assistant__unlock,
+  .assistant--resting .assistant__privacy {
+    grid-column: 1 / -1;
+  }
+
+  /* De lado, o bico do balão muda de parede. */
+  .assistant--resting .assistant__bubble::after {
+    right: -9px;
+    bottom: 56px;
+    border-radius: 0 var(--tne-radius-sm) 0 0;
+  }
 }
 
 /* ── O balão ───────────────────────────────────────────────────────────── */
