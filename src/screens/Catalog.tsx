@@ -7,8 +7,8 @@ import { legal } from '../data/legal'
 import type { Product } from '../types'
 
 // As sugestões mostram três opções para não sobrecarregar quem está de pé à
-// frente da máquina. Mas há produtos que só se levantam ao balcão e que, por
-// isso, nunca chegariam a aparecer. Este ecrã garante que a gama toda está
+// frente do tablet. Mas a gama tem mais do que três produtos por objetivo, e o
+// resto nunca chegaria a aparecer. Este ecrã garante que a gama toda está
 // sempre a um toque de distância.
 export function Catalog() {
   const navigate = useNavigate()
@@ -37,8 +37,7 @@ export function Catalog() {
       <p className="eyebrow">Gama completa</p>
       <h1 className="title">Todos os produtos</h1>
       <p className="subtitle">
-        {products.length} produtos. Os que não saem na máquina levantam-se ao balcão,
-        aqui ao lado.
+        {products.length} produtos. Escolha aqui e levante ao balcão, a dois passos.
       </p>
 
       <div className="grid grid--products">

@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, Frame } from '../components/ui'
 import { config, formatPrice } from '../config'
 import { getCatalog } from '../services/catalog'
-import { getDispenser } from '../services/dispenser'
 import {
   findByCode,
   listOpen,
   markCancelled,
-  markDispensed,
+  markDelivered,
   markPaid,
   pickupCodeFor,
   subscribe,
@@ -18,8 +17,8 @@ import type { Product } from '../types'
 /**
  * Painel do balcão.
  *
- * O quiosque está à porta, o funcionário está lá dentro. O cliente atravessa a
- * loja com um código no ecrã do telemóvel e este painel é o que fecha o ciclo.
+ * A estação está na loja e não entrega nada: o cliente chega ao balcão com uma
+ * ficha e este painel é o que fecha o ciclo.
  * São dois códigos diferentes e o funcionário não tem de saber a diferença:
  *
  *  - `TB-XXXX` — ainda não pagou. Recebe-se o dinheiro e só depois se entrega.
@@ -100,27 +99,15 @@ export function Staff() {
     )
   }
 
-  const deliver = async (order: StoredOrder) => {
+  const deliver = (order: StoredOrder) => {
     setBusy(true)
     try {
-      // Ordem deliberada: primeiro regista-se o pagamento, só depois se larga o
-      // produto. Ao contrário, uma falha a meio deixa mercadoria entregue sem
+      // Ordem deliberada: primeiro regista-se o pagamento, só depois se fecha a
+      // entrega. Ao contrário, uma falha a meio deixa mercadoria entregue sem
       // registo de que foi paga.
       const paid = order.status === 'awaiting_counter' ? markPaid(order.id) ?? order : order
 
-      if (paid.fulfilment === 'machine' && paid.slotId) {
-        const result = await getDispenser().dispense(paid.slotId)
-        if (!result.ok) {
-          setSelected(findByCode(paid.ticketCode ?? pickupCodeFor(paid)))
-          setFeedback({
-            tone: 'warn',
-            text: `O compartimento ${paid.slotId} não abriu (${result.reason}). O pedido está pago — entregue à mão e resolva a máquina depois.`,
-          })
-          return
-        }
-      }
-
-      markDispensed(paid.id)
+      markDelivered(paid.id)
       setSelected(null)
       setCode('')
       setFeedback({ tone: 'ok', text: 'Entregue. Pedido fechado.' })
@@ -181,7 +168,7 @@ export function Staff() {
           order={selected}
           product={productById.get(selected.productId)}
           busy={busy}
-          onDeliver={() => void deliver(selected)}
+          onDeliver={() => deliver(selected)}
           onCancel={() => cancel(selected)}
         />
       )}
@@ -234,7 +221,7 @@ function OrderCard({
   onDeliver: () => void
   onCancel: () => void
 }) {
-  const closed = order.status === 'dispensed' || order.status === 'cancelled'
+  const closed = order.status === 'delivered' || order.status === 'cancelled'
   const owes = order.status === 'awaiting_counter'
   // A reserva expirada não bloqueia a entrega: quem chegou ao balcão com o
   // código na mão não tem culpa de ter demorado. Só avisa, para o funcionário
@@ -253,11 +240,7 @@ function OrderCard({
       <p className="staff__product">{product?.name ?? order.productId}</p>
       <p className="staff__amount">{formatPrice(order.amountCents)}</p>
 
-      <p className="staff__where">
-        {order.fulfilment === 'machine' && order.slotId
-          ? `Sai da máquina · compartimento ${order.slotId}`
-          : 'Entregar da prateleira'}
-      </p>
+      <p className="staff__where">Entregar da prateleira</p>
 
       {lapsed && (
         <p className="staff__feedback staff__feedback--warn">
@@ -267,12 +250,12 @@ function OrderCard({
 
       {closed ? (
         <p className="staff__feedback staff__feedback--ok">
-          {order.status === 'dispensed' ? 'Já foi entregue.' : 'Este pedido foi cancelado.'}
+          {order.status === 'delivered' ? 'Já foi entregue.' : 'Este pedido foi cancelado.'}
         </p>
       ) : (
         <div className="staff__actions">
           <Button onClick={onDeliver} disabled={busy}>
-            {busy ? 'A abrir…' : owes ? `Recebi ${formatPrice(order.amountCents)} · Entregar` : 'Entregar'}
+            {busy ? 'A fechar…' : owes ? `Recebi ${formatPrice(order.amountCents)} · Entregar` : 'Entregar'}
           </Button>
           {/* `ghost` é o botão de ícone da barra do topo — com texto, transborda
               da caixa. Aqui a ação é secundária mas continua a ser texto. */}

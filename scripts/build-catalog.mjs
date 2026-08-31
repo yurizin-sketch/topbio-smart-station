@@ -11,7 +11,6 @@
  *  · nome comercial  — o título vive no produto Shopify, não no template;
  *  · preço           — idem; abaixo estão os da tabela oficial;
  *  · objetivo        — taxonomia própria da estação;
- *  · compartimento   — depende da máquina, que ainda não foi comprada.
  *
  * Produto que ainda não tem página no site leva a copy em `copy:` aqui mesmo.
  * É a excepção, não a regra: quando o template existir, apaga-se o `copy` e
@@ -41,34 +40,31 @@ const OUT = resolve(here, '..', 'src', 'data', 'catalog.seed.ts')
  *
  * `priceCents: 0` + `active: false` significa "ainda não tem preço": o produto
  * fica fora da estação em vez de aparecer com um número inventado. Nunca pôr um
- * preço de recheio aqui — a máquina cobra este valor.
+ * preço de recheio aqui — é este o valor que se cobra ao balcão.
  *
  * `handle` é o nome do template (product.<handle>.json) e também o id da
  * imagem em public/products.
  */
 const PRODUCTS = [
-  { handle: 'maca-peruana', id: 'maca-peruana', name: 'Maca Peruana', goals: ['energia', 'performance'], priceCents: 3000, slot: 'A01', stock: 6 },
-  { handle: 'top-brain', id: 'top-brain', name: 'Top Brain', goals: ['foco', 'energia'], priceCents: 3000, slot: 'A02', stock: 5 },
-  { handle: 'topcalm', id: 'topcalm', name: 'Top Calm', goals: ['sono'], priceCents: 3000, slot: 'A03', stock: 5 },
-  { handle: 'magnetop', id: 'magnetop', name: 'Magnetop', goals: ['energia', 'sono', 'performance'], priceCents: 3000, slot: 'A04', stock: 6 },
-  { handle: 'imune', id: 'imune', name: 'Imune+', goals: ['imunidade'], priceCents: 3000, slot: 'A05', stock: 5 },
-  { handle: 'vitamina-c', id: 'vitamina-c', name: 'Vitamina C', goals: ['imunidade', 'beleza'], priceCents: 3000, slot: 'A06', stock: 6 },
-  { handle: 'vitamina-d3-k2', id: 'vitamina-d3-k2', name: 'Vitamina D3 + K2', goals: ['imunidade', 'mobilidade'], priceCents: 3000, slot: 'A07', stock: 5 },
-  { handle: 'colageno-verisol', id: 'colageno-verisol', name: 'Colagénio Verisol®', goals: ['beleza'], priceCents: 3000, slot: 'A08', stock: 5 },
-  { handle: 'acido-hialuronico', id: 'acido-hialuronico', name: 'Ácido Hialurónico', goals: ['beleza'], priceCents: 3000, slot: 'B01', stock: 4 },
-  { handle: 'articulacao', id: 'articulacao', name: 'Articulação+', goals: ['mobilidade', 'performance'], priceCents: 3000, slot: 'B02', stock: 4 },
-  { handle: 'termogenico', id: 'termogenico', name: 'Top Termo', goals: ['peso', 'performance'], priceCents: 8000, slot: 'B03', stock: 4 },
-  { handle: 'vinagre-de-maca', id: 'vinagre-de-maca', name: 'Vinagre de Maçã', goals: ['peso'], priceCents: 3000, slot: 'B04', stock: 4 },
-  { handle: 'top-omega3', id: 'top-omega3', name: 'Top Ómega 3', goals: ['foco', 'beleza'], priceCents: 3000, slot: 'B05', stock: 4 },
-  { handle: 'topcoenzimaq10', id: 'topcoenzimaq10', name: 'Top Coenzima Q10', goals: ['energia'], priceCents: 3000, slot: 'B06', stock: 4 },
-  { handle: 'top-woman-40', id: 'top-woman-40', name: 'Top Woman 40+', goals: ['sono', 'energia'], priceCents: 4000, slot: 'B07', stock: 4 },
-  { handle: 'oleo-de-coco', id: 'oleo-de-coco', name: 'Óleo de Coco', goals: ['peso', 'energia'], priceCents: 2500, slot: 'B08', stock: 4 },
-  // Sem compartimento: a máquina tem 16 posições no desenho actual e a gama
-  // tem 19 produtos. Estes três vendem-se ao balcão até se saber quantas
-  // posições a máquina escolhida tem mesmo.
-  { handle: 'feno-grego', id: 'feno-grego', name: 'Feno-Grego', goals: ['energia', 'performance'], priceCents: 3000, slot: null, stock: 0 },
-  { handle: 'topnew-lip', id: 'topbio-lip', name: 'TopBio Lip', goals: ['peso'], priceCents: 8000, slot: null, stock: 0 },
-  { handle: 'topnew-lip-mini-20-capsulas', id: 'topbio-lip-mini', name: 'TopBio Lip Mini', goals: ['peso'], priceCents: 4000, slot: null, stock: 0 },
+  { handle: 'maca-peruana', id: 'maca-peruana', name: 'Maca Peruana', goals: ['energia', 'performance'], priceCents: 3000 },
+  { handle: 'top-brain', id: 'top-brain', name: 'Top Brain', goals: ['foco', 'energia'], priceCents: 3000 },
+  { handle: 'topcalm', id: 'topcalm', name: 'Top Calm', goals: ['sono'], priceCents: 3000 },
+  { handle: 'magnetop', id: 'magnetop', name: 'Magnetop', goals: ['energia', 'sono', 'performance'], priceCents: 3000 },
+  { handle: 'imune', id: 'imune', name: 'Imune+', goals: ['imunidade'], priceCents: 3000 },
+  { handle: 'vitamina-c', id: 'vitamina-c', name: 'Vitamina C', goals: ['imunidade', 'beleza'], priceCents: 3000 },
+  { handle: 'vitamina-d3-k2', id: 'vitamina-d3-k2', name: 'Vitamina D3 + K2', goals: ['imunidade', 'mobilidade'], priceCents: 3000 },
+  { handle: 'colageno-verisol', id: 'colageno-verisol', name: 'Colagénio Verisol®', goals: ['beleza'], priceCents: 3000 },
+  { handle: 'acido-hialuronico', id: 'acido-hialuronico', name: 'Ácido Hialurónico', goals: ['beleza'], priceCents: 3000 },
+  { handle: 'articulacao', id: 'articulacao', name: 'Articulação+', goals: ['mobilidade', 'performance'], priceCents: 3000 },
+  { handle: 'termogenico', id: 'termogenico', name: 'Top Termo', goals: ['peso', 'performance'], priceCents: 8000 },
+  { handle: 'vinagre-de-maca', id: 'vinagre-de-maca', name: 'Vinagre de Maçã', goals: ['peso'], priceCents: 3000 },
+  { handle: 'top-omega3', id: 'top-omega3', name: 'Top Ómega 3', goals: ['foco', 'beleza'], priceCents: 3000 },
+  { handle: 'topcoenzimaq10', id: 'topcoenzimaq10', name: 'Top Coenzima Q10', goals: ['energia'], priceCents: 3000 },
+  { handle: 'top-woman-40', id: 'top-woman-40', name: 'Top Woman 40+', goals: ['sono', 'energia'], priceCents: 4000 },
+  { handle: 'oleo-de-coco', id: 'oleo-de-coco', name: 'Óleo de Coco', goals: ['peso', 'energia'], priceCents: 2500 },
+  { handle: 'feno-grego', id: 'feno-grego', name: 'Feno-Grego', goals: ['energia', 'performance'], priceCents: 3000 },
+  { handle: 'topnew-lip', id: 'topbio-lip', name: 'TopBio Lip', goals: ['peso'], priceCents: 8000 },
+  { handle: 'topnew-lip-mini-20-capsulas', id: 'topbio-lip-mini', name: 'TopBio Lip Mini', goals: ['peso'], priceCents: 4000 },
 
   // Ainda sem página no site: a copy vem daqui até o template existir.
   //
@@ -80,7 +76,7 @@ const PRODUCTS = [
   // fiscalização.
   {
     handle: 'top-shape', id: 'top-shape', name: 'Top Shape', goals: ['peso'],
-    priceCents: 4500, slot: null, stock: 0,
+    priceCents: 4500,
     copy: {
       description: 'Fórmula com Morosil® (extrato de laranja Moro), berberina, açafrão e cromo quelado, em 2 cápsulas por dia.',
       highlights: ['Metabolismo normal dos macronutrientes', 'Glicemia normal', '2 cápsulas por dia'],
@@ -90,7 +86,7 @@ const PRODUCTS = [
   },
   {
     handle: 'top-max', id: 'top-max', name: 'Top Max', goals: ['peso', 'energia'],
-    priceCents: 6000, slot: null, stock: 0,
+    priceCents: 6000,
     copy: {
       description: 'Fórmula com clorela, espirulina, extrato de rizoma de curcuma, psyllium e crómio, em 2 cápsulas por dia.',
       highlights: ['Metabolismo normal dos macronutrientes', 'Glicemia normal', '2 cápsulas por dia'],
@@ -100,7 +96,7 @@ const PRODUCTS = [
   },
   {
     handle: 'top-shot', id: 'top-shot', name: 'Top Shot Matinal', goals: ['energia', 'imunidade'],
-    priceCents: 4500, slot: null, stock: 0,
+    priceCents: 4500,
     copy: {
       description: 'Pó solúvel com inulina, gengibre, curcuma, maca peruana, zinco, própolis e flavonoides. Uma colher de chá por dia, de manhã.',
       // Sem os miligramas de zinco por dose não se pode afirmar as alegações
@@ -185,8 +181,6 @@ for (const p of PRODUCTS) {
     id: ${ts(p.id)},
     name: ${ts(p.name)},
     priceCents: ${p.priceCents},
-    slotId: ${p.slot ? ts(p.slot) : 'null'},
-    machineStock: ${p.stock},
     inStore: true,
     image: ${ts(`/products/${p.id}.webp`)},
     description: ${ts(description)},
@@ -210,10 +204,11 @@ const header = `import type { Product } from '../types'
  * Preços: tabela oficial de 2026-08-10, mais Top Ómega 3 e Top Coenzima Q10
  * confirmados a 2026-08-28. \`priceCents: 0\` com \`active: false\`
  * é um produto à espera de preço — fica fora da estação em vez de aparecer
- * com um número inventado, porque a máquina cobra mesmo este valor.
+ * com um número inventado, porque é este o valor que se cobra ao balcão.
  *
- * \`inStore\` é sempre true: quem compra aqui está à porta da loja. Um
- * produto sem compartimento não está esgotado — levanta-se lá dentro.
+ * \`inStore\` é sempre true: a estação é um tablet dentro da loja e tudo o que
+ * está aqui se levanta ao balcão. Quando faltar mesmo stock de um produto,
+ * põe-se a false — é o único sinal de indisponível que existe.
  */
 export const catalogSeed: Product[] = [
 `

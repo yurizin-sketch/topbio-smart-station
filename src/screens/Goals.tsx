@@ -32,9 +32,9 @@ export function Goals() {
       <div className="grid grid--goals">
         {/*
           Nenhum objetivo é desativado.
-          A máquina pode não ter um produto carregado, mas a loja tem — logo
-          há sempre resposta para dar. Bloquear uma escolha aqui era mandar
-          embora um cliente que estava a dois passos de comprar.
+          A loja tem sempre alguma coisa a propor para cada objetivo — logo há
+          sempre resposta para dar. Bloquear uma escolha aqui era mandar embora
+          um cliente que estava a dois passos de comprar.
         */}
         {goals.map((goal, i) => (
           <button

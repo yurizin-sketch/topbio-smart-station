@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Frame } from '../components/ui'
 import { useSession } from '../state/session'
-import { fulfilmentFor } from '../services/catalog'
 import { formatPrice } from '../config'
 import { track } from '../services/telemetry'
 import { legal } from '../data/legal'
@@ -11,10 +10,11 @@ import type { PaymentMethod } from '../types'
 /**
  * Escolha do método de pagamento.
  *
- * Dois caminhos, porque a estação fica à porta da loja:
- *  · MB WAY — resolve tudo no ecrã, sem falar com ninguém.
+ * Dois caminhos, e ambos acabam no mesmo balcão — muda só onde o dinheiro
+ * passa:
+ *  · MB WAY — paga no ecrã e vai buscar o produto já pago.
  *  · Balcão — para quem prefere pagar a uma pessoa (ou não usa MB WAY).
- *    Emite um código, reserva a unidade e o pagamento acontece lá dentro.
+ *    Emite uma ficha, reserva a unidade e o pagamento acontece ao balcão.
  */
 export function Payment() {
   const navigate = useNavigate()
@@ -25,8 +25,6 @@ export function Payment() {
   }, [product, navigate])
 
   if (!product) return null
-
-  const mode = fulfilmentFor(product)
 
   const choose = (method: PaymentMethod) => {
     createOrder(method)
@@ -65,10 +63,8 @@ export function Payment() {
           </span>
           <h2 className="card__title">MB WAY</h2>
           <p className="card__text">
-            Leia o QR com a app MB WAY e confirme.{' '}
-            {mode === 'machine'
-              ? 'O produto sai aqui na estação.'
-              : 'Depois levanta o produto na loja.'}
+            Leia o QR com a app MB WAY e confirme. Depois levanta o produto ao
+            balcão, já pago.
           </p>
         </button>
 
@@ -78,7 +74,7 @@ export function Payment() {
           </span>
           <h2 className="card__title">Pagar na loja</h2>
           <p className="card__text">
-            Geramos um código. Leve-o ao balcão, pague lá e levanta o produto no
+            Geramos uma ficha. Leve-a ao balcão, pague lá e levante o produto no
             momento.
           </p>
         </button>

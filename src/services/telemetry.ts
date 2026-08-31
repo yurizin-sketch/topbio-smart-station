@@ -19,8 +19,6 @@ export type StationEvent =
   | { type: 'checkout_started'; productId: string; method: string }
   | { type: 'payment_confirmed'; orderId: string }
   | { type: 'payment_failed'; orderId: string; reason: string }
-  | { type: 'dispense_ok'; slotId: string }
-  | { type: 'dispense_failed'; slotId: string; reason: string }
   | { type: 'session_timeout'; screen: string }
 
 export interface TelemetrySink {

@@ -1,4 +1,4 @@
-import type { Fulfilment, GoalId, Product } from '../types'
+import type { GoalId, Product } from '../types'
 import { catalogSeed } from '../data/catalog.seed'
 import { config } from '../config'
 
@@ -38,44 +38,29 @@ export function setCatalog(next: CatalogSource): void {
 }
 
 /**
- * Como é que este produto chega ao cliente, agora.
+ * Este produto pode ser vendido agora.
  *
- * Se está carregado na máquina, sai na máquina. Se não está, levanta-se ao
- * balcão — a loja é a dois passos. Só devolve `null` no caso raro de o
- * produto estar descontinuado também em loja.
+ * A estação é um tablet dentro da loja: não entrega nada, só fecha a venda e
+ * emite a ficha que o cliente leva ao balcão. Por isso há uma única pergunta
+ * a fazer — há unidades na loja? — e não duas vias de entrega.
  */
-export function fulfilmentFor(product: Product): Fulfilment | null {
-  if (product.slotId && product.machineStock > 0) return 'machine'
-  if (product.inStore) return 'counter'
-  return null
+export function isAvailable(product: Product): boolean {
+  return product.active && product.inStore
 }
 
-/** Produtos que a estação pode vender, por qualquer via. */
+/** Produtos que a estação pode vender. */
 export function purchasable(products: Product[]): Product[] {
-  return products.filter((p) => p.active && fulfilmentFor(p) !== null)
+  return products.filter(isAvailable)
 }
 
 /**
  * Sugestões para um objetivo.
  *
- * Ordena por entrega imediata primeiro: entre duas opções igualmente
- * adequadas, mostrar antes a que sai na máquina poupa uma ida à loja a quem
- * só quer comprar e seguir caminho.
+ * Sem ordenação por via de entrega: tudo se levanta no mesmo balcão, por isso
+ * a ordem do catálogo é a ordem que a loja escolheu mostrar.
  */
 export function recommendFor(products: Product[], goal: GoalId): Product[] {
-  const rank = (p: Product) => (fulfilmentFor(p) === 'machine' ? 0 : 1)
-
   return purchasable(products)
     .filter((p) => p.goals.includes(goal))
-    .sort((a, b) => rank(a) - rank(b) || b.machineStock - a.machineStock)
     .slice(0, config.maxRecommendations)
-}
-
-/** Só para o operador: sinaliza compartimentos a precisar de reposição. */
-export function needsRestock(product: Product): boolean {
-  return (
-    product.slotId !== null &&
-    product.machineStock > 0 &&
-    product.machineStock <= config.lowStockThreshold
-  )
 }

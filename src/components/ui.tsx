@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import QRCode from 'qrcode'
-import type { Product } from '../types'
-import { fulfilmentFor } from '../services/catalog'
-import { config } from '../config'
+import type { Order, Product } from '../types'
+import { isAvailable } from '../services/catalog'
+import { config, formatPrice } from '../config'
 import { asset } from '../assets'
 
 /* ── Moldura ─────────────────────────────────────────────────────────── */
@@ -94,22 +94,19 @@ export function Button({
 /* ── Stock ───────────────────────────────────────────────────────────── */
 
 /**
- * Diz COMO se recebe o produto, não SE há produto.
+ * Há ou não há este produto na loja.
  *
- * A palavra "esgotado" não existe neste ecrã: a loja está a dois passos e
- * tem stock. Dizer a alguém que não pode comprar o que temos ali dentro é
- * perder uma venda por uma questão de arrumação de armazém.
+ * Nada sai da estação: o tablet está dentro da loja e tudo se levanta ao
+ * balcão. Por isso a etiqueta tem duas posições e não três — escrever
+ * "levantar na loja" em cima de um produto que já está na loja não informa
+ * ninguém.
  */
 export function AvailabilityBadge({ product }: { product: Product }) {
-  const mode = fulfilmentFor(product)
-
-  if (mode === 'machine') {
-    return <span className="badge badge--in-stock">Sai aqui na hora</span>
-  }
-  if (mode === 'counter') {
-    return <span className="badge badge--low-stock">Levantar na loja</span>
-  }
-  return <span className="badge badge--out">Indisponível</span>
+  return isAvailable(product) ? (
+    <span className="badge badge--in-stock">Disponível</span>
+  ) : (
+    <span className="badge badge--out">Indisponível</span>
+  )
 }
 
 /**
@@ -131,8 +128,8 @@ export function ProductImage({
   const [broken, setBroken] = useState(false)
 
   // Um espaço vazio, não um buraco: sem isto a moldura colapsa e leva consigo a
-  // etiqueta de «sai na máquina / levanta-se na loja», que é a informação de
-  // que o cliente precisa mesmo.
+  // etiqueta de disponibilidade, que é a informação de que o cliente precisa
+  // mesmo.
   if (broken) {
     return <div className={['media-empty', className].filter(Boolean).join(' ')} aria-hidden="true" />
   }
@@ -186,6 +183,78 @@ export function QrCode({ value, size = 380 }: { value: string; size?: number }) 
   }, [value, size])
 
   return <canvas className="qr" ref={ref} role="img" aria-label="Código QR de pagamento" />
+}
+
+/* ── Comprovante ────────────────────────────────────────────────── */
+
+/**
+ * A ficha que o cliente leva ao balcão.
+ *
+ * É o único desfecho da estação: o tablet não entrega produto nenhum, fecha a
+ * venda e imprime — hoje no ecrã, amanhã em papel — o que o funcionário
+ * precisa de ver para entregar. Por isso vive num só componente: o dia em que
+ * houver impressora ligada, é este bloco que sai, igual em ambos os ecrãs.
+ *
+ * O código aparece em texto E em QR de propósito. O QR é para o balcão ler
+ * depressa; o texto é para quando o leitor não pega ou o ecrã está riscado.
+ */
+export function Receipt({
+  code,
+  order,
+  productName,
+  state,
+}: {
+  code: string
+  order: Order
+  productName: string
+  /** O que falta fazer com esta ficha. Muda a tarja, não o resto. */
+  state: 'paid' | 'to_pay'
+}) {
+  const issued = new Date(order.createdAt)
+
+  return (
+    <div className="receipt">
+      <div className="receipt__head">
+        <p className="section-label">Comprovante</p>
+        <span className={`receipt__state receipt__state--${state === 'paid' ? 'ok' : 'due'}`}>
+          {state === 'paid' ? 'Pago' : 'Por pagar'}
+        </span>
+      </div>
+
+      <strong className="ticket-code">{code}</strong>
+      <QrCode value={code} size={220} />
+
+      <dl className="receipt__lines">
+        <div>
+          <dt>Produto</dt>
+          <dd>{productName}</dd>
+        </div>
+        <div>
+          <dt>Valor</dt>
+          <dd>{formatPrice(order.amountCents)}</dd>
+        </div>
+        <div>
+          <dt>Emitido</dt>
+          <dd>
+            {issued.toLocaleDateString('pt-PT')}{' '}
+            {issued.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+          </dd>
+        </div>
+        <div>
+          <dt>Estação</dt>
+          <dd>{order.stationId}</dd>
+        </div>
+      </dl>
+
+      {/*
+        Não é fatura. Dizer isto na própria ficha evita que alguém a apresente
+        como documento fiscal — quem emite fatura é o balcão, com NIF e tudo.
+      */}
+      <p className="receipt__note">
+        Documento interno de levantamento. Não serve de fatura.
+      </p>
+    </div>
+  )
 }
 
 /* ── Teclado numérico ────────────────────────────────────────────────── */

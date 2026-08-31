@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
 import { useSession } from '../state/session'
-import { fulfilmentFor } from '../services/catalog'
+import { isAvailable } from '../services/catalog'
 import { formatPrice } from '../config'
 import { legal } from '../data/legal'
 
@@ -30,8 +30,6 @@ export function ProductDetail() {
 
   if (!product) return null
 
-  const mode = fulfilmentFor(product)
-
   return (
     <Frame
       legal={legal.supplement}
@@ -57,10 +55,7 @@ export function ProductDetail() {
         <figure className="detail__figure" style={{ margin: 0 }}>
           <ProductImage product={product} />
           <figcaption className="detail__slot">
-            <AvailabilityBadge product={product} />{' '}
-            {mode === 'machine'
-              ? `· compartimento ${product.slotId}`
-              : '· ao balcão, a dois passos'}
+            <AvailabilityBadge product={product} /> · levanta-se ao balcão
           </figcaption>
         </figure>
 
@@ -115,7 +110,7 @@ export function ProductDetail() {
               <p className="section-label">Preço</p>
               <span className="price">{formatPrice(product.priceCents)}</span>
             </div>
-            <Button onClick={() => navigate('/checkout')} disabled={mode === null}>
+            <Button onClick={() => navigate('/checkout')} disabled={!isAvailable(product)}>
               Comprar →
             </Button>
           </div>

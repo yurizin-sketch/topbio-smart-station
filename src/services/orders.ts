@@ -28,7 +28,7 @@ export type StoredOrder = Order & {
 }
 
 /**
- * Estados que interessam ao balcão. Tudo o resto (`created`, `dispensing`, …)
+ * Estados que interessam ao balcão. Tudo o resto (`created`, `expired`, …)
  * é ruído de meio-caminho que o funcionário nunca precisa de ver.
  */
 const OPEN_STATUSES: ReadonlyArray<Order['status']> = ['awaiting_counter', 'paid']
@@ -109,8 +109,9 @@ export function markPaid(id: string): StoredOrder | null {
   return patch(id, { status: 'paid', method: 'counter' })
 }
 
-export function markDispensed(id: string): StoredOrder | null {
-  return patch(id, { status: 'dispensed', closedAt: Date.now() })
+/** Produto entregue em mão ao cliente. Fecha o pedido. */
+export function markDelivered(id: string): StoredOrder | null {
+  return patch(id, { status: 'delivered', closedAt: Date.now() })
 }
 
 export function markCancelled(id: string): StoredOrder | null {

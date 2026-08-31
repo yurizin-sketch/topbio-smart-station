@@ -13,7 +13,7 @@ import type { OrderStatus } from '../types'
  * Pagamento MB WAY.
  *
  * O QR é o caminho principal e aparece logo ao entrar: quem está de pé à
- * frente de uma máquina não quer escrever nove dígitos num teclado tátil.
+ * frente de um tablet não quer escrever nove dígitos num teclado tátil.
  * Abre a app, lê, confirma. A introdução do número fica como alternativa
  * para quem tiver dificuldade com a câmara.
  */
@@ -66,7 +66,7 @@ export function MbWay() {
   /**
    * Quem decide que o pagamento entrou é o SERVIDOR — o webhook do parceiro.
    * O ecrã limita-se a ouvir. Se pudesse decidir sozinho, qualquer pessoa com
-   * o inspetor do browser esvaziava a máquina de graça.
+   * o inspetor do browser esvaziava a loja de graça.
    */
   const orderId = order?.id
   const onStatus = useRef<(status: OrderStatus) => void>(() => {})
@@ -144,18 +144,14 @@ export function MbWay() {
       <p className="price" style={{ marginTop: 'var(--tne-space-sm)' }}>
         {formatPrice(order.amountCents)}
       </p>
-      <p className="card__text">
-        {order.fulfilment === 'machine'
-          ? `Sai no compartimento ${order.slotId}`
-          : 'Levantamento na loja'}
-      </p>
+      <p className="card__text">Levantamento ao balcão</p>
       {countdown && (
         <div className="notice notice--info" style={{ marginTop: 'var(--tne-space-md)' }}>
           Válido durante {countdown}
         </div>
       )}
       <Steps
-        labels={['Ler o QR', 'Confirmar na app', 'Receber']}
+        labels={['Ler o QR', 'Confirmar na app', 'Levantar']}
         current={step}
       />
       <div style={{ marginTop: 'var(--tne-space-lg)' }}>

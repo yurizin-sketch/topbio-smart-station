@@ -22,37 +22,18 @@ export interface Goal {
   icon: string
 }
 
-/**
- * Compartimento físico da máquina, no formato `A01`..`C08`.
- * O tipo é uma string opaca de propósito: a grelha real (quantas
- * prateleiras, quantas colunas) só se sabe quando a máquina for escolhida,
- * por isso não a fixamos no sistema de tipos.
- */
-export type SlotId = string
-
-/**
- * Como o produto chega às mãos do cliente.
- *
- * A estação fica à porta da loja, e a loja tem sempre stock. Por isso um
- * produto que não esteja carregado na máquina NÃO está esgotado — muda só a
- * forma de entrega. Nunca há becos sem saída.
- */
-export type Fulfilment =
-  /** Sai no compartimento, ali mesmo. */
-  | 'machine'
-  /** Levanta-se ao balcão, lá dentro. */
-  | 'counter'
-
 export interface Product {
   id: string
   name: string
   /** Preço em cêntimos. Nunca usar float para dinheiro. */
   priceCents: number
-  /** Compartimento na máquina. `null` = este produto não está carregado. */
-  slotId: SlotId | null
-  /** Unidades dentro do compartimento. Zero não significa esgotado. */
-  machineStock: number
-  /** Existe em loja. Na prática é quase sempre `true`. */
+  /**
+   * Há unidades na loja.
+   *
+   * A estação é um tablet dentro da loja e não entrega nada por si: tudo o que
+   * se compra aqui se levanta ao balcão. Este é o único sinal de disponível /
+   * indisponível que existe.
+   */
   inStore: boolean
   image: string
   /** Descrição factual do produto. Sem alegações de efeito. */
@@ -74,10 +55,10 @@ export type OrderStatus =
   | 'awaiting_payment'
   /** Ticket emitido, cliente vai pagar ao balcão. */
   | 'awaiting_counter'
-  /** Confirmada pelo servidor (webhook ou staff). Só aqui é que se despacha. */
+  /** Confirmada pelo servidor (webhook ou staff). Só aqui é que se entrega. */
   | 'paid'
-  | 'dispensing'
-  | 'dispensed'
+  /** Produto entregue em mão pelo balcão. Fim de linha. */
+  | 'delivered'
   | 'failed'
   | 'expired'
   | 'cancelled'
@@ -86,9 +67,6 @@ export interface Order {
   id: string
   stationId: string
   productId: string
-  /** Só preenchido quando a entrega é pela máquina. */
-  slotId: SlotId | null
-  fulfilment: Fulfilment
   amountCents: number
   method: PaymentMethod | null
   status: OrderStatus

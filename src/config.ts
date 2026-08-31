@@ -1,14 +1,14 @@
 /**
  * Configuração da estação.
  *
- * Tudo o que muda entre máquinas (ou entre dev e produção) vive aqui, para
+ * Tudo o que muda entre estações (ou entre dev e produção) vive aqui, para
  * não haver números mágicos espalhados pelos ecrãs.
  */
 
 const STATION_ID_KEY = 'topbio_station_id'
 
 /**
- * Identificador persistente desta máquina.
+ * Identificador persistente deste tablet.
  * Gerado uma vez e guardado localmente — é o que permite saber de que
  * estação veio cada venda sem identificar o cliente.
  */

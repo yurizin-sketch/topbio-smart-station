@@ -10,7 +10,7 @@ import { config } from '../config'
  * ║ servidor e espera. Quem marca `paid` é o webhook da SIBS (MB WAY) ou  ║
  * ║ um funcionário autenticado (balcão). Se o ecrã pudesse confirmar      ║
  * ║ sozinho, qualquer pessoa com o inspetor do browser esvaziava a        ║
- * ║ máquina de graça.                                                     ║
+ * ║ loja de graça.                                                        ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  *
  * Fluxo MB WAY (SIBS API Market / SIBS Payment Gateway):
@@ -24,7 +24,7 @@ import { config } from '../config'
  *
  * Fluxo balcão (POS à porta da loja):
  *   1. quiosque cria a encomenda com `awaiting_counter` e um código curto
- *   2. o stock daquele compartimento fica reservado até expirar
+ *   2. a unidade fica reservada até expirar
  *   3. cliente leva o código ao balcão e paga lá
  *   4. funcionário confirma no /staff → backend marca `paid`
  *   5. entrega manual ou despacho automático, conforme se decidir

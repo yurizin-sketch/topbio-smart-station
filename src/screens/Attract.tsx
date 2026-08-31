@@ -9,7 +9,7 @@ import { asset } from '../assets'
 /**
  * Ecrã de repouso.
  *
- * É o que a máquina mostra 90% do dia, por isso é o que mais trabalha a
+ * É o que o tablet mostra 90% do dia, por isso é o que mais trabalha a
  * marca. Tudo aqui é tocável: quem passa não devia ter de encontrar o botão
  * certo — qualquer toque no ecrã começa a sessão.
  */

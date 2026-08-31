@@ -1002,7 +1002,7 @@ img {
 }
 
 /* Produto ainda sem fotografia. Fica um cartão bege com a marca de água da
-   casa — lê-se como «foto a caminho», nunca como avaria da máquina. */
+   casa — lê-se como «foto a caminho», nunca como avaria da estação. */
 .media-empty {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -1010,4 +1010,125 @@ img {
   background:
     radial-gradient(circle at 50% 45%, rgba(196, 154, 74, 0.14), transparent 62%),
     var(--tne-cream);
+}
+
+/* ── Comprovante ────────────────────────────────────────────────── */
+
+/* Desenhado como um talão: fundo branco, largura fixa, tudo alinhado ao
+   centro. Assim já se parece com o que vai sair da impressora quando houver
+   uma, e quem está ao balcão reconhece a mesma folha no ecrã e no papel. */
+.receipt {
+  width: 100%;
+  max-width: 420px;
+  margin: var(--tne-space-lg) auto 0;
+  padding: var(--tne-space-lg);
+  border-radius: var(--tne-radius-md);
+  background: var(--tne-white);
+  box-shadow: var(--tne-shadow-sm);
+  text-align: center;
+  color: var(--tne-green-dark);
+}
+
+.receipt__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tne-space-sm);
+}
+
+.receipt__head .section-label {
+  margin: 0;
+}
+
+.receipt__state {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.receipt__state--ok {
+  color: #1f5c3a;
+  background: rgba(31, 92, 58, 0.12);
+}
+
+.receipt__state--due {
+  color: #7a5620;
+  background: var(--tne-gold-light);
+}
+
+/* O código dentro do talão não pode usar o tamanho gigante do ecrã inteiro,
+   senão rebenta a largura fixa. */
+.receipt .ticket-code {
+  font-size: clamp(2.4rem, 7vw, 3.4rem);
+  margin: var(--tne-space-md) 0 var(--tne-space-sm);
+}
+
+.receipt .qr {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.receipt__lines {
+  margin: var(--tne-space-lg) 0 0;
+  text-align: left;
+  font-size: var(--station-small);
+}
+
+.receipt__lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--tne-space-md);
+  padding: 8px 0;
+  border-top: 1px dashed rgba(0, 46, 38, 0.18);
+}
+
+.receipt__lines dt {
+  color: var(--tne-text-subtle);
+}
+
+.receipt__lines dd {
+  margin: 0;
+  font-weight: var(--tne-weight-bold);
+  text-align: right;
+}
+
+.receipt__note {
+  margin: var(--tne-space-md) 0 0;
+  font-size: var(--station-small);
+  color: var(--tne-text-subtle);
+}
+
+/* Impressão. Ainda não há impressora ligada à estação, mas no dia em que
+   houver, o que sai tem de ser só o talão: sem barra de topo, sem botões,
+   sem fundo verde a gastar tinta. */
+@media print {
+  .station__bar,
+  .station__draft,
+  .station__legal,
+  .btn,
+  .attract__backdrop,
+  .steps {
+    display: none !important;
+  }
+
+  .station,
+  .station__body,
+  .station__inner,
+  .finish {
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .receipt {
+    max-width: 100%;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
 }

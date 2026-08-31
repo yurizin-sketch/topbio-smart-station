@@ -8,7 +8,7 @@ import {
 } from 'react'
 import type { GoalId, Order, OrderStatus, PaymentMethod, Product } from '../types'
 import { config, getStationId } from '../config'
-import { fulfilmentFor, getCatalog, purchasable } from '../services/catalog'
+import { getCatalog, purchasable } from '../services/catalog'
 import { upsertOrder } from '../services/orders'
 
 /**
@@ -64,7 +64,14 @@ function reducer(state: SessionState, action: Action): SessionState {
         : state
 
     case 'reset':
-      // O catálogo sobrevive ao reset: é da máquina, não do cliente.
+      // Nada de cliente por limpar — devolvemos o mesmo objeto.
+      //
+      // Sem esta guarda o ecrã de atração girava em falso: chama `reset()` ao
+      // montar, o reducer devolvia sempre um estado novo, o `api` recalculava,
+      // o `reset` mudava de identidade e o efeito voltava a disparar. Era o
+      // ecrã que está ligado o dia todo a gastar bateria do tablet a fazer nada.
+      if (!state.goal && !state.product && !state.order) return state
+      // O catálogo sobrevive ao reset: é da estação, não do cliente.
       return {
         ...initialState,
         products: state.products,
@@ -102,18 +109,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // alguém do outro lado tem de o conseguir ver. Espelhamos aqui, num só sítio,
   // em vez de espalhar chamadas por cada ecrã de checkout.
   //
-  // Só espelhamos o que obriga mesmo alguém a levantar-se do balcão: pedidos por
-  // pagar (o dinheiro passa pelas mãos do funcionário, seja qual for a entrega) e
-  // pedidos já pagos cujo produto está na prateleira. Um produto que sai da
-  // máquina e é pago por MB WAY resolve-se sozinho no quiosque — se entrasse
-  // aqui, ficava eternamente na fila "Por entregar" a fingir trabalho.
+  // Todo o pedido que chega a estes dois estados acaba nas mãos do funcionário:
+  // ou falta cobrar, ou falta entregar. Nada se resolve sozinho no tablet.
   const { order } = state
   useEffect(() => {
     if (!order) return
-    const needsCounter =
-      order.status === 'awaiting_counter' ||
-      (order.status === 'paid' && order.fulfilment === 'counter')
-    if (needsCounter) upsertOrder(order)
+    if (order.status === 'awaiting_counter' || order.status === 'paid') upsertOrder(order)
   }, [order])
 
   const api = useMemo<SessionApi>(
@@ -128,17 +129,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const product = state.product
         if (!product) throw new Error('createOrder sem produto selecionado')
 
-        const fulfilment = fulfilmentFor(product)
-        if (!fulfilment) throw new Error('createOrder para produto indisponível')
-
         const now = Date.now()
         const order: Order = {
           id: crypto.randomUUID(),
           stationId: getStationId(),
           productId: product.id,
-          // Só faz sentido guardar compartimento se a entrega for pela máquina.
-          slotId: fulfilment === 'machine' ? product.slotId : null,
-          fulfilment,
           amountCents: product.priceCents,
           method,
           status: 'created',
