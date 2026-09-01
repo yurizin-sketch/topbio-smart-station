@@ -100,7 +100,7 @@ function cors(origin, allowed) {
     // Sem isto o JS do tablet nem chega a ver estes cabecalhos: o browser
     // esconde tudo o que nao esteja na lista curta do CORS. Sao so
     // diagnostico -- dizem o que correu mal, nunca nada vindo de uma chave.
-    'access-control-expose-headers': 'x-tts-cache, x-bia',
+    'access-control-expose-headers': 'x-tts-cache, x-bia, x-bia-detalhe',
     'access-control-max-age': '86400',
   }
 }
@@ -173,6 +173,22 @@ async function speak(request, env, headers) {
 }
 
 /** Chave curta e estável para a cache. */
+/**
+ * Motivo legível de uma resposta de erro da Anthropic.
+ *
+ * Só o tipo e o princípio da mensagem, sem acentos nem quebras de linha, que
+ * um cabeçalho HTTP não aceita mais do que isso.
+ */
+async function reason(response) {
+  try {
+    const body = await response.json()
+    const text = `${body?.error?.type ?? ''}: ${body?.error?.message ?? ''}`
+    return text.replace(/[^\x20-\x7e]/g, ' ').trim().slice(0, 150) || 'sem detalhe'
+  } catch {
+    return 'sem detalhe'
+  }
+}
+
 async function digest(value) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return [...new Uint8Array(hash)]
@@ -322,7 +338,15 @@ export default {
       })
 
       if (!upstream.ok) {
-        return json(FALLBACK, 200, { ...headers, 'x-bia': `anthropic-${upstream.status}` })
+        // O corpo do erro da Anthropic diz o que está mal no pedido -- quase
+        // sempre o nome do modelo. Nunca traz a chave de volta, mas mesmo
+        // assim vai limpo e cortado: um cabeçalho só aceita ASCII e ninguém
+        // precisa de mais do que a primeira linha.
+        return json(FALLBACK, 200, {
+          ...headers,
+          'x-bia': `anthropic-${upstream.status}`,
+          'x-bia-detalhe': await reason(upstream),
+        })
       }
 
       const data = await upstream.json()
