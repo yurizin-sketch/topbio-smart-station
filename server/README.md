@@ -150,15 +150,26 @@ site — o build deita-o fora. Não há nada a desligar.
 
 ### Confirmar que está de pé
 
+O endereço da loja é
+`https://topbio-assistente.topbio-europa.workers.dev`.
+
+Não é segredo nenhum: vai dentro do site, que é público. Guarda-se como
+*secret* no GitHub por hábito, não por precisar.
+
 ```bash
-curl -X POST https://<o-seu-endereco>.workers.dev/speak \
+curl -X POST https://topbio-assistente.topbio-europa.workers.dev/speak \
   -H "content-type: application/json" \
   -H "origin: https://yurizin-sketch.github.io" \
   -d '{"text":"Oi, tudo bem?"}' --output teste.mp3
 ```
 
 Um ficheiro que se ouve significa que está tudo certo. Se vier
-`{"error":"voz_remota_desligada"}`, falta a chave ou o Voice ID.
+`{"error":"voz_remota_desligada"}`, falta a chave da ElevenLabs ou o Voice ID.
+
+A raiz responde ao mesmo tratamento sem o `/speak` e sem o `--output`. Se
+devolver `"Estou aqui se você precisar de ajuda para escolher."` — a frase de
+recurso — é porque falta a chave da Anthropic: o worker está de pé, mas ainda
+não tem com que pensar.
 
 ### Travão contra abuso
 
