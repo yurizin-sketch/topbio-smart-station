@@ -10,7 +10,13 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { config } from '../config'
-import { getAssistant, type AssistantChoice, type AssistantTurn } from '../services/assistant'
+import {
+  getAssistant,
+  WELCOME,
+  OPENING_STEPS,
+  type AssistantChoice,
+  type AssistantTurn,
+} from '../services/assistant'
 import { getPresence } from '../services/presence'
 import { getVoice } from '../services/voice'
 import { track } from '../services/telemetry'
@@ -112,9 +118,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         })),
       }
 
+      // A abertura da casa não passa pelo modelo: é sempre a mesma, sai no
+      // instante e não depende de a rede estar boa àquela hora. Ver `WELCOME`
+      // em `services/assistant.ts` -- a conversa a sério começa a partir dali.
+      if (said === null) {
+        perform(WELCOME.inicio)
+        return WELCOME.inicio
+      }
+      const opening = OPENING_STEPS[said]
+      if (opening) {
+        perform(opening)
+        return opening
+      }
+
       setThinking(true)
       try {
-        const next = said === null ? await brain.greet(context) : await brain.reply(context, said)
+        const next = await brain.reply(context, said)
         // Uma resposta vazia é uma resposta: significa "não tenho nada a
         // acrescentar neste ecrã". Melhor calar do que encher.
         if (next.say) perform(next)

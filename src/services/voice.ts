@@ -35,6 +35,21 @@ export interface Voice {
 
 import { config } from '../config'
 
+/**
+ * O que a boca diz, tirado do que o balão mostra.
+ *
+ * As falas levam emoji porque no ecrã ficam bem. Lidos em voz alta não ficam:
+ * a ElevenLabs ora os ignora ora tenta dizer-lhes o nome, e o cliente ouve
+ * "bíceps" no meio de uma frase. Também limpa os espaços que sobram, para a
+ * cache do worker não guardar duas vezes a mesma frase.
+ */
+export function spoken(text: string): string {
+  return text
+    .replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 /** Preferência de vozes, da melhor para a pior. */
 function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   // Português do Brasil primeiro, por escolha da loja. Também é a voz
@@ -80,8 +95,9 @@ class WebSpeechVoice implements Voice {
     this.emit()
   }
 
-  speak(text: string): void {
-    if (!this.ready || !text.trim()) return
+  speak(raw: string): void {
+    const text = spoken(raw)
+    if (!this.ready || !text) return
     const synth = window.speechSynthesis
     // Uma assistente que acumula frases fala por cima de si própria e da
     // pessoa. A última coisa que há para dizer é sempre a única que interessa.
@@ -183,8 +199,8 @@ class RemoteVoice implements Voice {
     this.emit()
   }
 
-  speak(text: string): void {
-    const say = text.trim()
+  speak(raw: string): void {
+    const say = spoken(raw)
     if (!say) return
 
     this.stop()

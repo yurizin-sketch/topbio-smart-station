@@ -83,6 +83,52 @@ const GOAL_CHOICES: AssistantChoice[] = [
   { label: 'Só quero ver', value: 'browse' },
 ]
 
+/* ──────────────────────────────────────────────────────────────────────────
+   A abertura da casa
+
+   Estas três frases não passam pelo modelo. São escolha do dono e são o
+   cartão de visita da loja: têm de sair sempre iguais, sempre à mesma
+   velocidade, e não podem depender de a internet estar boa àquela hora.
+
+   Ganha-se também o tempo: a primeira frase sai no instante em que a pessoa
+   chega, em vez de esperar pela ida à Anthropic e pela volta com o áudio.
+   A conversa a sério — a que ela inventa — começa a partir daqui.
+
+   O emoji fica no balão e não vai para a voz. Quem trata disso é o
+   `spoken()` em `voice.ts`; aqui escreve-se a frase como se quer lida.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Valores internos da escada de abertura. Não são objetivos nem produtos. */
+export const WELCOME_YES = '__abertura_sim__'
+export const WELCOME_HELP = '__abertura_ajuda__'
+
+export const WELCOME: Record<'inicio' | 'ajuda' | 'objetivos', AssistantTurn> = {
+  inicio: {
+    say: 'Olá! Bem-vindo à TopBio. Vamos suplementar hoje? 💪',
+    choices: [
+      { label: 'Sim', value: WELCOME_YES },
+      { label: 'Agora não', value: 'browse' },
+    ],
+  },
+  ajuda: {
+    say: 'Boa! Eu posso te ajudar a escolher. Quer?',
+    choices: [
+      { label: 'Sim', value: WELCOME_HELP },
+      { label: 'Só olhando', value: 'browse' },
+    ],
+  },
+  objetivos: {
+    say: 'Me diz o que você procura que eu mostro as opções da casa.',
+    choices: GOAL_CHOICES,
+  },
+}
+
+/** O degrau seguinte de cada "sim". Fora daqui, quem responde é o modelo. */
+export const OPENING_STEPS: Record<string, AssistantTurn | undefined> = {
+  [WELCOME_YES]: WELCOME.ajuda,
+  [WELCOME_HELP]: WELCOME.objetivos,
+}
+
 /**
  * As falas de cada ecrã.
  *

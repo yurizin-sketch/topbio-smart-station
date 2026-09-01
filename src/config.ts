@@ -99,8 +99,11 @@ export const config = {
      *
      * Sem isto, quem ficasse ao balcão a decidir levava com "olá" de dez em
      * dez segundos.
+     * Quarenta e cinco era demais: quem se afastava a pensar e voltava
+     * encontrava-a calada, e ficava com ar de avariada. Vinte chega para não
+     * ser insistente e é pouco para o cliente reparar que ela o ignorou.
      */
-    greetCooldownMs: 45_000,
+    greetCooldownMs: 20_000,
   },
 
   /**
