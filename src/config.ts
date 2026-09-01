@@ -104,7 +104,7 @@ export const config = {
   },
 
   /**
-   * Voz da Bia.
+   * Voz da Cláudia.
    *
    * Só conta quando há worker configurado; sem ele fala-se com as vozes do
    * próprio aparelho e nada disto se usa.
@@ -123,7 +123,7 @@ export const config = {
      *
      * A estação diz as mesmas dez ou vinte frases o dia todo. O worker já tem a
      * sua própria cache, mas esta poupa também a ida à rede — a segunda vez que
-     * a Bia diz "Oi!" sai instantânea.
+     * a Cláudia diz "Oi!" sai instantânea.
      */
     cacheEntries: 40,
   },

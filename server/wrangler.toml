@@ -20,7 +20,7 @@ MODEL = "claude-sonnet-5"
 # Carteira a que a Anthropic háde cobrar.
 #
 # Só faz falta se a chave for pessoal -- as que a consola cria por omissão são.
-# Sem isto, uma chave dessas devolve 400 e a Bia responde a fala escrita.
+# Sem isto, uma chave dessas devolve 400 e a Cláudia responde a fala escrita.
 #
 # Duas saídas, e a segunda é melhor:
 #
@@ -33,7 +33,7 @@ MODEL = "claude-sonnet-5"
 # Não é segredo -- é um nome de gaveta, não abre nada. Por isso pode ficar aqui.
 # ANTHROPIC_WORKSPACE_ID = "wrkspc_..."
 
-# A voz da Bia na ElevenLabs. Sem isto preenchido, o tablet fala com as vozes
+# A voz da Cláudia na ElevenLabs. Sem isto preenchido, o tablet fala com as vozes
 # que tiver instaladas — que no PC da loja são só de Portugal.
 #
 # O identificador tira-se em <https://elevenlabs.io/app/voice-library>: escolha

@@ -1,8 +1,8 @@
-# O worker da Bia
+# O worker da Cláudia
 
 Um ficheiro (`worker.js`) publicado no Cloudflare. Faz duas coisas:
 
-- **pensa** — recebe o estado da estação e devolve o que a Bia diz e os botões
+- **pensa** — recebe o estado da estação e devolve o que a Cláudia diz e os botões
   que mostra (API da Anthropic);
 - **fala** — recebe uma frase e devolve o áudio dela (API da ElevenLabs).
 
@@ -16,7 +16,7 @@ dinheiro da loja.
 As chaves ficam aqui, no Cloudflare, cifradas. O tablet nunca as vê: pede ao
 worker, o worker é que fala com a Anthropic e com a ElevenLabs.
 
-**Sem isto publicado a estação funciona na mesma.** A Bia diz uma frase fixa por
+**Sem isto publicado a estação funciona na mesma.** A Cláudia diz uma frase fixa por
 ecrã, com a voz do próprio aparelho. Só não conversa e não soa a pessoa.
 
 ---
@@ -108,7 +108,7 @@ ElevenLabs e revogue-a — leva dez segundos e é o fim do problema.
 
 ### 7. Cache das falas (recomendado)
 
-Sem isto, cada vez que a Bia diz "Oi! Eu sou a Bia" paga-se essa frase outra
+Sem isto, cada vez que a Cláudia diz "Oi! Eu sou a Cláudia" paga-se essa frase outra
 vez. Com isto, paga-se uma vez por mês.
 
 ```bash
@@ -170,25 +170,25 @@ A raiz responde ao mesmo tratamento sem o `/speak` e sem o `--output`. Se
 devolver `"Estou aqui se você precisar de ajuda para escolher."` — a frase de
 recurso — o worker está de pé mas não conseguiu pensar.
 
-### Porque é que a Bia não pensa
+### Porque é que a Cláudia não pensa
 
 O worker nunca devolve erro ao tablet: uma estacão calada ao pé de um cliente
 é pior do que uma estacão com uma frase escrita. Mas diz sempre o motivo, num
-cabeçalho chamado `x-bia`. Para o ver:
+cabeçalho chamado `x-claudia`. Para o ver:
 
 ```bash
 curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
   -H "content-type: application/json" \
   -H "origin: https://yurizin-sketch.github.io" \
-  -d '{}' | findstr x-bia
+  -d '{}' | findstr x-claudia
 ```
 
-| `x-bia` | O que se passa | O que fazer |
+| `x-claudia` | O que se passa | O que fazer |
 | --- | --- | --- |
 | `ok` | Nada. Foi ela mesma a responder. | — |
 | `sem-chave` | O worker não tem `ANTHROPIC_API_KEY`. | `npx wrangler secret list` confirma o nome; volte ao passo 6. |
 | `anthropic-401` | A chave existe mas foi recusada. | Chave errada, apagada ou de outra conta. Crie outra. |
-| `anthropic-400` | O pedido foi recusado. | Leia o `x-bia-detalhe`: diz qual campo. Chave pessoal sem workspace, ou `MODEL` que não existe. |
+| `anthropic-400` | O pedido foi recusado. | Leia o `x-claudia-detalhe`: diz qual campo. Chave pessoal sem workspace, ou `MODEL` que não existe. |
 | `anthropic-429` | Demasiados pedidos. | Esperar. Se for constante, subir o limite na Anthropic. |
 | `anthropic-529` | A Anthropic está sobrecarregada. | Passa sozinho. |
 | `ilegível` | Ela respondeu, mas fora do formato. | Raríssimo. Se repetir, o `SYSTEM` foi mexido. |
@@ -196,7 +196,7 @@ curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
 | `limite` | Vinte pedidos no mesmo minuto do mesmo IP. | É o travão a funcionar. |
 
 Nenhum destes cabeçalhos leva nada de dentro das chaves — só o número que a
-Anthropic devolveu e, no `x-bia-detalhe`, o princípio da explicação dela.
+Anthropic devolveu e, no `x-claudia-detalhe`, o princípio da explicação dela.
 
 #### Chave pessoal e carteira
 
@@ -257,12 +257,12 @@ sempre.
 Ponha um limite de gasto nas duas contas. É a única proteção que não depende de
 o código estar certo.
 
-### Mudar o que a Bia diz
+### Mudar o que a Cláudia diz
 
 A personalidade está no `SYSTEM`, dentro do `worker.js`. Se lhe mexer, tenha
 presente que:
 
-- A loja é em **Portugal**, mas a Bia fala **português do Brasil**. Foi escolha
+- A loja é em **Portugal**, mas a Cláudia fala **português do Brasil**. Foi escolha
   da loja. O resto da estação — botões, títulos, avisos — está em português
   europeu.
 - Os preços são **em euros**. Está lá uma regra a dizê-lo, porque uma persona

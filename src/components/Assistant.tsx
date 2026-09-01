@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Bia } from './Bia'
+import { Claudia } from './Claudia'
 import { useAssistant } from '../state/assistant'
 
 /**
@@ -72,9 +72,9 @@ export function Assistant() {
           // Tocar nela é pedir ajuda. É o caminho de quem não espera pela
           // câmara ou de quem lhe fechou o balão e se arrependeu.
           onClick={summon}
-          aria-label="Falar com a Bia"
+          aria-label="Falar com a Cláudia"
         >
-          <Bia speaking={speaking} thinking={thinking} size={resting ? 168 : 104} />
+          <Claudia speaking={speaking} thinking={thinking} size={resting ? 168 : 104} />
         </button>
 
         <button
@@ -92,10 +92,10 @@ export function Assistant() {
         O aviso do toque da manhã.
         Só no repouso e só antes do primeiro toque: os navegadores não deixam
         uma página falar sozinha antes de alguém lhe tocar, e sem este aviso
-        quem abre a loja não faz ideia porque é que a Bia está muda.
+        quem abre a loja não faz ideia porque é que a Cláudia está muda.
       */}
       {resting && needsUnlock && !muted && (
-        <p className="assistant__unlock">Toque uma vez no ecrã para dar voz à Bia</p>
+        <p className="assistant__unlock">Toque uma vez no ecrã para dar voz à Cláudia</p>
       )}
 
       {/*

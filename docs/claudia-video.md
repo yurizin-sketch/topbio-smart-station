@@ -1,8 +1,8 @@
-# A Bia em vídeo
+# A Cláudia em vídeo
 
 Guia para gravar a personagem no HeyGen e pôr os ficheiros na estação.
 
-A Bia diz duas espécies de coisas:
+A Cláudia diz duas espécies de coisas:
 
 - **as falas fixas** — quinze frases, sempre as mesmas, uma por ecrã. Gravam-se
   uma vez e ficam. Não custam nada a correr e funcionam sem internet.
@@ -16,7 +16,7 @@ quando ela responde de improviso.
 
 ## 1. Antes de gravar: a voz
 
-**Não use a voz do HeyGen.** A Bia já tem voz — a da ElevenLabs, que é a que
+**Não use a voz do HeyGen.** A Cláudia já tem voz — a da ElevenLabs, que é a que
 fala nas respostas inventadas. Se os clips saírem com outra, ela muda de voz a
 meio da conversa, e isso nota-se de um modo difícil de explicar mas impossível
 de ignorar.
@@ -38,20 +38,20 @@ Assim a boca bate certo com a voz que ela tem no resto do tempo.
 | Fundo | verde ou transparente, se o plano deixar exportar com alfa |
 | Peso | até 3 MB por clip |
 
-O fundo é o que mais importa. A Bia fica **por cima** do ecrã da estação, ao
+O fundo é o que mais importa. A Cláudia fica **por cima** do ecrã da estação, ao
 lado dos produtos; com um fundo de estúdio ficava uma caixa de vídeo colada a
 uma app, e vê-se logo que são duas coisas diferentes.
 
 ## 3. As falas
 
 O nome do ficheiro tem de ser exatamente este — é por ele que a estação o
-encontra. Tudo em `public/bia/`.
+encontra. Tudo em `public/claudia/`.
 
 | Ficheiro | O que ela diz |
 | --- | --- |
 | `parada.mp4` | *(nada — só ela quieta, a respirar e a olhar em volta. 10 a 15 s, a repetir sem se notar o corte)* |
 | `a-falar.mp4` | *(nada — ela a falar, sem palavras. Usa-se por baixo das respostas inventadas. 8 a 10 s, também a repetir)* |
-| `atrair.mp4` | Oi! Eu sou a Bia. Posso te ajudar a escolher? |
+| `atrair.mp4` | Oi! Eu sou a Cláudia. Posso te ajudar a escolher? |
 | `atrair-2.mp4` | Bem-vindo à TopBio. Quer que eu te ajude a escolher? |
 | `atrair-3.mp4` | Oi! Se quiser, eu te ajudo a achar o que você procura. |
 | `objetivos.mp4` | Me diz o que você procura que eu mostro as opções da casa. |
@@ -85,13 +85,13 @@ Confirme no contrato duas coisas, porque não sou eu que as posso garantir:
 
 O avatar ao vivo, que responde a qualquer pergunta em tempo real, é outro
 produto e outra conta — paga-se ao minuto. Para uma estação aberta oito horas
-por dia não compensa, e se a internet da loja falhar a Bia desaparece do ecrã.
+por dia não compensa, e se a internet da loja falhar a Cláudia desaparece do ecrã.
 Os clips gravados não têm esse problema.
 
 ### A bata branca
 
 A personagem chama-se `dr.claudia` no HeyGen. Se ficar só o nome interno, não
-há problema nenhum — para o cliente ela é a Bia, e é esse o nome que aparece.
+há problema nenhum — para o cliente ela é a Cláudia, e é esse o nome que aparece.
 
 O que **não** pode acontecer é a estação apresentá-la como médica ou
 farmacêutica: nem no nome, nem no crachá, nem na bata. Uma pessoa de bata
@@ -104,7 +104,7 @@ como quem trabalha na loja. Se a `dr.claudia` tiver bata, vale a pena trocar de
 roupa no HeyGen antes de gravar as quinze — é mais barato do que gravar duas
 vezes.
 
-Repare que a própria Bia já sabe isto. Perguntando-lhe se um produto cura
+Repare que a própria Cláudia já sabe isto. Perguntando-lhe se um produto cura
 ansiedade, ela responde:
 
 > "Isso é uma pergunta pra médico ou farmacêutico, eu não posso responder sobre
@@ -114,7 +114,7 @@ Seria estranho ela dizer isso vestida de médica.
 
 ## 5. Quando os ficheiros existirem
 
-Ponha-os em `public/bia/` e diga-me. A estação passa a tocá-los sozinha: o
+Ponha-os em `public/claudia/` e diga-me. A estação passa a tocá-los sozinha: o
 `parada.mp4` a repetir entre clientes, o clip certo em cada ecrã, e o desenho
 que lá está agora fica por baixo como rede — se um vídeo não carregar, ninguém
 fica com um buraco preto ao pé de um cliente.

@@ -273,7 +273,7 @@ function OrderCard({
 }
 
 /**
- * O estado da Bia, para quem instala o tablet.
+ * O estado da Cláudia, para quem instala o tablet.
  *
  * Sem isto, quem monta a estação na loja não tem como saber se a câmara ficou
  * a apontar para o sítio certo ou para o teto, nem porque é que ela está muda.

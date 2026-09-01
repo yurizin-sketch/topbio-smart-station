@@ -1,5 +1,5 @@
 /**
- * O cérebro da Bia.
+ * O cérebro da Cláudia.
  *
  * Um Cloudflare Worker entre o tablet e a API da Anthropic. Existe por uma
  * razão só: a chave da API não pode estar no tablet. O código da estação é
@@ -13,7 +13,7 @@
  * Deploy: ver `server/README.md`.
  */
 
-/* ── O que a Bia pode e não pode dizer ─────────────────────────────────────
+/* ── O que a Cláudia pode e não pode dizer ─────────────────────────────────────
 
    Esta é a parte com consequências legais, não a parte com consequências de
    estilo. Em Portugal e na UE, dizer que um suplemento trata, cura ou previne
@@ -26,7 +26,7 @@
    proibida escrita por extenso não.
    ────────────────────────────────────────────────────────────────────────── */
 
-const SYSTEM = `Você é a Bia, a assistente de uma loja física de suplementos alimentares em Portugal, a TopBio. Você fala com quem está de pé na frente de um tablet dentro da loja.
+const SYSTEM = `Você é a Cláudia, a assistente de uma loja física de suplementos alimentares em Portugal, a TopBio. Você fala com quem está de pé na frente de um tablet dentro da loja.
 
 COMO VOCÊ FALA
 - Português do Brasil, sempre. É a voz da estação, por escolha da loja. Nunca português de Portugal: diga "tela" e não "ecrã", "você está vendo" e não "está a ver", "o app" e não "a app".
@@ -100,7 +100,7 @@ function cors(origin, allowed) {
     // Sem isto o JS do tablet nem chega a ver estes cabecalhos: o browser
     // esconde tudo o que nao esteja na lista curta do CORS. Sao so
     // diagnostico -- dizem o que correu mal, nunca nada vindo de uma chave.
-    'access-control-expose-headers': 'x-tts-cache, x-bia, x-bia-detalhe',
+    'access-control-expose-headers': 'x-tts-cache, x-claudia, x-claudia-detalhe',
     'access-control-max-age': '86400',
   }
 }
@@ -108,12 +108,12 @@ function cors(origin, allowed) {
 /* ── Voz ─────────────────────────────────────────────────────────────────────
    A voz do tablet (Web Speech API) usa as vozes instaladas no aparelho, e isso
    não se controla daqui: o PC da loja só tem pt-PT e lê o texto brasileiro da
-   Bia com sotaque de Lisboa. A ElevenLabs resolve isso — a voz vem sempre igual,
+   Cláudia com sotaque de Lisboa. A ElevenLabs resolve isso — a voz vem sempre igual,
    venha o aparelho que vier — mas custa por caráter e a chave não pode andar no
    browser, que o repositório é público. Por isso passa por aqui.
    ────────────────────────────────────────────────────────────────────────── */
 
-/** Limite por fala. Uma frase da Bia não chega perto disto; um abuso chega. */
+/** Limite por fala. Uma frase da Cláudia não chega perto disto; um abuso chega. */
 const SPEAK_MAX = 320
 
 /**
@@ -121,7 +121,7 @@ const SPEAK_MAX = 320
  *
  * Sem chave ou sem voz escolhida responde 501, e o tablet fala com a voz que
  * tiver. A estação nunca fica muda por causa disto: uma voz pior é um problema
- * pequeno, uma Bia calada ao pé de um cliente é um problema grande.
+ * pequeno, uma Cláudia calada ao pé de um cliente é um problema grande.
  */
 async function speak(request, env, headers) {
   const voiceId = env.ELEVENLABS_VOICE_ID
@@ -142,7 +142,7 @@ async function speak(request, env, headers) {
   const key = await digest(`${voiceId}:${modelId}:${text}`)
 
   // A estação repete as mesmas dez ou vinte frases o dia inteiro. Sem cache,
-  // pagava-se o "Oi! Eu sou a Bia" umas centenas de vezes por dia.
+  // pagava-se o "Oi! Eu sou a Cláudia" umas centenas de vezes por dia.
   if (env.TTS_CACHE) {
     const hit = await env.TTS_CACHE.get(key, 'arrayBuffer')
     if (hit) return audio(hit, headers, 'hit')
@@ -288,10 +288,10 @@ export default {
     if (overLimit(ip)) {
       // 429 com a frase neutra em vez de erro: quem está à frente do tablet não
       // tem culpa nem quer saber, e a estação sabe usar isto na mesma.
-      return json(FALLBACK, 429, { ...headers, 'x-bia': 'limite' })
+      return json(FALLBACK, 429, { ...headers, 'x-claudia': 'limite' })
     }
 
-    // A raiz continua a ser o cérebro da Bia, para não partir os endereços já
+    // A raiz continua a ser o cérebro da Cláudia, para não partir os endereços já
     // configurados. A voz é um caminho à parte porque devolve áudio, não JSON.
     if (new URL(request.url).pathname === '/speak') {
       return speak(request, env, headers)
@@ -320,7 +320,7 @@ export default {
     }
 
     if (!env.ANTHROPIC_API_KEY) {
-      return json(FALLBACK, 200, { ...headers, 'x-bia': 'sem-chave' })
+      return json(FALLBACK, 200, { ...headers, 'x-claudia': 'sem-chave' })
     }
 
     try {
@@ -360,8 +360,8 @@ export default {
         // precisa de mais do que a primeira linha.
         return json(FALLBACK, 200, {
           ...headers,
-          'x-bia': `anthropic-${upstream.status}`,
-          'x-bia-detalhe': await reason(upstream),
+          'x-claudia': `anthropic-${upstream.status}`,
+          'x-claudia-detalhe': await reason(upstream),
         })
       }
 
@@ -373,16 +373,16 @@ export default {
         // princípio, para se perceber se divagou ou se ficou a meio.
         return json(FALLBACK, 200, {
           ...headers,
-          'x-bia': 'ilegivel',
-          'x-bia-detalhe': `${data?.stop_reason ?? '?'} | ${sanitize(text)}`,
+          'x-claudia': 'ilegivel',
+          'x-claudia-detalhe': `${data?.stop_reason ?? '?'} | ${sanitize(text)}`,
         })
       }
-      return json(turn, 200, { ...headers, 'x-bia': 'ok' })
+      return json(turn, 200, { ...headers, 'x-claudia': 'ok' })
     } catch (err) {
       // Nunca devolvemos erro ao tablet: a estação tem falas escritas para este
       // caso, mas uma resposta válida evita que a personagem se cale. O nome
       // do erro vai no cabeçalho para se perceber porquê sem abrir os registos.
-      return json(FALLBACK, 200, { ...headers, 'x-bia': `erro-${err?.name ?? 'desconhecido'}` })
+      return json(FALLBACK, 200, { ...headers, 'x-claudia': `erro-${err?.name ?? 'desconhecido'}` })
     }
   },
 }

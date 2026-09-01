@@ -33,7 +33,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/kiosk" replace />} />
       </Routes>
 
-      {/* Fora das rotas de propósito: a Bia tem de sobreviver à navegação. Se
+      {/* Fora das rotas de propósito: a Cláudia tem de sobreviver à navegação. Se
           vivesse dentro de cada ecrã, calava-se e recomeçava a cada toque. */}
       <Assistant />
     </>

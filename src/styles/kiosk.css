@@ -1161,7 +1161,7 @@ img {
   }
 }
 
-/* ═══ A Bia, a assistente ══════════════════════════════════════════════════
+/* ═══ A Cláudia, a assistente ══════════════════════════════════════════════════
 
    Fica colada ao canto e por cima de tudo. Duas regras que vale a pena
    guardar: `pointer-events: none` no contentor e `auto` só no que se toca —
@@ -1177,7 +1177,7 @@ img {
   right: var(--station-gutter);
   /* Levantada acima da tarja legal.
      A tarja é uma faixa de largura inteira colada ao fundo, e sem esta folga a
-     Bia assentava-lhe em cima — o aviso obrigatório dos suplementos ficava por
+     Cláudia assentava-lhe em cima — o aviso obrigatório dos suplementos ficava por
      baixo de uma personagem a acenar. Cinco rem chegam para as duas linhas em
      que a tarja costuma cair. */
   bottom: calc(var(--station-gutter) + 5rem);
@@ -1216,7 +1216,7 @@ img {
 }
 
 /* Só num ecrã alto — o tablet ao alto da loja — é que existe uma faixa vazia
-   entre o botão e a tarja legal. Aí a Bia sai do canto e ocupa-a de lado:
+   entre o botão e a tarja legal. Aí a Cláudia sai do canto e ocupa-a de lado:
    balão à esquerda, personagem à direita, os dois a caber sem tocar no
    “Toque para começar”. Empilhados não cabiam: 458px de altura contra os
    390px da faixa. Em ecrãs mais baixos esta faixa não existe e ela fica no
@@ -1424,35 +1424,35 @@ img {
   border-radius: var(--tne-radius-pill);
 }
 
-/* ═══ O desenho da Bia ═════════════════════════════════════════════════════
+/* ═══ O desenho da Cláudia ═════════════════════════════════════════════════════
 
    Três animações a correr ao mesmo tempo com períodos que não batem certo uns
    com os outros — 4s, 5,1s e 6,4s. É isso que impede o olho de apanhar o
    ciclo e de ver um GIF em vez de alguém.
    ────────────────────────────────────────────────────────────────────────── */
 
-.bia {
+.claudia {
   display: block;
   overflow: visible;
 }
 
-.bia__ring {
+.claudia__ring {
   fill: none;
   stroke: var(--tne-gold);
   stroke-width: 2.5;
 }
 
-.bia__halo {
+.claudia__halo {
   fill: var(--tne-gold);
   opacity: 0;
   transform-origin: 60px 60px;
 }
 
-.bia--speaking .bia__halo {
-  animation: bia-halo 1.6s var(--tne-ease-default) infinite;
+.claudia--speaking .claudia__halo {
+  animation: claudia-halo 1.6s var(--tne-ease-default) infinite;
 }
 
-@keyframes bia-halo {
+@keyframes claudia-halo {
   0%,
   100% {
     opacity: 0;
@@ -1464,83 +1464,83 @@ img {
   }
 }
 
-.bia__shoulders {
+.claudia__shoulders {
   fill: var(--tne-cream);
 }
 
-.bia__face {
+.claudia__face {
   fill: #f6dcc4;
 }
 
-.bia__hair {
+.claudia__hair {
   fill: #2f2119;
 }
 
-.bia__eyes ellipse {
+.claudia__eyes ellipse {
   fill: #2f2119;
 }
 
-.bia__brows path {
+.claudia__brows path {
   fill: none;
   stroke: #2f2119;
   stroke-width: 2;
   stroke-linecap: round;
 }
 
-.bia__blush {
+.claudia__blush {
   fill: #e79c8a;
   opacity: 0.5;
 }
 
-.bia__neck {
+.claudia__neck {
   fill: #ecc6a6;
 }
 
-.bia__ear {
+.claudia__ear {
   fill: #f6dcc4;
 }
 
-.bia__collar {
+.claudia__collar {
   fill: var(--tne-green);
   opacity: 0.85;
 }
 
-.bia__glint {
+.claudia__glint {
   fill: #ffffff;
 }
 
 /* Duas bocas, uma de cada vez. O sorriso vive parado; a boca aberta só existe
    enquanto ela fala. Trocar opacidade em vez de esticar uma forma só evita que
    o sorriso se deforme em careta a meio da frase. */
-.bia__smile {
+.claudia__smile {
   fill: none;
   stroke: #8c3b3b;
   stroke-width: 2.6;
   stroke-linecap: round;
 }
 
-.bia__open {
+.claudia__open {
   fill: #8c3b3b;
   opacity: 0;
   transform-origin: 60px 70px;
 }
 
-.bia--speaking .bia__smile {
+.claudia--speaking .claudia__smile {
   opacity: 0;
 }
 
-.bia--speaking .bia__open {
+.claudia--speaking .claudia__open {
   opacity: 1;
 }
 
 /* Respirar. O corpo todo, muito pouco — 1,5% de escala é quase nada, e é o que
    separa um boneco de um autocolante. */
-.bia__body {
+.claudia__body {
   transform-origin: 60px 110px;
-  animation: bia-breathe 4s var(--tne-ease-default) infinite;
+  animation: claudia-breathe 4s var(--tne-ease-default) infinite;
 }
 
-@keyframes bia-breathe {
+@keyframes claudia-breathe {
   0%,
   100% {
     transform: scale(1) translateY(0);
@@ -1551,12 +1551,12 @@ img {
 }
 
 /* Oscilar a cabeça. Vive à parte do respirar para os dois se somarem. */
-.bia__head {
+.claudia__head {
   transform-origin: 60px 84px;
-  animation: bia-sway 5.1s var(--tne-ease-default) infinite;
+  animation: claudia-sway 5.1s var(--tne-ease-default) infinite;
 }
 
-@keyframes bia-sway {
+@keyframes claudia-sway {
   0%,
   100% {
     transform: rotate(-1.6deg);
@@ -1567,12 +1567,12 @@ img {
 }
 
 /* Piscar. Rápido e raro, como piscar mesmo. */
-.bia__eyes {
+.claudia__eyes {
   transform-origin: 60px 55px;
-  animation: bia-blink 6.4s step-end infinite;
+  animation: claudia-blink 6.4s step-end infinite;
 }
 
-@keyframes bia-blink {
+@keyframes claudia-blink {
   0%,
   96%,
   100% {
@@ -1587,11 +1587,11 @@ img {
 /* A falar: a boca abre e fecha e a cabeça acelera. Não é sincronização labial
    — para isso era preciso ler o áudio — mas ao metro de distância a que o
    cliente está, convence. */
-.bia--speaking .bia__open {
-  animation: bia-talk 0.32s var(--tne-ease-default) infinite;
+.claudia--speaking .claudia__open {
+  animation: claudia-talk 0.32s var(--tne-ease-default) infinite;
 }
 
-@keyframes bia-talk {
+@keyframes claudia-talk {
   0%,
   100% {
     transform: scaleY(0.5);
@@ -1603,16 +1603,16 @@ img {
   }
 }
 
-.bia--speaking .bia__head {
+.claudia--speaking .claudia__head {
   animation-duration: 2.6s;
 }
 
 /* A pensar: as sobrancelhas sobem. É onde vive metade de uma expressão. */
-.bia--thinking .bia__brows {
-  animation: bia-wonder 1.4s var(--tne-ease-default) infinite;
+.claudia--thinking .claudia__brows {
+  animation: claudia-wonder 1.4s var(--tne-ease-default) infinite;
 }
 
-@keyframes bia-wonder {
+@keyframes claudia-wonder {
   0%,
   100% {
     transform: translateY(0);
@@ -1624,12 +1624,12 @@ img {
 
 /* Quem pediu menos movimento ao sistema fica com uma ilustração parada. */
 @media (prefers-reduced-motion: reduce) {
-  .bia__body,
-  .bia__head,
-  .bia__eyes,
-  .bia__open,
-  .bia__brows,
-  .bia__halo,
+  .claudia__body,
+  .claudia__head,
+  .claudia__eyes,
+  .claudia__open,
+  .claudia__brows,
+  .claudia__halo,
   .assistant__bubble,
   .assistant__thinking span {
     animation: none;

@@ -1,5 +1,5 @@
 /**
- * A Bia — a assistente da estação.
+ * A Cláudia — a assistente da estação.
  *
  * Desenhada em SVG e animada em CSS, de propósito. Um vídeo ou um modelo 3D
  * pesariam megabytes, precisariam de ser regravados a cada mudança de marca e
@@ -18,7 +18,7 @@
  * o ciclo. Uma personagem que repete de dois em dois segundos lê-se como um
  * GIF partido.
  */
-export function Bia({
+export function Claudia({
   speaking,
   thinking,
   size = 132,
@@ -32,18 +32,18 @@ export function Bia({
 
   return (
     <svg
-      className={`bia bia--${state}`}
+      className={`claudia claudia--${state}`}
       width={size}
       height={size}
       viewBox="0 0 120 120"
       role="img"
-      aria-label="Bia, assistente da TopBio"
+      aria-label="Cláudia, assistente da TopBio"
     >
       <defs>
-        <clipPath id="bia-frame">
+        <clipPath id="claudia-frame">
           <circle cx="60" cy="60" r="57" />
         </clipPath>
-        <linearGradient id="bia-bg" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="claudia-bg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0d7a62" />
           <stop offset="100%" stopColor="#00453a" />
         </linearGradient>
@@ -51,67 +51,67 @@ export function Bia({
 
       {/* Halo que pulsa enquanto fala. É o sinal de "sou eu a falar" para quem
           está longe de mais para ver a boca mexer. */}
-      <circle className="bia__halo" cx="60" cy="60" r="57" />
-      <circle cx="60" cy="60" r="57" fill="url(#bia-bg)" />
+      <circle className="claudia__halo" cx="60" cy="60" r="57" />
+      <circle cx="60" cy="60" r="57" fill="url(#claudia-bg)" />
 
-      <g clipPath="url(#bia-frame)">
-        <g className="bia__body">
+      <g clipPath="url(#claudia-frame)">
+        <g className="claudia__body">
           {/* Ombros. Baixos e largos: subidos, a personagem parecia encolhida. */}
           <path
-            className="bia__shoulders"
+            className="claudia__shoulders"
             d="M2 124 C6 104 28 95 60 95 C92 95 114 104 118 124 Z"
           />
           {/* Gola, só para os ombros não serem uma mancha lisa. */}
-          <path className="bia__collar" d="M49 96 L60 108 L71 96 C67 94 53 94 49 96 Z" />
+          <path className="claudia__collar" d="M49 96 L60 108 L71 96 C67 94 53 94 49 96 Z" />
 
-          <g className="bia__head">
+          <g className="claudia__head">
             {/* Cabelo de trás. Desenhado primeiro para a cara ficar por cima. */}
             <path
-              className="bia__hair"
+              className="claudia__hair"
               d="M31 58 C29 27 42 15 60 15 C78 15 91 27 89 58 L89 84 C89 89 81 89 81 84 L81 56 L39 56 L39 84 C39 89 31 89 31 84 Z"
             />
 
-            <path className="bia__neck" d="M52 72 H68 V92 Q60 99 52 92 Z" />
-            <ellipse className="bia__ear" cx="35" cy="58" rx="4" ry="6" />
-            <ellipse className="bia__ear" cx="85" cy="58" rx="4" ry="6" />
-            <ellipse className="bia__face" cx="60" cy="55" rx="25" ry="28" />
+            <path className="claudia__neck" d="M52 72 H68 V92 Q60 99 52 92 Z" />
+            <ellipse className="claudia__ear" cx="35" cy="58" rx="4" ry="6" />
+            <ellipse className="claudia__ear" cx="85" cy="58" rx="4" ry="6" />
+            <ellipse className="claudia__face" cx="60" cy="55" rx="25" ry="28" />
 
             {/* Franja. Deixa a testa à vista de propósito: a versão anterior
                 tapava-a e a cara passava a ler-se como um capacete. */}
             <path
-              className="bia__hair"
+              className="claudia__hair"
               d="M35 45 C36 25 46 16 60 16 C74 16 84 25 85 45 C80 33 71 29 60 29 C48 29 40 34 35 45 Z"
             />
 
             {/* Sobrancelhas. Sobem quando pensa — metade da expressão está aqui. */}
-            <g className="bia__brows">
+            <g className="claudia__brows">
               <path d="M45 47 Q51 43 57 47" />
               <path d="M63 47 Q69 43 75 47" />
             </g>
 
-            <g className="bia__eyes">
+            <g className="claudia__eyes">
               <ellipse cx="51" cy="57" rx="3.8" ry="4.4" />
               <ellipse cx="69" cy="57" rx="3.8" ry="4.4" />
               {/* Brilho. Dois pontos brancos e a cara deixa de ser um boneco. */}
-              <circle className="bia__glint" cx="52.4" cy="55.4" r="1.3" />
-              <circle className="bia__glint" cx="70.4" cy="55.4" r="1.3" />
+              <circle className="claudia__glint" cx="52.4" cy="55.4" r="1.3" />
+              <circle className="claudia__glint" cx="70.4" cy="55.4" r="1.3" />
             </g>
 
-            <ellipse className="bia__blush" cx="41" cy="66" rx="5" ry="3" />
-            <ellipse className="bia__blush" cx="79" cy="66" rx="5" ry="3" />
+            <ellipse className="claudia__blush" cx="41" cy="66" rx="5" ry="3" />
+            <ellipse className="claudia__blush" cx="79" cy="66" rx="5" ry="3" />
 
             {/* Duas bocas, uma de cada vez.
                 O sorriso é um traço curvo porque a cem pixels uma forma cheia
                 vira uma mancha. A boca aberta só aparece a falar, e é aí que a
                 forma cheia funciona — está a mexer, lê-se pelo movimento. */}
-            <path className="bia__smile" d="M50 68 Q60 77 70 68" />
-            <ellipse className="bia__open" cx="60" cy="70" rx="6" ry="4.5" />
+            <path className="claudia__smile" d="M50 68 Q60 77 70 68" />
+            <ellipse className="claudia__open" cx="60" cy="70" rx="6" ry="4.5" />
           </g>
         </g>
       </g>
 
       {/* Anel da marca, por cima de tudo, a limpar o recorte. */}
-      <circle className="bia__ring" cx="60" cy="60" r="56" />
+      <circle className="claudia__ring" cx="60" cy="60" r="56" />
     </svg>
   )
 }

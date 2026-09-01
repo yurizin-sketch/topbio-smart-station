@@ -21,7 +21,7 @@ createRoot(root).render(
   <StrictMode>
     <HashRouter>
       <SessionProvider>
-        {/* Dentro do router e da sessão: a Bia precisa de saber em que ecrã
+        {/* Dentro do router e da sessão: a Cláudia precisa de saber em que ecrã
             está e o que o cliente já escolheu para dizer o que quer que seja. */}
         <AssistantProvider>
           <App />

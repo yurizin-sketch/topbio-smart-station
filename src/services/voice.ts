@@ -5,7 +5,7 @@
  *
  * A do tablet (Web Speech API) não custa nada, não precisa de internet e
  * responde no instante — mas usa as vozes instaladas no aparelho, e isso não se
- * controla daqui. O PC da loja só tem pt-PT: lê o texto brasileiro da Bia com
+ * controla daqui. O PC da loja só tem pt-PT: lê o texto brasileiro da Cláudia com
  * sotaque de Lisboa, e soa a robô.
  *
  * A do servidor (ElevenLabs, através do worker) soa a pessoa e é sempre a mesma
@@ -141,7 +141,7 @@ const SILENCE =
  * Voz do servidor (ElevenLabs, através do worker).
  *
  * Soa a pessoa e é sempre a mesma, venha o aparelho com as vozes que vier — o
- * PC da loja, por exemplo, só traz pt-PT e lia o texto brasileiro da Bia com
+ * PC da loja, por exemplo, só traz pt-PT e lia o texto brasileiro da Cláudia com
  * sotaque de Lisboa. Em troca custa por caráter e demora uns instantes.
  *
  * Por isso nunca anda sozinha: leva sempre a voz local ao lado e passa-lhe a

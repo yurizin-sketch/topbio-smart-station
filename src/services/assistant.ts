@@ -61,7 +61,7 @@ export interface Assistant {
 /* ──────────────────────────────────────────────────────────────────────────
    Falas escritas
 
-   Atenção ao idioma: **só o que a Bia diz é português do Brasil**. Foi escolha
+   Atenção ao idioma: **só o que a Cláudia diz é português do Brasil**. Foi escolha
    da loja e combina com a voz dela (ver `pickVoice` em `voice.ts`). Todo o
    resto — botões, títulos, avisos, a tarja legal — continua em português
    europeu, porque é a estação a falar com clientes portugueses, não ela.
@@ -71,7 +71,7 @@ export interface Assistant {
    ────────────────────────────────────────────────────────────────────────── */
 
 const OPENINGS: [string, ...string[]] = [
-  'Oi! Eu sou a Bia. Posso te ajudar a escolher?',
+  'Oi! Eu sou a Cláudia. Posso te ajudar a escolher?',
   'Bem-vindo à TopBio. Quer que eu te ajude a escolher?',
   'Oi! Se quiser, eu te ajudo a achar o que você procura.',
 ]
@@ -91,7 +91,7 @@ const GOAL_CHOICES: AssistantChoice[] = [
  * rotina" e nunca "para o seu problema".
  */
 const LINES: Record<string, string> = {
-  attract: 'Oi! Eu sou a Bia. Posso te ajudar a escolher?',
+  attract: 'Oi! Eu sou a Cláudia. Posso te ajudar a escolher?',
   goals: 'Me diz o que você procura que eu mostro as opções da casa.',
   recommendations: 'Aqui está o que a gente tem pra isso. Quer saber mais de algum?',
   catalog: 'Esse é o catálogo todo. Se preferir, me diz o que você procura.',
