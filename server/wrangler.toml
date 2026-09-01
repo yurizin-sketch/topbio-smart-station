@@ -43,8 +43,8 @@ ELEVENLABS_MODEL = "eleven_turbo_v2_5"
 #
 #   npx wrangler kv namespace create TTS_CACHE
 #
-# O comando imprime um id — cole-o abaixo e tire o comentário das três linhas.
-#
-# [[kv_namespaces]]
-# binding = "TTS_CACHE"
-# id = "cole-aqui-o-id"
+# O comando imprime um id, que é o que está aqui em baixo.
+
+[[kv_namespaces]]
+binding = "TTS_CACHE"
+id = "aba57a5a683b468a8e7010a4cfad6124"
