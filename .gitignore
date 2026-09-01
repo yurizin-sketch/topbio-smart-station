@@ -17,5 +17,9 @@ Product/
 .env.*
 !.env.example
 
+# Estado local do wrangler: cache, ficheiros temporários do `wrangler dev` e a
+# simulação do KV. Nada disto serve a outra máquina.
+.wrangler/
+
 .DS_Store
 Thumbs.db

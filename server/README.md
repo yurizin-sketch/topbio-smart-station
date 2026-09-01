@@ -1,79 +1,189 @@
-# O cérebro da Bia
+# O worker da Bia
 
-Um Cloudflare Worker entre o tablet e a API da Anthropic.
+Um ficheiro (`worker.js`) publicado no Cloudflare. Faz duas coisas:
 
-## Porque é que isto tem de existir
+- **pensa** — recebe o estado da estação e devolve o que a Bia diz e os botões
+  que mostra (API da Anthropic);
+- **fala** — recebe uma frase e devolve o áudio dela (API da ElevenLabs).
 
-A chave da API não pode estar no tablet. O código da estação é público no
-GitHub, e tudo o que vai para o navegador — incluindo variáveis `VITE_` — vai
-em texto legível. Quem encontrasse a chave gastava o dinheiro da loja.
+## Porque é que isto existe
 
-Este worker é a única peça que conhece a chave. O tablet só sabe o endereço.
+O repositório é **público**. Qualquer pessoa vê o código, e tudo o que for para
+o browser vai com ele — incluindo qualquer variável `VITE_`. Uma chave de API
+posta lá dentro é uma chave dada a quem a quiser, e quem a apanhar gasta o
+dinheiro da loja.
 
-## Pôr no ar
+As chaves ficam aqui, no Cloudflare, cifradas. O tablet nunca as vê: pede ao
+worker, o worker é que fala com a Anthropic e com a ElevenLabs.
 
-Precisa de duas contas. Nenhuma delas pode ser criada por mim: a criação de
-contas e a introdução de chaves são passos que têm de ser dados por si.
+**Sem isto publicado a estação funciona na mesma.** A Bia diz uma frase fixa por
+ecrã, com a voz do próprio aparelho. Só não conversa e não soa a pessoa.
 
-**1. Chave da Anthropic** — em <https://console.anthropic.com>, secção *API
-Keys*. Antes de sair da consola, defina um **limite de gastos mensal**. É o
-único travão de custo que não depende de nada nosso funcionar.
+---
 
-**2. Conta Cloudflare** — gratuita, em <https://dash.cloudflare.com>. O plano
-grátis dá 100 000 pedidos por dia, muito acima do que uma loja faz.
+## Publicar, passo a passo
 
-**3. Publicar**, a partir desta pasta:
+Tudo isto se faz uma vez. Os comandos correm-se dentro da pasta `server/`.
+
+No Claude Code pode escrever `! ` antes do comando para o correr aqui mesmo.
+Os que abrem o browser para autenticar (o `login`) têm de ser assim.
+
+### 1. Chave da Anthropic
+
+Em <https://console.anthropic.com>:
+
+1. **Settings → Limits** — defina um **limite de gasto mensal**. Faça isto
+   primeiro. É o que garante que um erro ou um abuso custa vinte euros e não
+   dois mil.
+2. **API keys → Create key**. Copie a chave (`sk-ant-...`). Só aparece uma vez.
+
+Carregue 5 € para começar. Dá para muitas conversas — cada uma custa milésimos.
+
+### 2. Chave e voz da ElevenLabs
+
+Em <https://elevenlabs.io>:
+
+1. **Voice Library** — procure uma voz feminina **brasileira**, ouça algumas e
+   adicione a escolhida à conta (*Add to my voices*).
+2. Em **My Voices**, nos três pontos da voz, **Copy Voice ID**. É uma linha de
+   letras e números.
+3. **Profile → API Keys → Create**. Copie a chave.
+
+O sotaque vem da voz, não de nenhuma definição. Uma voz portuguesa a ler texto
+brasileiro soa a portuguesa; escolha mesmo uma do Brasil.
+
+### 3. Pôr o Voice ID no `wrangler.toml`
+
+Abra `server/wrangler.toml` e cole o identificador:
+
+```toml
+ELEVENLABS_VOICE_ID = "cole-aqui-o-voice-id"
+```
+
+Este pode ir para o repositório — é o nome da voz, não é segredo. **As chaves
+não**, e por isso não têm lugar neste ficheiro.
+
+### 4. Conta Cloudflare e login
+
+Crie a conta em <https://dash.cloudflare.com> (o plano gratuito chega: 100 000
+pedidos por dia). Depois:
 
 ```bash
-cd server
-npx wrangler login          # abre o navegador uma vez
-npx wrangler secret put ANTHROPIC_API_KEY   # cola a chave; não fica no disco
+npx wrangler login
+```
+
+Abre o browser para autorizar.
+
+### 5. Guardar as chaves
+
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put ELEVENLABS_API_KEY
+```
+
+Cada comando pede a chave e cola-se ali. Ficam cifradas no Cloudflare e não há
+maneira de as ler de volta — nem por si, nem por mim, nem por ninguém.
+
+### 6. Cache das falas (recomendado)
+
+Sem isto, cada vez que a Bia diz "Oi! Eu sou a Bia" paga-se essa frase outra
+vez. Com isto, paga-se uma vez por mês.
+
+```bash
+npx wrangler kv namespace create TTS_CACHE
+```
+
+O comando imprime um `id`. Cole-o no fim do `wrangler.toml` e tire o comentário
+das três linhas:
+
+```toml
+[[kv_namespaces]]
+binding = "TTS_CACHE"
+id = "o-id-que-o-comando-imprimiu"
+```
+
+### 7. Publicar
+
+```bash
 npx wrangler deploy
 ```
 
-No fim, o `wrangler` imprime o endereço. Algo como
-`https://topbio-assistente.<a-sua-conta>.workers.dev`.
+No fim aparece o endereço, qualquer coisa como
+`https://topbio-assistente.<a-sua-conta>.workers.dev`. Guarde-o.
 
-**4. Dizer o endereço à estação.** Em `.github/workflows/deploy.yml`, o passo
-de build já lê `VITE_ASSISTANT_URL` dos *secrets* do repositório. Vá a
-*Settings → Secrets and variables → Actions → New repository secret*, com o
-nome `VITE_ASSISTANT_URL` e o endereço como valor.
+### 8. Dizer o endereço ao site
 
-Sem este passo nada se parte: a Bia fica com as falas escritas, que funcionam
-sem servidor e sem custo. Fica mais simples, não fica avariada.
+No GitHub, em **Settings → Secrets and variables → Actions → New repository
+secret**:
 
-Para experimentar em casa antes de publicar, crie um ficheiro `.env.local` na
-raiz do projeto — está no `.gitignore` — com:
+- **Name:** `VITE_ASSISTANT_URL`
+- **Secret:** o endereço do passo anterior
 
+O `.github/workflows/deploy.yml` já lê este segredo. Faça um commit qualquer (ou
+carregue em *Re-run jobs*) e o site passa a usar o worker.
+
+Enquanto este segredo não existir, o código da voz remota nem sequer entra no
+site — o build deita-o fora. Não há nada a desligar.
+
+---
+
+## Depois de publicado
+
+### Confirmar que está de pé
+
+```bash
+curl -X POST https://<o-seu-endereco>.workers.dev/speak \
+  -H "content-type: application/json" \
+  -H "origin: https://yurizin-sketch.github.io" \
+  -d '{"text":"Oi, tudo bem?"}' --output teste.mp3
 ```
-VITE_ASSISTANT_URL=https://topbio-assistente.a-sua-conta.workers.dev
-```
 
-## Travar o abuso
+Um ficheiro que se ouve significa que está tudo certo. Se vier
+`{"error":"voz_remota_desligada"}`, falta a chave ou o Voice ID.
 
-O endereço vai dentro do JavaScript público da estação, portanto qualquer
-pessoa o encontra. Há três travões, e o terceiro é o que conta:
+### Travão contra abuso
 
-1. **Origem** (`ALLOWED_ORIGINS` no `wrangler.toml`) — trava o abuso casual a
-   partir de outro site. Fora do navegador, o cabeçalho falsifica-se.
-2. **Balde por IP** dentro do worker — 20 pedidos por minuto. Vive na memória
-   de cada *isolate*, portanto conta mal quando o tráfego se espalha. Chega
-   para o acidente, não para o ataque.
-3. **Regra no painel do Cloudflare** — esta é a verdadeira. Em *Security →
-   WAF → Rate limiting rules*, crie uma regra sobre o caminho do worker com um
-   teto de cerca de 60 pedidos por minuto por IP. Cinco minutos a fazer, e é o
-   que impede uma conta de mil euros num fim de semana.
+O endereço é público — tem de ser, é o tablet que lhe chama. O worker já limita
+20 pedidos por minuto por IP, mas isso é memória de uma máquina só. Para um
+travão a sério, no painel do Cloudflare:
 
-## Alterar o que ela diz
+**Security → WAF → Rate limiting rules → Create**
 
-A personalidade e — mais importante — **as proibições legais** estão na
-constante `SYSTEM` no topo do `worker.js`.
+- Se: `URI Path` contém `/`
+- Então: bloquear acima de **60 pedidos em 1 minuto** por IP
 
-Essa secção não é estilo. Em Portugal e na UE é proibido dizer que um
-suplemento trata, cura ou previne seja o que for (Regulamento (CE) 1924/2006),
-e quem responde pela frase é a loja, não quem fornece o modelo. O `SYSTEM`
-proíbe-o com exemplos escritos por extenso, porque um modelo entusiasmado
-ignora regras abstratas e não ignora uma frase proibida escrita à letra.
+Sessenta chega e sobra para uma loja. Um robô a martelar o endereço passa disso
+em segundos e apanha com a porta na cara.
 
-Se mexer aí, teste a falar com ela sobre sono, dores e imunidade antes de
-publicar. São os três temas onde ela tenta escorregar.
+### Custos, na prática
+
+| O quê | Quanto |
+| --- | --- |
+| Cloudflare Workers | grátis até 100 000 pedidos/dia |
+| Cloudflare KV | grátis até 100 000 leituras/dia |
+| Anthropic | milésimos de euro por conversa |
+| ElevenLabs | por caráter — **é aqui que se gasta** |
+
+A ElevenLabs é a única que merece vigilância. Com a cache do passo 6, as falas
+fixas pagam-se uma vez e ficam guardadas trinta dias; só as respostas novas,
+inventadas na altura para cada cliente, é que custam. Sem a cache, custa tudo,
+sempre.
+
+Ponha um limite de gasto nas duas contas. É a única proteção que não depende de
+o código estar certo.
+
+### Mudar o que a Bia diz
+
+A personalidade está no `SYSTEM`, dentro do `worker.js`. Se lhe mexer, tenha
+presente que:
+
+- A loja é em **Portugal**, mas a Bia fala **português do Brasil**. Foi escolha
+  da loja. O resto da estação — botões, títulos, avisos — está em português
+  europeu.
+- Os preços são **em euros**. Está lá uma regra a dizê-lo, porque uma persona
+  brasileira escorrega para reais com facilidade.
+- A proibição de alegações de saúde **não é uma preferência de estilo**. É o
+  Regulamento (CE) 1924/2006. Dizer que um suplemento "ajuda a dormir" é
+  ilegal e dá coima à loja, não a mim nem a si. Não tire esse bloco.
+
+Depois de mexer: `npx wrangler deploy` outra vez.

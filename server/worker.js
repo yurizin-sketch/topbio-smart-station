@@ -101,6 +101,88 @@ function cors(origin, allowed) {
   }
 }
 
+/* ── Voz ─────────────────────────────────────────────────────────────────────
+   A voz do tablet (Web Speech API) usa as vozes instaladas no aparelho, e isso
+   não se controla daqui: o PC da loja só tem pt-PT e lê o texto brasileiro da
+   Bia com sotaque de Lisboa. A ElevenLabs resolve isso — a voz vem sempre igual,
+   venha o aparelho que vier — mas custa por caráter e a chave não pode andar no
+   browser, que o repositório é público. Por isso passa por aqui.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Limite por fala. Uma frase da Bia não chega perto disto; um abuso chega. */
+const SPEAK_MAX = 320
+
+/**
+ * Devolve a fala em MP3.
+ *
+ * Sem chave ou sem voz escolhida responde 501, e o tablet fala com a voz que
+ * tiver. A estação nunca fica muda por causa disto: uma voz pior é um problema
+ * pequeno, uma Bia calada ao pé de um cliente é um problema grande.
+ */
+async function speak(request, env, headers) {
+  const voiceId = env.ELEVENLABS_VOICE_ID
+  if (!env.ELEVENLABS_API_KEY || !voiceId) {
+    return json({ error: 'voz_remota_desligada' }, 501, headers)
+  }
+
+  const body = await request.json().catch(() => null)
+  const text = String(body?.text ?? '')
+    .trim()
+    .slice(0, SPEAK_MAX)
+  if (!text) return json({ error: 'sem_texto' }, 400, headers)
+
+  // Turbo por omissão: metade do custo do multilingue e responde bem mais
+  // depressa. Num balcão, meio segundo de silêncio depois de a pessoa tocar já
+  // se nota.
+  const modelId = env.ELEVENLABS_MODEL || 'eleven_turbo_v2_5'
+  const key = await digest(`${voiceId}:${modelId}:${text}`)
+
+  // A estação repete as mesmas dez ou vinte frases o dia inteiro. Sem cache,
+  // pagava-se o "Oi! Eu sou a Bia" umas centenas de vezes por dia.
+  if (env.TTS_CACHE) {
+    const hit = await env.TTS_CACHE.get(key, 'arrayBuffer')
+    if (hit) return audio(hit, headers, 'hit')
+  }
+
+  const res = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_64`,
+    {
+      method: 'POST',
+      headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        model_id: modelId,
+        // Sem isto o modelo às vezes lê português com prosódia de espanhol.
+        // O sotaque brasileiro vem da voz escolhida, não daqui.
+        language_code: 'pt',
+        voice_settings: { stability: 0.45, similarity_boost: 0.8 },
+      }),
+    },
+  )
+
+  if (!res.ok) return json({ error: 'voz_remota_falhou', status: res.status }, 502, headers)
+
+  const bytes = await res.arrayBuffer()
+  // Trinta dias. As falas só mudam quando alguém mexe no código.
+  if (env.TTS_CACHE) await env.TTS_CACHE.put(key, bytes, { expirationTtl: 2_592_000 })
+  return audio(bytes, headers, 'miss')
+}
+
+/** Chave curta e estável para a cache. */
+async function digest(value) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32)
+}
+
+function audio(bytes, headers, cache) {
+  return new Response(bytes, {
+    headers: { ...headers, 'content-type': 'audio/mpeg', 'x-tts-cache': cache },
+  })
+}
+
 /** Uma frase que serve sempre, para quando o modelo não serve. */
 const FALLBACK = {
   say: 'Estou aqui se você precisar de ajuda para escolher.',
@@ -183,6 +265,12 @@ export default {
       // 429 com a frase neutra em vez de erro: quem está à frente do tablet não
       // tem culpa nem quer saber, e a estação sabe usar isto na mesma.
       return json(FALLBACK, 429, headers)
+    }
+
+    // A raiz continua a ser o cérebro da Bia, para não partir os endereços já
+    // configurados. A voz é um caminho à parte porque devolve áudio, não JSON.
+    if (new URL(request.url).pathname === '/speak') {
+      return speak(request, env, headers)
     }
 
     let body

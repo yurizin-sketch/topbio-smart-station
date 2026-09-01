@@ -102,6 +102,31 @@ export const config = {
      */
     greetCooldownMs: 45_000,
   },
+
+  /**
+   * Voz da Bia.
+   *
+   * Só conta quando há worker configurado; sem ele fala-se com as vozes do
+   * próprio aparelho e nada disto se usa.
+   */
+  voice: {
+    /**
+     * Espera máxima pelo áudio antes de desistir.
+     *
+     * Curto de propósito. Mais do que isto e a pessoa já percebeu que ficou
+     * pendurada — mais vale ouvir a voz do tablet do que ouvir silêncio.
+     */
+    timeoutMs: 5_000,
+
+    /**
+     * Falas guardadas em memória no tablet.
+     *
+     * A estação diz as mesmas dez ou vinte frases o dia todo. O worker já tem a
+     * sua própria cache, mas esta poupa também a ida à rede — a segunda vez que
+     * a Bia diz "Oi!" sai instantânea.
+     */
+    cacheEntries: 40,
+  },
 } as const
 
 export function formatPrice(cents: number): string {

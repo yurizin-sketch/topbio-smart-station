@@ -11,15 +11,40 @@ compatibility_date = "2026-01-01"
 ALLOWED_ORIGINS = "https://yurizin-sketch.github.io,http://localhost:5173"
 
 # O modelo. Sonnet 5 é o equilíbrio certo para isto: responde numa fração de
-# segundo e escreve português de Portugal decente.
+# segundo e escreve português do Brasil decente.
 #
 # Se a conta ficar cara, "claude-haiku-4-5-20251001" custa uma fração e para
 # duas frases e três botões a diferença quase não se nota.
 MODEL = "claude-sonnet-5"
 
-# A chave NÃO vem aqui. Este ficheiro está no repositório e o repositório é
-# público. A chave entra uma vez por:
+# A voz da Bia na ElevenLabs. Sem isto preenchido, o tablet fala com as vozes
+# que tiver instaladas — que no PC da loja são só de Portugal.
+#
+# O identificador tira-se em <https://elevenlabs.io/app/voice-library>: escolha
+# uma voz feminina brasileira, adicione-a à conta e copie o "Voice ID".
+ELEVENLABS_VOICE_ID = ""
+
+# Turbo v2.5 custa metade do multilingue e responde bem mais depressa, que é o
+# que conta num balcão. Para mais qualidade: "eleven_multilingual_v2".
+ELEVENLABS_MODEL = "eleven_turbo_v2_5"
+
+# As chaves NÃO vêm aqui. Este ficheiro está no repositório e o repositório é
+# público. Entram uma vez cada, por:
 #
 #   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put ELEVENLABS_API_KEY
 #
-# e fica guardada no Cloudflare, cifrada, sem forma de ser lida de volta.
+# e ficam guardadas no Cloudflare, cifradas, sem forma de serem lidas de volta.
+
+# Cache das falas já geradas. Opcional, mas é a diferença entre pagar cada
+# frase uma vez e pagá-la todas as vezes que alguém passa pela loja.
+#
+# Cria-se com:
+#
+#   npx wrangler kv namespace create TTS_CACHE
+#
+# O comando imprime um id — cole-o abaixo e tire o comentário das três linhas.
+#
+# [[kv_namespaces]]
+# binding = "TTS_CACHE"
+# id = "cole-aqui-o-id"
