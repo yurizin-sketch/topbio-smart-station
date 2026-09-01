@@ -168,8 +168,47 @@ Um ficheiro que se ouve significa que está tudo certo. Se vier
 
 A raiz responde ao mesmo tratamento sem o `/speak` e sem o `--output`. Se
 devolver `"Estou aqui se você precisar de ajuda para escolher."` — a frase de
-recurso — é porque falta a chave da Anthropic: o worker está de pé, mas ainda
-não tem com que pensar.
+recurso — o worker está de pé mas não conseguiu pensar.
+
+### Porque é que a Bia não pensa
+
+O worker nunca devolve erro ao tablet: uma estacão calada ao pé de um cliente
+é pior do que uma estacão com uma frase escrita. Mas diz sempre o motivo, num
+cabeçalho chamado `x-bia`. Para o ver:
+
+```bash
+curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
+  -H "content-type: application/json" \
+  -H "origin: https://yurizin-sketch.github.io" \
+  -d '{}' | findstr x-bia
+```
+
+| `x-bia` | O que se passa | O que fazer |
+| --- | --- | --- |
+| `ok` | Nada. Foi ela mesma a responder. | — |
+| `sem-chave` | O worker não tem `ANTHROPIC_API_KEY`. | `npx wrangler secret list` confirma o nome; volte ao passo 6. |
+| `anthropic-401` | A chave existe mas foi recusada. | Chave errada, apagada ou de outra conta. Crie outra. |
+| `anthropic-400` | O pedido foi recusado. | Quase sempre o `MODEL` no `wrangler.toml` não existe. |
+| `anthropic-429` | Demasiados pedidos. | Esperar. Se for constante, subir o limite na Anthropic. |
+| `anthropic-529` | A Anthropic está sobrecarregada. | Passa sozinho. |
+| `ilegível` | Ela respondeu, mas fora do formato. | Raríssimo. Se repetir, o `SYSTEM` foi mexido. |
+| `erro-TimeoutError` | Demorou demasiado. | Rede. Se repetir, o modelo está lento — use um mais rápido. |
+| `limite` | Vinte pedidos no mesmo minuto do mesmo IP. | É o travão a funcionar. |
+
+Nenhum destes cabeçalhos leva nada de dentro das chaves — só o número que a
+Anthropic devolveu.
+
+O mesmo vale para a voz: `x-tts-cache: hit` quer dizer que a frase já estava
+guardada e não custou nada; `miss` quer dizer que foi gerada agora.
+
+E para saber que chaves estão guardadas, sem as ver:
+
+```bash
+npx wrangler secret list
+```
+
+Imprime só os nomes. Se `ANTHROPIC_API_KEY` não aparecer escrito exatamente
+assim, o worker não a encontra.
 
 ### Travão contra abuso
 

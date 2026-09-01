@@ -97,6 +97,10 @@ function cors(origin, allowed) {
     'access-control-allow-origin': allowed.includes(origin) ? origin : allowed[0] ?? '',
     'access-control-allow-methods': 'POST, OPTIONS',
     'access-control-allow-headers': 'content-type',
+    // Sem isto o JS do tablet nem chega a ver estes cabecalhos: o browser
+    // esconde tudo o que nao esteja na lista curta do CORS. Sao so
+    // diagnostico -- dizem o que correu mal, nunca nada vindo de uma chave.
+    'access-control-expose-headers': 'x-tts-cache, x-bia',
     'access-control-max-age': '86400',
   }
 }
@@ -264,7 +268,7 @@ export default {
     if (overLimit(ip)) {
       // 429 com a frase neutra em vez de erro: quem está à frente do tablet não
       // tem culpa nem quer saber, e a estação sabe usar isto na mesma.
-      return json(FALLBACK, 429, headers)
+      return json(FALLBACK, 429, { ...headers, 'x-bia': 'limite' })
     }
 
     // A raiz continua a ser o cérebro da Bia, para não partir os endereços já
@@ -295,6 +299,10 @@ export default {
       content: `${messages[messages.length - 1].content}\n\n[Estado da estação]\n${describe(body?.context)}`,
     }
 
+    if (!env.ANTHROPIC_API_KEY) {
+      return json(FALLBACK, 200, { ...headers, 'x-bia': 'sem-chave' })
+    }
+
     try {
       const upstream = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -313,15 +321,19 @@ export default {
         }),
       })
 
-      if (!upstream.ok) return json(FALLBACK, 200, headers)
+      if (!upstream.ok) {
+        return json(FALLBACK, 200, { ...headers, 'x-bia': `anthropic-${upstream.status}` })
+      }
 
       const data = await upstream.json()
       const text = data?.content?.find((c) => c.type === 'text')?.text ?? ''
-      return json(readTurn(text), 200, headers)
-    } catch {
+      const turn = readTurn(text)
+      return json(turn, 200, { ...headers, 'x-bia': turn === FALLBACK ? 'ilegivel' : 'ok' })
+    } catch (err) {
       // Nunca devolvemos erro ao tablet: a estação tem falas escritas para este
-      // caso, mas uma resposta válida evita que a personagem se cale.
-      return json(FALLBACK, 200, headers)
+      // caso, mas uma resposta válida evita que a personagem se cale. O nome
+      // do erro vai no cabeçalho para se perceber porquê sem abrir os registos.
+      return json(FALLBACK, 200, { ...headers, 'x-bia': `erro-${err?.name ?? 'desconhecido'}` })
     }
   },
 }
