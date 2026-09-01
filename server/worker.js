@@ -182,11 +182,15 @@ async function speak(request, env, headers) {
 async function reason(response) {
   try {
     const body = await response.json()
-    const text = `${body?.error?.type ?? ''}: ${body?.error?.message ?? ''}`
-    return text.replace(/[^\x20-\x7e]/g, ' ').trim().slice(0, 150) || 'sem detalhe'
+    return sanitize(`${body?.error?.type ?? ''}: ${body?.error?.message ?? ''}`)
   } catch {
     return 'sem detalhe'
   }
+}
+
+/** Texto que cabe num cabeçalho HTTP: uma linha, ASCII, curto. */
+function sanitize(value) {
+  return String(value).replace(/[^\x20-\x7e]/g, ' ').trim().slice(0, 150) || 'sem detalhe'
 }
 
 async function digest(value) {
@@ -359,7 +363,16 @@ export default {
       const data = await upstream.json()
       const text = data?.content?.find((c) => c.type === 'text')?.text ?? ''
       const turn = readTurn(text)
-      return json(turn, 200, { ...headers, 'x-bia': turn === FALLBACK ? 'ilegivel' : 'ok' })
+      if (turn === FALLBACK) {
+        // O que ela escreveu são palavras dela, não credenciais -- vai o
+        // princípio, para se perceber se divagou ou se ficou a meio.
+        return json(FALLBACK, 200, {
+          ...headers,
+          'x-bia': 'ilegivel',
+          'x-bia-detalhe': `${data?.stop_reason ?? '?'} | ${sanitize(text)}`,
+        })
+      }
+      return json(turn, 200, { ...headers, 'x-bia': 'ok' })
     } catch (err) {
       // Nunca devolvemos erro ao tablet: a estação tem falas escritas para este
       // caso, mas uma resposta válida evita que a personagem se cale. O nome
