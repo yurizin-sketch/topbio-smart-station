@@ -74,17 +74,39 @@ npx wrangler login
 
 Abre o browser para autorizar.
 
-### 5. Guardar as chaves
+### 5. Publicar
+
+```bash
+npx wrangler deploy
+```
+
+No fim aparece o endereço, qualquer coisa como
+`https://topbio-assistente.<a-sua-conta>.workers.dev`. Guarde-o.
+
+Publica-se **antes** de guardar as chaves porque as chaves ficam guardadas
+*dentro* deste worker — enquanto ele não existir, não há onde as pôr.
+
+### 6. Guardar as chaves
+
+**Num terminal seu, não através do Claude Code.**
 
 ```bash
 npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put ELEVENLABS_API_KEY
 ```
 
-Cada comando pede a chave e cola-se ali. Ficam cifradas no Cloudflare e não há
-maneira de as ler de volta — nem por si, nem por mim, nem por ninguém.
+Cada comando pergunta a chave, cola-se ali e carrega-se em Enter. O terminal
+tapa o que se escreve com asteriscos, e a chave vai direta para o Cloudflare
+cifrada — não fica no ecrã, não fica no histórico, não fica no repositório.
 
-### 6. Cache das falas (recomendado)
+Não há maneira de as ler de volta depois: nem por si, nem por mim, nem por
+ninguém. Se perder uma, cria-se outra e substitui-se.
+
+Nunca escreva estas chaves numa conversa comigo, num ficheiro do projeto ou
+numa mensagem. Se acontecer por acidente, vá ao painel da Anthropic ou da
+ElevenLabs e revogue-a — leva dez segundos e é o fim do problema.
+
+### 7. Cache das falas (recomendado)
 
 Sem isto, cada vez que a Bia diz "Oi! Eu sou a Bia" paga-se essa frase outra
 vez. Com isto, paga-se uma vez por mês.
@@ -102,14 +124,11 @@ binding = "TTS_CACHE"
 id = "o-id-que-o-comando-imprimiu"
 ```
 
-### 7. Publicar
+Como o `wrangler.toml` mudou, publique outra vez:
 
 ```bash
 npx wrangler deploy
 ```
-
-No fim aparece o endereço, qualquer coisa como
-`https://topbio-assistente.<a-sua-conta>.workers.dev`. Guarde-o.
 
 ### 8. Dizer o endereço ao site
 
