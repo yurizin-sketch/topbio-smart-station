@@ -22,7 +22,7 @@ MODEL = "claude-sonnet-5"
 #
 # O identificador tira-se em <https://elevenlabs.io/app/voice-library>: escolha
 # uma voz feminina brasileira, adicione-a à conta e copie o "Voice ID".
-ELEVENLABS_VOICE_ID = ""
+ELEVENLABS_VOICE_ID = "7eNTDDQVOfe6PkLOmu23"
 
 # Turbo v2.5 custa metade do multilingue e responde bem mais depressa, que é o
 # que conta num balcão. Para mais qualidade: "eleven_multilingual_v2".
