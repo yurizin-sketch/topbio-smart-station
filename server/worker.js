@@ -326,6 +326,13 @@ export default {
           'content-type': 'application/json',
           'x-api-key': env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
+          // Uma chave pessoal (as que a consola cria por omissão) não sabe a
+          // que carteira háde cobrar e recusa o pedido com 400. Dizendo-lhe o
+          // workspace, funciona. Uma chave criada dentro de um workspace já
+          // sabe, e aí isto vai vazio e não estorva.
+          ...(env.ANTHROPIC_WORKSPACE_ID
+            ? { 'anthropic-workspace-id': env.ANTHROPIC_WORKSPACE_ID }
+            : {}),
         },
         body: JSON.stringify({
           model: env.MODEL ?? 'claude-sonnet-5',

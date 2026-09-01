@@ -188,7 +188,7 @@ curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
 | `ok` | Nada. Foi ela mesma a responder. | — |
 | `sem-chave` | O worker não tem `ANTHROPIC_API_KEY`. | `npx wrangler secret list` confirma o nome; volte ao passo 6. |
 | `anthropic-401` | A chave existe mas foi recusada. | Chave errada, apagada ou de outra conta. Crie outra. |
-| `anthropic-400` | O pedido foi recusado. | Quase sempre o `MODEL` no `wrangler.toml` não existe. |
+| `anthropic-400` | O pedido foi recusado. | Leia o `x-bia-detalhe`: diz qual campo. Chave pessoal sem workspace, ou `MODEL` que não existe. |
 | `anthropic-429` | Demasiados pedidos. | Esperar. Se for constante, subir o limite na Anthropic. |
 | `anthropic-529` | A Anthropic está sobrecarregada. | Passa sozinho. |
 | `ilegível` | Ela respondeu, mas fora do formato. | Raríssimo. Se repetir, o `SYSTEM` foi mexido. |
@@ -196,7 +196,23 @@ curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
 | `limite` | Vinte pedidos no mesmo minuto do mesmo IP. | É o travão a funcionar. |
 
 Nenhum destes cabeçalhos leva nada de dentro das chaves — só o número que a
-Anthropic devolveu.
+Anthropic devolveu e, no `x-bia-detalhe`, o princípio da explicação dela.
+
+#### Chave pessoal e carteira
+
+Se o detalhe falar em `anthropic-workspace-id`, a chave é **pessoal** — é o que
+a consola cria quando se carrega em *Create key* sem mais nada. Uma chave dessas
+não sabe a que carteira háde cobrar e recusa o pedido.
+
+O mais limpo é criar outra, agora dentro de um workspace: **Console → Settings
+→ Workspaces →** escolher um **→ API keys → Create key**. Depois é
+`npx wrangler secret put ANTHROPIC_API_KEY` outra vez, com a nova, e apagar a
+antiga na consola.
+
+Em alternativa, mantém-se a chave e diz-se-lhe a carteira: tire o comentário ao
+`ANTHROPIC_WORKSPACE_ID` no `wrangler.toml`. O id está no endereço da consola
+com o workspace aberto e começa por `wrkspc_`. Não é segredo — é um nome, não
+abre nada.
 
 O mesmo vale para a voz: `x-tts-cache: hit` quer dizer que a frase já estava
 guardada e não custou nada; `miss` quer dizer que foi gerada agora.
