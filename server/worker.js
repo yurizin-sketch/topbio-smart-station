@@ -340,9 +340,14 @@ export default {
         },
         body: JSON.stringify({
           model: env.MODEL ?? 'claude-sonnet-5',
-          // Curto de propósito: a resposta são duas frases e três botões. Um
-          // limite baixo é o travão de custo mais directo que existe.
-          max_tokens: 300,
+          // A resposta são duas frases e três botões, mas isto tem de dar folga
+          // para o JSON à volta -- e português com acentos gasta mais fichas do
+          // que parece. Com 300 as respostas mais compridas ficavam cortadas a
+          // meio e a estacão, sem conseguir lê-las, dizia a fala escrita.
+          //
+          // Isto é um tecto, não uma encomenda: paga-se o que ela escrever, e o
+          // travão a sério é a regra das duas frases no SYSTEM.
+          max_tokens: 700,
           system: SYSTEM,
           messages,
         }),
