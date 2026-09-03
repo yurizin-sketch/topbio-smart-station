@@ -14,6 +14,22 @@ quando ela responde de improviso.
 
 ---
 
+## 0. Antes dos vídeos: o retrato parado
+
+Os vídeos dão trabalho e gastam créditos. O retrato não: é uma imagem só, e
+já põe a personagem certa no ecrã.
+
+Exporte do HeyGen um enquadramento de cabeça e ombros da personagem, guarde-o
+como `public/claudia/retrato.png` e está feito — a estação passa a mostrá-lo
+em vez do desenho, sem precisar de alterar código. As medidas estão em
+`public/claudia/LEIA-ME.md`.
+
+O que fica a faltar é a boca a mexer. Para isso são precisos os clips que se
+seguem. Mas vale a pena pôr o retrato primeiro: é a diferença entre um desenho
+e a personagem, e leva cinco minutos.
+
+---
+
 ## 1. Antes de gravar: a voz
 
 **Não use a voz do HeyGen.** A Cláudia já tem voz — a da ElevenLabs, que é a que

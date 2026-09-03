@@ -1,23 +1,56 @@
-/**
- * A Cláudia — a assistente da estação.
- *
- * Desenhada em SVG e animada em CSS, de propósito. Um vídeo ou um modelo 3D
- * pesariam megabytes, precisariam de ser regravados a cada mudança de marca e
- * ficariam pixelizados no tablet seguinte. Isto são uns kilobytes de vetores
- * nas cores da casa, nítidos em qualquer ecrã e recoloríveis num token.
- *
- * DESENHADA PARA SER VISTA PEQUENA. Durante a compra ela mede cem pixels, e a
- * cem pixels os pormenores desaparecem: o que sobrevive são traços grossos e
- * contrastes fortes. Por isso a boca é um traço curvo e não uma forma cheia,
- * os olhos são grandes de mais para uma cara real, e não há nariz — um nariz a
- * este tamanho é sujidade no ecrã.
- *
- * O movimento é o que a faz parecer viva e são três animações ao mesmo tempo
- * com períodos que não batem certo uns com os outros — respirar a 4s, oscilar
- * a 5,1s, piscar a 6,4s. Números que não se dividem, para o olho nunca apanhar
- * o ciclo. Uma personagem que repete de dois em dois segundos lê-se como um
- * GIF partido.
- */
+import { useEffect, useState } from 'react'
+
+import { asset } from '../assets'
+
+/** O retrato da personagem, se alguém o tiver posto lá. */
+const PORTRAIT = '/claudia/retrato.png'
+
+/*
+   Uma pergunta só por sessão, guardada aqui: a estação fica ligada o dia
+   todo e a Cláudia aparece e desaparece a cada cliente. Perguntar de cada
+   vez era um pedido por cliente para saber sempre a mesma coisa.
+*/
+let lookup: Promise<boolean> | null = null
+
+function temRetrato(): Promise<boolean> {
+  lookup ??= fetch(asset(PORTRAIT))
+    .then((r) => r.ok && (r.headers.get('content-type') ?? '').startsWith('image/'))
+    .catch(() => false)
+  return lookup
+}
+
+/*
+   A Cláudia.
+
+   São duas Cláudias no mesmo sítio, uma por cima da outra.
+
+   Por baixo, desenhada aqui em SVG: cabelo louro comprido e cheio, olhos
+   castanhos grandes, sorriso aberto, bata branca. É a que está no ecrã hoje
+   e a que fica se o retrato faltar. Um SVG não é um render 3D e nunca vai
+   ser — mas é o mesmo penteado, a mesma cor de olhos e a mesma roupa, que é
+   o que se reconhece a três metros de distância.
+
+   Por cima, `claudia__photo`: o retrato a sério, o mesmo da personagem do
+   HeyGen. Basta pôr o ficheiro em `public/claudia/retrato.png` e ele tapa o
+   desenho todo — não é preciso mexer em código nenhum.
+
+   Se o ficheiro não existir fica o desenho. Quem decide isso é o
+   `temRetrato()` aqui em baixo, e a decisão é pelo tipo do conteúdo, não
+   pelo browser dizer que correu mal. Foi preciso assim: um servidor de
+   página única responde 200 com o index.html a qualquer caminho que não
+   conheça, e o Chrome, ao receber isso dentro de um `<image>` de SVG, não
+   dá erro nenhum — pinta lixo por cima da cara e fica-se sem saber porquê.
+   Visto e corrigido, não suposto.
+
+   O que se perde com o retrato é a boca a mexer: uma fotografia não fala.
+   O respirar, o oscilar e o halo continuam, porque são movimentos do grupo
+   todo. Boca a sério só com os vídeos do HeyGen — está em
+   `docs/claudia-video.md`.
+
+   Os tempos das animações são primos entre si de propósito: 4s, 5,1s e
+   6,4s. Assim o respirar, o oscilar e o piscar nunca caem certos ao mesmo
+   tempo, e ela não parece um relógio.
+*/
 export function Claudia({
   speaking,
   thinking,
@@ -29,6 +62,21 @@ export function Claudia({
   size?: number
 }) {
   const state = speaking ? 'speaking' : thinking ? 'thinking' : 'idle'
+
+  // Começa em falso: primeiro vê-se o desenho, e o retrato entra por cima
+  // quando se souber que existe mesmo. Ao contrário, dava um piscar de lixo
+  // sempre que ela aparecesse.
+  const [portrait, setPortrait] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    void temRetrato().then((ok) => {
+      if (vivo) setPortrait(ok)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   return (
     <svg
@@ -43,74 +91,106 @@ export function Claudia({
         <clipPath id="claudia-frame">
           <circle cx="60" cy="60" r="57" />
         </clipPath>
+        {/* Fundo claro e neutro, como no retrato. A bata é branca: num fundo
+            escuro ficava um borrão a flutuar. */}
         <linearGradient id="claudia-bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0d7a62" />
-          <stop offset="100%" stopColor="#00453a" />
+          <stop offset="0%" stopColor="#f3eee7" />
+          <stop offset="100%" stopColor="#d9d0c3" />
         </linearGradient>
       </defs>
 
-      {/* Halo que pulsa enquanto fala. É o sinal de "sou eu a falar" para quem
-          está longe de mais para ver a boca mexer. */}
-      <circle className="claudia__halo" cx="60" cy="60" r="57" />
-      <circle cx="60" cy="60" r="57" fill="url(#claudia-bg)" />
-
       <g clipPath="url(#claudia-frame)">
+        <rect x="0" y="0" width="120" height="120" fill="url(#claudia-bg)" />
+        <circle className="claudia__halo" cx="60" cy="60" r="52" />
+
         <g className="claudia__body">
-          {/* Ombros. Baixos e largos: subidos, a personagem parecia encolhida. */}
+          {/* O cabelo de trás oscila com a cabeça, senão a cara desliza por
+              dentro dele. São dois grupos com a mesma classe e por isso com
+              a mesma animação — andam sempre certos um com o outro. */}
+          <g className="claudia__head">
+            <path
+              className="claudia__hair-back"
+              d="M60 6 C32 6 13 25 13 55 C13 72 10 91 8 110 C8 118 11 121 15 121 L105 121 C109 121 112 118 112 110 C110 91 107 72 107 55 C107 25 88 6 60 6 Z"
+            />
+          </g>
+
           <path
             className="claudia__shoulders"
-            d="M2 124 C6 104 28 95 60 95 C92 95 114 104 118 124 Z"
+            d="M18 120 C20 101 34 92 48 88 L72 88 C86 92 100 101 102 120 Z"
           />
-          {/* Gola, só para os ombros não serem uma mancha lisa. */}
-          <path className="claudia__collar" d="M49 96 L60 108 L71 96 C67 94 53 94 49 96 Z" />
+          <path className="claudia__inner" d="M50 88 L60 104 L70 88 L70 120 L50 120 Z" />
+          <path className="claudia__collar" d="M48 88 L60 105 L72 88" />
 
           <g className="claudia__head">
-            {/* Cabelo de trás. Desenhado primeiro para a cara ficar por cima. */}
+            <path
+              className="claudia__hair-front"
+              d="M37 44 C32 58 31 80 34 100 C38 104 45 105 49 102 C43 90 41 66 44 46 Z"
+            />
+            <path
+              className="claudia__hair-front"
+              d="M83 44 C88 58 89 80 86 100 C82 104 75 105 71 102 C77 90 79 66 76 46 Z"
+            />
+            <path className="claudia__neck" d="M53 71 L53 86 C53 90 67 90 67 86 L67 71 Z" />
+            <ellipse className="claudia__ear" cx="35.5" cy="57" rx="3.4" ry="4.8" />
+            <ellipse className="claudia__ear" cx="84.5" cy="57" rx="3.4" ry="4.8" />
+            <path
+              className="claudia__face"
+              d="M36 48 C36 29 46 21 60 21 C74 21 84 29 84 48 C84 69 74 83 60 83 C46 83 36 69 36 48 Z"
+            />
+            <ellipse className="claudia__blush" cx="44" cy="63" rx="5" ry="3" />
+            <ellipse className="claudia__blush" cx="76" cy="63" rx="5" ry="3" />
+
+            {/* A franja cai da risca ao lado e atravessa a testa. */}
             <path
               className="claudia__hair"
-              d="M31 58 C29 27 42 15 60 15 C78 15 91 27 89 58 L89 84 C89 89 81 89 81 84 L81 56 L39 56 L39 84 C39 89 31 89 31 84 Z"
+              d="M36 45 C36 30 46 21 60 21 C72 21 81 27 84 38 C79 31 71 28 63 29 C54 30 45 35 41 44 C40 47 36 48 36 45 Z"
             />
+            <path className="claudia__strand" d="M34 46 C35 32 43 21 56 16 C45 23 39 33 37 47 Z" />
 
-            <path className="claudia__neck" d="M52 72 H68 V92 Q60 99 52 92 Z" />
-            <ellipse className="claudia__ear" cx="35" cy="58" rx="4" ry="6" />
-            <ellipse className="claudia__ear" cx="85" cy="58" rx="4" ry="6" />
-            <ellipse className="claudia__face" cx="60" cy="55" rx="25" ry="28" />
-
-            {/* Franja. Deixa a testa à vista de propósito: a versão anterior
-                tapava-a e a cara passava a ler-se como um capacete. */}
-            <path
-              className="claudia__hair"
-              d="M35 45 C36 25 46 16 60 16 C74 16 84 25 85 45 C80 33 71 29 60 29 C48 29 40 34 35 45 Z"
-            />
-
-            {/* Sobrancelhas. Sobem quando pensa — metade da expressão está aqui. */}
             <g className="claudia__brows">
-              <path d="M45 47 Q51 43 57 47" />
-              <path d="M63 47 Q69 43 75 47" />
+              <path d="M44 44 Q51 39.5 58 43.5" />
+              <path d="M62 43.5 Q69 39.5 76 44" />
             </g>
 
+            {/* Olhos grandes, castanhos. O brilho é o que os tira de vidrados. */}
             <g className="claudia__eyes">
-              <ellipse cx="51" cy="57" rx="3.8" ry="4.4" />
-              <ellipse cx="69" cy="57" rx="3.8" ry="4.4" />
-              {/* Brilho. Dois pontos brancos e a cara deixa de ser um boneco. */}
-              <circle className="claudia__glint" cx="52.4" cy="55.4" r="1.3" />
-              <circle className="claudia__glint" cx="70.4" cy="55.4" r="1.3" />
+              <ellipse className="claudia__sclera" cx="51" cy="55" rx="6.2" ry="7" />
+              <circle className="claudia__iris" cx="51" cy="55.5" r="4.6" />
+              <circle className="claudia__pupil" cx="51" cy="55.5" r="2.1" />
+              <circle className="claudia__glint" cx="49.2" cy="53.2" r="1.7" />
+              <circle className="claudia__glint" cx="53" cy="57.8" r="0.8" />
+              <path className="claudia__lash" d="M44.4 51.6 Q51 45.4 57.6 51.6" />
+
+              <ellipse className="claudia__sclera" cx="69" cy="55" rx="6.2" ry="7" />
+              <circle className="claudia__iris" cx="69" cy="55.5" r="4.6" />
+              <circle className="claudia__pupil" cx="69" cy="55.5" r="2.1" />
+              <circle className="claudia__glint" cx="67.2" cy="53.2" r="1.7" />
+              <circle className="claudia__glint" cx="71" cy="57.8" r="0.8" />
+              <path className="claudia__lash" d="M62.4 51.6 Q69 45.4 75.6 51.6" />
             </g>
 
-            <ellipse className="claudia__blush" cx="41" cy="66" rx="5" ry="3" />
-            <ellipse className="claudia__blush" cx="79" cy="66" rx="5" ry="3" />
-
-            {/* Duas bocas, uma de cada vez.
-                O sorriso é um traço curvo porque a cem pixels uma forma cheia
-                vira uma mancha. A boca aberta só aparece a falar, e é aí que a
-                forma cheia funciona — está a mexer, lê-se pelo movimento. */}
-            <path className="claudia__smile" d="M50 68 Q60 77 70 68" />
-            <ellipse className="claudia__open" cx="60" cy="70" rx="6" ry="4.5" />
+            {/* Duas bocas, uma de cada vez — ver o comentário no kiosk.css. */}
+            <g className="claudia__mouth">
+              <path className="claudia__smile" d="M50 67 Q60 78.5 70 67 Z" />
+              <path className="claudia__teeth" d="M51 67.4 Q60 71.8 69 67.4 Z" />
+              <ellipse className="claudia__open" cx="60" cy="70" rx="5" ry="4.4" />
+            </g>
           </g>
         </g>
+
+        {portrait ? (
+          <image
+            className="claudia__photo"
+            href={asset(PORTRAIT)}
+            x="0"
+            y="0"
+            width="120"
+            height="120"
+            preserveAspectRatio="xMidYMid slice"
+          />
+        ) : null}
       </g>
 
-      {/* Anel da marca, por cima de tudo, a limpar o recorte. */}
       <circle className="claudia__ring" cx="60" cy="60" r="56" />
     </svg>
   )

@@ -1436,6 +1436,13 @@ img {
   overflow: visible;
 }
 
+/* O retrato da personagem, se `public/claudia/retrato.png` existir. Tapa o
+   desenho todo; se o ficheiro faltar, o browser nao pinta nada e fica o
+   desenho por baixo. Ver o comentario em Claudia.tsx. */
+.claudia__photo {
+  pointer-events: none;
+}
+
 .claudia__ring {
   fill: none;
   stroke: var(--tne-gold);
@@ -1465,24 +1472,65 @@ img {
 }
 
 .claudia__shoulders {
-  fill: var(--tne-cream);
+  fill: #ffffff;
+}
+
+/* O que se ve' no decote, por baixo da bata. */
+.claudia__inner {
+  fill: #efe7da;
 }
 
 .claudia__face {
-  fill: #f6dcc4;
+  fill: #f7d9bb;
 }
 
 .claudia__hair {
-  fill: #2f2119;
+  fill: #e0b264;
 }
 
-.claudia__eyes ellipse {
-  fill: #2f2119;
+/* O cabelo de tras e' o mesmo louro puxado abaixo. Duas cores chapadas em vez
+   de um gradiente: a 104px ninguem ve' a diferenca, e uma cor chapada nao
+   depende de um <defs> que se pode esquecer de copiar. */
+.claudia__hair-back {
+  fill: #c9974d;
+}
+
+/* As madeixas da frente sao um tom acima das de tras: e o que da a ideia
+   de que uma esta a frente da outra sem desenhar sombra nenhuma. */
+.claudia__hair-front {
+  fill: #d9a659;
+}
+
+.claudia__strand {
+  fill: #ecc379;
+  opacity: 0.75;
+}
+
+/* O olho sao cinco pecas: o branco, a iris castanha, a pupila, o brilho e a
+   pestana por cima. Custa mais cinco formas e e' a diferenca entre um olho e
+   um ponto preto. */
+.claudia__sclera {
+  fill: #fffaf4;
+}
+
+.claudia__iris {
+  fill: #6b4426;
+}
+
+.claudia__pupil {
+  fill: #2b1a10;
+}
+
+.claudia__lash {
+  fill: none;
+  stroke: #3b2a1c;
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
 .claudia__brows path {
   fill: none;
-  stroke: #2f2119;
+  stroke: #a2763c;
   stroke-width: 2;
   stroke-linecap: round;
 }
@@ -1493,16 +1541,20 @@ img {
 }
 
 .claudia__neck {
-  fill: #ecc6a6;
+  fill: #e8bd99;
 }
 
 .claudia__ear {
-  fill: #f6dcc4;
+  fill: #f0c9a6;
 }
 
+/* A lapela e' um traco em V, nao uma forma cheia: e' o que marca a bata sem
+   lhe desenhar costuras que a este tamanho so' sujavam. */
 .claudia__collar {
-  fill: var(--tne-green);
-  opacity: 0.85;
+  fill: none;
+  stroke: #ddd5c8;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
 .claudia__glint {
@@ -1513,19 +1565,21 @@ img {
    enquanto ela fala. Trocar opacidade em vez de esticar uma forma só evita que
    o sorriso se deforme em careta a meio da frase. */
 .claudia__smile {
-  fill: none;
-  stroke: #8c3b3b;
-  stroke-width: 2.6;
-  stroke-linecap: round;
+  fill: #9c4340;
+}
+
+.claudia__teeth {
+  fill: #fffaf3;
 }
 
 .claudia__open {
-  fill: #8c3b3b;
+  fill: #9c4340;
   opacity: 0;
   transform-origin: 60px 70px;
 }
 
-.claudia--speaking .claudia__smile {
+.claudia--speaking .claudia__smile,
+.claudia--speaking .claudia__teeth {
   opacity: 0;
 }
 
