@@ -49,14 +49,51 @@ Assim a boca bate certo com a voz que ela tem no resto do tempo.
 
 | | |
 | --- | --- |
-| Resolução | 1080 × 1920 (vertical) ou 1920 × 1080, conforme o tablet |
+| Resolução | 1080 × 1920, vertical |
+| Enquadramento | **corpo inteiro**, dos pés à cabeça, com folga por cima e por baixo |
 | Formato | MP4, H.264 |
-| Fundo | verde ou transparente, se o plano deixar exportar com alfa |
+| Fundo | uma cor lisa, `#004a3c` — já pintado na fotografia de origem |
 | Peso | até 3 MB por clip |
+
+### Tudo se decide na fotografia
+
+O Avatar IV não filma ninguém. **Anima uma fotografia parada.** É preciso perceber
+isto antes de tudo o resto, porque muda quem faz o quê: o enquadramento, a roupa,
+a pose, as mãos e o fundo já têm de estar certos **na foto que se carrega**. Não há
+botão no HeyGen que corrija nada disso depois.
+
+Daí que a foto tem de ser:
+
+- **de corpo inteiro**, dos pés à cabeça, de frente;
+- **vertical**, proporção 9:16 — o Avatar IV exporta em 16:9 ou 9:16, e a foto é
+  que manda;
+- com as **mãos à vista** e afastadas do corpo, senão o modelo não tem por onde
+  as mexer;
+- com **folga por cima e por baixo**. Se ela ficar colada ao topo, um tablet de
+  proporção diferente corta-lhe a cabeça, e não há css que devolva píxeis que
+  nunca foram gravados;
+- com o **fundo já pintado** de `#004a3c`, o verde da casa.
+
+Corpo inteiro obriga a Avatar IV ou V. O modo de tempo real da HeyGen — o
+LiveAvatar — não serve: a própria HeyGen escreve que a filmagem tem de ser do
+peito para cima e que corpo inteiro não é suportado.
+
+### O fundo
 
 O fundo é o que mais importa. A Cláudia fica **por cima** do ecrã da estação, ao
 lado dos produtos; com um fundo de estúdio ficava uma caixa de vídeo colada a
 uma app, e vê-se logo que são duas coisas diferentes.
+
+**O Avatar IV não tira fundos.** A opção de remover fundo do estúdio não se aplica
+a vídeos de Avatar IV, e não há exportação com canal alfa por este caminho. O
+fundo do vídeo é, e será sempre, o fundo da fotografia.
+
+Por isso se pinta o fundo **antes**, de `#004a3c` liso, igual ao fundo do ecrã.
+Feito assim não se vê a emenda, não gasta processador do tablet a recortar imagem
+sessenta vezes por segundo, e não depende de nenhuma opção de exportação.
+
+Verde de croma — aquele verde berrante de estúdio — **não**. Obrigaria a recortar
+no tablet e deixaria orla verde no cabelo dela.
 
 ## 3. As falas
 

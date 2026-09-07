@@ -1,3 +1,35 @@
+# O que a estação procura nesta pasta
+
+A Cláudia tem três aspectos possíveis e fica sempre pelo melhor que aqui
+encontrar, sem ser preciso mexer em código nenhum:
+
+| o que está cá | o que se vê |
+| --- | --- |
+| `a-falar.mp4` **e** `parada.mp4` | ela a sério, de corpo inteiro, a mexer-se |
+| só `retrato.png` | uma fotografia parada |
+| nada | o desenho, que nunca falha |
+
+Tirar os ficheiros daqui faz o caminho ao contrário. Serve para experimentar
+sem medo.
+
+## Os dois vídeos
+
+`parada.mp4` toca quando ela está calada e `a-falar.mp4` quando ela fala. Estão
+os dois montados ao mesmo tempo e trocam-se por transparência, para não haver
+piscar nenhum.
+
+Ambos vêm do mesmo clip do HeyGen, montados em **ida e volta** — o clip corre
+até ao fim e volta para trás. É assim que se põe um vídeo curto em ciclo sem
+salto na emenda; senão via-se um esticao de cada vez que recomeçasse.
+
+Não têm som, de propósito. Quem fala é a voz da ElevenLabs, que diz também as
+frases que ela inventa na hora. Como o vídeo é sempre o mesmo, **a boca não
+acompanha as palavras** — a três metros do balcão ninguém repara, ao pé do ecrã
+repara-se.
+
+Para trocar de vídeo basta pôr outros dois ficheiros com estes nomes. O fundo
+tem de ser verde `#004a3c` liso, na vertical, senão vê-se o rectângulo.
+
 # O retrato da Cláudia
 
 Ponha aqui um ficheiro com o nome exacto **`retrato.png`**.

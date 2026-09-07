@@ -1431,6 +1431,61 @@ img {
    ciclo e de ver um GIF em vez de alguém.
    ────────────────────────────────────────────────────────────────────────── */
 
+/* ---------------------------------------------------------------------------
+   A Cláudia filmada
+
+   Os dois clips estão os dois montados e trocam-se por opacidade. Trocar o
+   `src` de um único vídeo dava um piscar preto de cada vez que ela abrisse a
+   boca, que é justamente quando se está a olhar para ela.
+
+   O fundo do painel é o mesmo verde do fundo do vídeo — `#004a3c` contra o
+   `#054739` que veio do HeyGen, três unidades de diferença. Não se vê a
+   emenda, e não é preciso recortar imagem nenhuma no tablet.
+   --------------------------------------------------------------------------- */
+.claudia-filme {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--tne-green);
+  box-shadow:
+    inset 0 0 0 2px rgba(202, 150, 73, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+  line-height: 0;
+  transition: box-shadow 220ms ease;
+}
+
+.claudia-filme--speaking {
+  box-shadow:
+    inset 0 0 0 2px rgba(232, 185, 106, 0.9),
+    0 10px 32px rgba(0, 0, 0, 0.32);
+}
+
+.claudia-filme__clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* O vídeo tem-na centrada; ao cortar, corta-se por baixo, nos pés, e
+     nunca pela cabeça. */
+  object-position: 50% 12%;
+  transition: opacity 200ms ease;
+}
+
+.claudia-filme__clip--falar {
+  opacity: 0;
+}
+
+.claudia-filme--speaking .claudia-filme__clip--falar {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claudia-filme__clip {
+    transition: none;
+  }
+}
+
 .claudia {
   display: block;
   overflow: visible;

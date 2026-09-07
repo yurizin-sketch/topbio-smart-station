@@ -1,56 +1,59 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { asset } from '../assets'
 
 /** O retrato da personagem, se alguém o tiver posto lá. */
 const PORTRAIT = '/claudia/retrato.png'
 
+/** Os dois clips: um para quando ela fala, outro para quando está calada. */
+const CLIPS = { falar: '/claudia/a-falar.mp4', parada: '/claudia/parada.mp4' }
+
 /*
    Uma pergunta só por sessão, guardada aqui: a estação fica ligada o dia
    todo e a Cláudia aparece e desaparece a cada cliente. Perguntar de cada
    vez era um pedido por cliente para saber sempre a mesma coisa.
 */
-let lookup: Promise<boolean> | null = null
+const perguntado = new Map<string, Promise<boolean>>()
 
-function temRetrato(): Promise<boolean> {
-  lookup ??= fetch(asset(PORTRAIT))
-    .then((r) => r.ok && (r.headers.get('content-type') ?? '').startsWith('image/'))
-    .catch(() => false)
-  return lookup
+function existe(caminho: string, tipo: string): Promise<boolean> {
+  let r = perguntado.get(caminho)
+  if (!r) {
+    r = fetch(asset(caminho))
+      .then((res) => res.ok && (res.headers.get('content-type') ?? '').startsWith(tipo))
+      .catch(() => false)
+    perguntado.set(caminho, r)
+  }
+  return r
 }
 
 /*
    A Cláudia.
 
-   São duas Cláudias no mesmo sítio, uma por cima da outra.
+   São três Cláudias possíveis no mesmo sítio, da melhor para a pior, e ela
+   fica sempre pela melhor que existir no disco:
 
-   Por baixo, desenhada aqui em SVG: cabelo louro comprido e cheio, olhos
-   castanhos grandes, sorriso aberto, bata branca. É a que está no ecrã hoje
-   e a que fica se o retrato faltar. Um SVG não é um render 3D e nunca vai
-   ser — mas é o mesmo penteado, a mesma cor de olhos e a mesma roupa, que é
-   o que se reconhece a três metros de distância.
+   1. Os vídeos, `public/claudia/a-falar.mp4` e `parada.mp4`. É ela a sério,
+      de corpo inteiro, a mexer as mãos.
+   2. Um retrato parado, `public/claudia/retrato.png`.
+   3. O desenho em SVG aqui em baixo, que não depende de ficheiro nenhum e
+      por isso nunca falha.
 
-   Por cima, `claudia__photo`: o retrato a sério, o mesmo da personagem do
-   HeyGen. Basta pôr o ficheiro em `public/claudia/retrato.png` e ele tapa o
-   desenho todo — não é preciso mexer em código nenhum.
+   Quem escolhe é o `existe()` aqui em cima, e a decisão é pelo tipo do
+   conteúdo, não pelo browser dizer que correu mal. Foi preciso assim: um
+   servidor de página única responde 200 com o index.html a qualquer caminho
+   que não conheça, e o Chrome, ao receber isso, não dá erro nenhum — pinta
+   lixo e fica-se sem saber porquê. Visto e corrigido, não suposto.
 
-   Se o ficheiro não existir fica o desenho. Quem decide isso é o
-   `temRetrato()` aqui em baixo, e a decisão é pelo tipo do conteúdo, não
-   pelo browser dizer que correu mal. Foi preciso assim: um servidor de
-   página única responde 200 com o index.html a qualquer caminho que não
-   conheça, e o Chrome, ao receber isso dentro de um `<image>` de SVG, não
-   dá erro nenhum — pinta lixo por cima da cara e fica-se sem saber porquê.
-   Visto e corrigido, não suposto.
+   Os vídeos não têm som. Quem fala é a ElevenLabs, que também diz as frases
+   que ela inventa na hora; se o clip trouxesse voz eram duas vozes
+   diferentes na mesma pessoa. O vídeo serve para ela se mexer, mais nada —
+   e por isso a boca não acompanha as palavras. A três metros do balcão
+   ninguém repara; ao pé do ecrã repara-se, e fica dito.
 
-   O que se perde com o retrato é a boca a mexer: uma fotografia não fala.
-   O respirar, o oscilar e o halo continuam, porque são movimentos do grupo
-   todo. Boca a sério só com os vídeos do HeyGen — está em
-   `docs/claudia-video.md`.
-
-   Os tempos das animações são primos entre si de propósito: 4s, 5,1s e
-   6,4s. Assim o respirar, o oscilar e o piscar nunca caem certos ao mesmo
-   tempo, e ela não parece um relógio.
+   Os dois clips andam sempre a tocar e trocam-se por opacidade. Trocar o
+   `src` de um só dava um piscar preto de cada vez que ela abrisse a boca.
 */
+
 export function Claudia({
   speaking,
   thinking,
@@ -58,19 +61,25 @@ export function Claudia({
 }: {
   speaking: boolean
   thinking: boolean
-  /** Lado do quadrado, em pixels. */
+  /** Lado do quadrado no desenho; largura da figura no vídeo. */
   size?: number
 }) {
   const state = speaking ? 'speaking' : thinking ? 'thinking' : 'idle'
 
-  // Começa em falso: primeiro vê-se o desenho, e o retrato entra por cima
-  // quando se souber que existe mesmo. Ao contrário, dava um piscar de lixo
-  // sempre que ela aparecesse.
+  // Começa em falso: primeiro vê-se o desenho, e o que for melhor entra por
+  // cima quando se souber que existe mesmo.
+  const [video, setVideo] = useState(false)
   const [portrait, setPortrait] = useState(false)
 
   useEffect(() => {
     let vivo = true
-    void temRetrato().then((ok) => {
+    void Promise.all([
+      existe(CLIPS.falar, 'video/'),
+      existe(CLIPS.parada, 'video/'),
+    ]).then(([a, b]) => {
+      if (vivo) setVideo(a && b)
+    })
+    void existe(PORTRAIT, 'image/').then((ok) => {
       if (vivo) setPortrait(ok)
     })
     return () => {
@@ -78,6 +87,87 @@ export function Claudia({
     }
   }, [])
 
+  if (video) return <Filmada speaking={speaking} state={state} width={size} />
+
+  return <Desenhada state={state} portrait={portrait} size={size} />
+}
+
+/* A Cláudia dos vídeos. */
+function Filmada({
+  speaking,
+  state,
+  width,
+}: {
+  speaking: boolean
+  state: string
+  width: number
+}) {
+  const falar = useRef<HTMLVideoElement>(null)
+  const parada = useRef<HTMLVideoElement>(null)
+
+  // Só o que está à vista é que anda. Dois vídeos a descodificar ao mesmo
+  // tempo num tablet é gastar bateria para nada.
+  useEffect(() => {
+    const ligado = speaking ? falar.current : parada.current
+    const desligado = speaking ? parada.current : falar.current
+    desligado?.pause()
+    // O `play()` devolve uma promessa que rejeita se o browser recusar o
+    // arranque automático. Sem o `catch` isso ia parar à consola como erro
+    // por tratar, todos os segundos.
+    void ligado?.play().catch(() => {})
+  }, [speaking])
+
+  return (
+    <div
+      className={`claudia-filme claudia-filme--${state}`}
+      style={{ width, height: Math.round((width * 16) / 9) }}
+      role="img"
+      aria-label="Cláudia, assistente da TopBio"
+    >
+      <video
+        ref={parada}
+        className="claudia-filme__clip"
+        src={asset(CLIPS.parada)}
+        muted
+        loop
+        playsInline
+        autoPlay
+        preload="auto"
+      />
+      <video
+        ref={falar}
+        className="claudia-filme__clip claudia-filme__clip--falar"
+        src={asset(CLIPS.falar)}
+        muted
+        loop
+        playsInline
+        preload="auto"
+      />
+    </div>
+  )
+}
+
+/*
+   A Cláudia desenhada, que é a que fica quando não há ficheiro nenhum.
+
+   Cabelo louro comprido, olhos castanhos grandes, sorriso aberto, bata
+   branca. Um SVG não é um render 3D e nunca vai ser — mas é o mesmo
+   penteado, a mesma cor de olhos e a mesma roupa, que é o que se reconhece
+   a três metros de distância.
+
+   Os tempos das animações são primos entre si de propósito: 4s, 5,1s e
+   6,4s. Assim o respirar, o oscilar e o piscar nunca caem certos ao mesmo
+   tempo, e ela não parece um relógio.
+*/
+function Desenhada({
+  state,
+  portrait,
+  size,
+}: {
+  state: string
+  portrait: boolean
+  size: number
+}) {
   return (
     <svg
       className={`claudia claudia--${state}`}
