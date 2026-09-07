@@ -14,19 +14,22 @@ quando ela responde de improviso.
 
 ---
 
-## 0. Antes dos vídeos: o retrato parado
+## 0. O que já está feito
 
-Os vídeos dão trabalho e gastam créditos. O retrato não: é uma imagem só, e
-já põe a personagem certa no ecrã.
+Um clip serve para as duas coisas. Do primeiro que gravou saíram os dois
+ficheiros que estão hoje na estação:
 
-Exporte do HeyGen um enquadramento de cabeça e ombros da personagem, guarde-o
-como `public/claudia/retrato.png` e está feito — a estação passa a mostrá-lo
-em vez do desenho, sem precisar de alterar código. As medidas estão em
-`public/claudia/LEIA-ME.md`.
+- **`public/claudia/parada.webp`** — o último fotograma, de braços em baixo.
+  É ela quieta, e é o que se vê quase sempre.
+- **`public/claudia/a-falar.webp`** — o mesmo clip a mexer-se, que só entra no
+  ecrã enquanto ela fala.
 
-O que fica a faltar é a boca a mexer. Para isso são precisos os clips que se
-seguem. Mas vale a pena pôr o retrato primeiro: é a diferença entre um desenho
-e a personagem, e leva cinco minutos.
+Os dois saem **recortados**, sem fundo nenhum: ela fica de pé por cima do
+ecrã, e não numa caixa de vídeo colada a uma app. As receitas do `ffmpeg` que
+os fazem estão em `public/claudia/LEIA-ME.md` e servem para qualquer clip novo.
+
+Falta a boca bater certo com as palavras, e é para isso que servem os clips
+com fala que se seguem.
 
 ---
 
@@ -53,6 +56,7 @@ Assim a boca bate certo com a voz que ela tem no resto do tempo.
 | Enquadramento | **corpo inteiro**, dos pés à cabeça, com folga por cima e por baixo |
 | Formato | MP4, H.264 |
 | Fundo | uma cor lisa, `#004a3c` — já pintado na fotografia de origem |
+| Depois | recortado aqui pelo `ffmpeg`, com as receitas do `LEIA-ME.md` |
 | Peso | até 3 MB por clip |
 
 ### Tudo se decide na fotografia
@@ -88,22 +92,32 @@ uma app, e vê-se logo que são duas coisas diferentes.
 a vídeos de Avatar IV, e não há exportação com canal alfa por este caminho. O
 fundo do vídeo é, e será sempre, o fundo da fotografia.
 
-Por isso se pinta o fundo **antes**, de `#004a3c` liso, igual ao fundo do ecrã.
-Feito assim não se vê a emenda, não gasta processador do tablet a recortar imagem
-sessenta vezes por segundo, e não depende de nenhuma opção de exportação.
+Por isso se pinta o fundo **antes**, de `#004a3c` liso. O que importa não é a cor
+exacta — é ser **lisa e só dela**: nada no vestuário nem no cabelo pode ter aquele
+tom, senão abrem-se buracos na figura ao recortar.
 
-Verde de croma — aquele verde berrante de estúdio — **não**. Obrigaria a recortar
-no tablet e deixaria orla verde no cabelo dela.
+O recorte faz-se depois, **aqui**, uma vez, ao gerar os ficheiros. Não é o tablet
+que o faz: recortar imagem doze vezes por segundo num aparelho de loja é gastar
+bateria para chegar ao mesmo sítio. O clip que veio do HeyGen tinha `#054739`, três
+unidades ao lado do `#004a3c` pedido — o `ffmpeg` tem tolerância que chega para
+isso, mas confirme sempre a cor do clip novo antes de a pôr na receita.
+
+Verde de croma — aquele verde berrante de estúdio — **não**. É tão longe do tom
+da pele que a tolerância do recorte tem de ser larga, e larga demais deixa orla
+verde no cabelo dela. Um verde escuro perto do da casa é mais fácil de tirar
+limpo, e o que sobra confunde-se com o fundo do ecrã.
 
 ## 3. As falas
 
-O nome do ficheiro tem de ser exatamente este — é por ele que a estação o
-encontra. Tudo em `public/claudia/`.
+Estas ainda não estão ligadas a nada: a estação usa hoje um clip só, sem
+palavras, para tudo. Grave-as quando quiser, converta-as com as receitas do
+`LEIA-ME.md` e diga-me — a ligação é do meu lado.
+
+Os `.mp4` abaixo são o que sai do HeyGen; o que fica em `public/claudia/` é o
+`.webp` correspondente.
 
 | Ficheiro | O que ela diz |
 | --- | --- |
-| `parada.mp4` | *(nada — só ela quieta, a respirar e a olhar em volta. 10 a 15 s, a repetir sem se notar o corte)* |
-| `a-falar.mp4` | *(nada — ela a falar, sem palavras. Usa-se por baixo das respostas inventadas. 8 a 10 s, também a repetir)* |
 | `atrair.mp4` | Oi! Eu sou a Cláudia. Posso te ajudar a escolher? |
 | `atrair-2.mp4` | Bem-vindo à TopBio. Quer que eu te ajude a escolher? |
 | `atrair-3.mp4` | Oi! Se quiser, eu te ajudo a achar o que você procura. |
@@ -167,7 +181,9 @@ Seria estranho ela dizer isso vestida de médica.
 
 ## 5. Quando os ficheiros existirem
 
-Ponha-os em `public/claudia/` e diga-me. A estação passa a tocá-los sozinha: o
-`parada.mp4` a repetir entre clientes, o clip certo em cada ecrã, e o desenho
-que lá está agora fica por baixo como rede — se um vídeo não carregar, ninguém
-fica com um buraco preto ao pé de um cliente.
+Converta-os e ponha-os em `public/claudia/`, e diga-me: falta ligar cada um ao
+ecrã onde é dito, e isso é código.
+
+A rede já lá está e não se mexe. Se um ficheiro faltar ou vier estragado, a
+estação desce um degrau sozinha — do clip para a figura parada, e da figura
+parada para o desenho. Nunca fica um buraco no ecrã ao pé de um cliente.

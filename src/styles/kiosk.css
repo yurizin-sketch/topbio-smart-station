@@ -1432,70 +1432,50 @@ img {
    ────────────────────────────────────────────────────────────────────────── */
 
 /* ---------------------------------------------------------------------------
-   A Cláudia filmada
+   A Cláudia recortada
 
-   Os dois clips estão os dois montados e trocam-se por opacidade. Trocar o
-   `src` de um único vídeo dava um piscar preto de cada vez que ela abrisse a
-   boca, que é justamente quando se está a olhar para ela.
+   Sem moldura e sem fundo: os ficheiros já vêm com o verde tirado, por isso
+   ela fica em cima do ecrã como uma pessoa e não como um vídeo a dar dentro
+   de uma caixa.
 
-   O fundo do painel é o mesmo verde do fundo do vídeo — `#004a3c` contra o
-   `#054739` que veio do HeyGen, três unidades de diferença. Não se vê a
-   emenda, e não é preciso recortar imagem nenhuma no tablet.
+   Duas camadas no mesmo sitio. A parada está sempre lá; o clip só existe
+   enquanto ela fala. Ficar a parada por baixo é de propósito: se o clip
+   demorar a carregar, não há buraco nenhum no ecrã — ela está só sossegada.
+
+   Não há transição entre as duas. As duas imagens partem do mesmo
+   fotograma, por isso a troca já não se vê; um `fade` por cima disso só
+   deixaria a figura translúcida durante um quinto de segundo.
+
+   A sombra é `drop-shadow` e não `box-shadow`: uma segue o contorno dela, a
+   outra desenhava o rectângulo que se acabou de tirar.
    --------------------------------------------------------------------------- */
-.claudia-filme {
+.claudia-figura {
   position: relative;
-  overflow: hidden;
-  border-radius: 20px;
-  background: var(--tne-green);
-  box-shadow:
-    inset 0 0 0 2px rgba(202, 150, 73, 0.5),
-    0 10px 28px rgba(0, 0, 0, 0.28);
   line-height: 0;
-  transition: box-shadow 220ms ease;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.38));
 }
 
-.claudia-filme--speaking {
-  box-shadow:
-    inset 0 0 0 2px rgba(232, 185, 106, 0.9),
-    0 10px 32px rgba(0, 0, 0, 0.32);
-}
-
-.claudia-filme__clip {
+.claudia-figura__parada,
+.claudia-figura__clip {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  /* O vídeo tem-na centrada; ao cortar, corta-se por baixo, nos pés, e
-     nunca pela cabeça. */
-  object-position: 50% 12%;
-  transition: opacity 200ms ease;
+  object-fit: contain;
 }
 
-.claudia-filme__clip--falar {
-  opacity: 0;
-}
-
-.claudia-filme--speaking .claudia-filme__clip--falar {
-  opacity: 1;
-}
-
+/* Quem pediu ao sistema menos movimento fica com ela parada. O gesto é
+   enfeite, não informação: nada do que ela diz se perde por ela estar
+   quieta. */
 @media (prefers-reduced-motion: reduce) {
-  .claudia-filme__clip {
-    transition: none;
+  .claudia-figura__clip {
+    display: none;
   }
 }
 
 .claudia {
   display: block;
   overflow: visible;
-}
-
-/* O retrato da personagem, se `public/claudia/retrato.png` existir. Tapa o
-   desenho todo; se o ficheiro faltar, o browser nao pinta nada e fica o
-   desenho por baixo. Ver o comentario em Claudia.tsx. */
-.claudia__photo {
-  pointer-events: none;
 }
 
 .claudia__ring {

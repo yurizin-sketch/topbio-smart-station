@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { asset } from '../assets'
 
-/** O retrato da personagem, se alguém o tiver posto lá. */
-const PORTRAIT = '/claudia/retrato.png'
-
-/** Os dois clips: um para quando ela fala, outro para quando está calada. */
-const CLIPS = { falar: '/claudia/a-falar.mp4', parada: '/claudia/parada.mp4' }
+/*
+   A figura: dois ficheiros recortados, o mesmo fundo transparente nos dois.
+   O `parada` é um fotograma só; o `falar` é esse fotograma a mexer-se.
+*/
+const FIGURA = { parada: '/claudia/parada.webp', falar: '/claudia/a-falar.webp' }
 
 /*
    Uma pergunta só por sessão, guardada aqui: a estação fica ligada o dia
@@ -29,31 +29,41 @@ function existe(caminho: string, tipo: string): Promise<boolean> {
 /*
    A Cláudia.
 
-   São três Cláudias possíveis no mesmo sítio, da melhor para a pior, e ela
-   fica sempre pela melhor que existir no disco:
+   Fica parada. Só se mexe enquanto está mesmo a falar, e volta ao sossego
+   quando acaba — foi pedido assim, e é o que se faz numa loja: uma figura a
+   gesticular sozinha o dia todo cansa quem está ao balcão e deixa de se
+   notar quando é a sério.
 
-   1. Os vídeos, `public/claudia/a-falar.mp4` e `parada.mp4`. É ela a sério,
-      de corpo inteiro, a mexer as mãos.
-   2. Um retrato parado, `public/claudia/retrato.png`.
-   3. O desenho em SVG aqui em baixo, que não depende de ficheiro nenhum e
-      por isso nunca falha.
+   São duas camadas no mesmo sítio. Por baixo, `parada.webp`, um fotograma
+   recortado — é ela sossegada, e não gasta nada. Por cima, `a-falar.webp`,
+   que só existe no ecrã enquanto ela fala: entra quando ela abre a boca e
+   sai quando acaba. Enquanto está calada não há nada a descodificar.
 
-   Quem escolhe é o `existe()` aqui em cima, e a decisão é pelo tipo do
-   conteúdo, não pelo browser dizer que correu mal. Foi preciso assim: um
-   servidor de página única responde 200 com o index.html a qualquer caminho
-   que não conheça, e o Chrome, ao receber isso, não dá erro nenhum — pinta
-   lixo e fica-se sem saber porquê. Visto e corrigido, não suposto.
+   As duas imagens partem do mesmo fotograma — o último do clip, de braços
+   em baixo — e o clip foi invertido para começar e acabar nessa pose. Por
+   isso a troca não dá salto: o primeiro fotograma do movimento é
+   exactamente aquele que já lá estava parado.
 
-   Os vídeos não têm som. Quem fala é a ElevenLabs, que também diz as frases
-   que ela inventa na hora; se o clip trouxesse voz eram duas vozes
-   diferentes na mesma pessoa. O vídeo serve para ela se mexer, mais nada —
-   e por isso a boca não acompanha as palavras. A três metros do balcão
-   ninguém repara; ao pé do ecrã repara-se, e fica dito.
+   É uma imagem animada e não um vídeo, e é de propósito. Um `<video>`
+   depende de o browser deixar arrancar sozinho e de não estar a poupar
+   bateria — num tablet de loja, aberto o dia todo, isso falha calado e
+   ninguém dá por ela. Uma imagem anda sempre.
 
-   Os dois clips andam sempre a tocar e trocam-se por opacidade. Trocar o
-   `src` de um só dava um piscar preto de cada vez que ela abrisse a boca.
+   Ambos vêm com fundo transparente. O verde foi tirado uma vez, no
+   ficheiro, e não no tablet: recortar imagem doze vezes por segundo num
+   aparelho de loja é gastar bateria para chegar ao mesmo sítio.
+
+   Se nem a imagem existir, fica o desenho em SVG aqui em baixo, que não
+   depende de ficheiro nenhum. Quem escolhe é o `existe()` aqui em cima, e a
+   decisão é pelo tipo do conteúdo, não por o browser dizer que correu mal:
+   um servidor de página única responde 200 com o index.html a qualquer
+   caminho que não conheça, e o Chrome, ao receber isso, não dá erro nenhum
+   — pinta lixo e fica-se sem saber porquê. Visto e corrigido, não suposto.
+
+   O clip não tem som. Quem fala é a ElevenLabs, que diz também as frases
+   que ela inventa na hora; se o clip trouxesse voz eram duas vozes na mesma
+   pessoa. O preço é a boca não acompanhar as palavras.
 */
-
 export function Claudia({
   speaking,
   thinking,
@@ -61,88 +71,69 @@ export function Claudia({
 }: {
   speaking: boolean
   thinking: boolean
-  /** Lado do quadrado no desenho; largura da figura no vídeo. */
+  /** Lado do quadrado no desenho; largura da figura no retrato. */
   size?: number
 }) {
   const state = speaking ? 'speaking' : thinking ? 'thinking' : 'idle'
 
-  // Começa em falso: primeiro vê-se o desenho, e o que for melhor entra por
-  // cima quando se souber que existe mesmo.
-  const [video, setVideo] = useState(false)
-  const [portrait, setPortrait] = useState(false)
+  // Começa em falso: primeiro vê-se o desenho, e a figura entra por cima
+  // quando se souber que existe mesmo.
+  const [parada, setParada] = useState(false)
+  const [falar, setFalar] = useState(false)
 
   useEffect(() => {
     let vivo = true
-    void Promise.all([
-      existe(CLIPS.falar, 'video/'),
-      existe(CLIPS.parada, 'video/'),
-    ]).then(([a, b]) => {
-      if (vivo) setVideo(a && b)
+    void existe(FIGURA.parada, 'image/').then((ok) => {
+      if (vivo) setParada(ok)
     })
-    void existe(PORTRAIT, 'image/').then((ok) => {
-      if (vivo) setPortrait(ok)
+    void existe(FIGURA.falar, 'image/').then((ok) => {
+      if (vivo) setFalar(ok)
     })
     return () => {
       vivo = false
     }
   }, [])
 
-  if (video) return <Filmada speaking={speaking} state={state} width={size} />
+  if (parada) return <Figura speaking={speaking} state={state} width={size} comClip={falar} />
 
-  return <Desenhada state={state} portrait={portrait} size={size} />
+  return <Desenhada state={state} size={size} />
 }
 
-/* A Cláudia dos vídeos. */
-function Filmada({
+/* A Cláudia recortada, parada, que só se mexe enquanto fala. */
+function Figura({
   speaking,
   state,
   width,
+  comClip,
 }: {
   speaking: boolean
   state: string
   width: number
+  comClip: boolean
 }) {
-  const falar = useRef<HTMLVideoElement>(null)
-  const parada = useRef<HTMLVideoElement>(null)
-
-  // Só o que está à vista é que anda. Dois vídeos a descodificar ao mesmo
-  // tempo num tablet é gastar bateria para nada.
+  /*
+     Puxar o clip para a cache assim que se sabe que existe, e não à
+     primeira resposta. São mais de um megabyte: pedi-lo só quando ela
+     começa a falar dava meio segundo de figura quieta em cima de uma
+     pergunta já respondida.
+  */
   useEffect(() => {
-    const ligado = speaking ? falar.current : parada.current
-    const desligado = speaking ? parada.current : falar.current
-    desligado?.pause()
-    // O `play()` devolve uma promessa que rejeita se o browser recusar o
-    // arranque automático. Sem o `catch` isso ia parar à consola como erro
-    // por tratar, todos os segundos.
-    void ligado?.play().catch(() => {})
-  }, [speaking])
+    if (!comClip) return
+    const aquecer = new Image()
+    aquecer.src = asset(FIGURA.falar)
+  }, [comClip])
 
   return (
     <div
-      className={`claudia-filme claudia-filme--${state}`}
+      className={`claudia-figura claudia-figura--${state}`}
       style={{ width, height: Math.round((width * 16) / 9) }}
       role="img"
       aria-label="Cláudia, assistente da TopBio"
     >
-      <video
-        ref={parada}
-        className="claudia-filme__clip"
-        src={asset(CLIPS.parada)}
-        muted
-        loop
-        playsInline
-        autoPlay
-        preload="auto"
-      />
-      <video
-        ref={falar}
-        className="claudia-filme__clip claudia-filme__clip--falar"
-        src={asset(CLIPS.falar)}
-        muted
-        loop
-        playsInline
-        preload="auto"
-      />
+      <img className="claudia-figura__parada" src={asset(FIGURA.parada)} alt="" />
+      {comClip && speaking ? (
+        <img className="claudia-figura__clip" src={asset(FIGURA.falar)} alt="" />
+      ) : null}
     </div>
   )
 }
@@ -159,15 +150,7 @@ function Filmada({
    6,4s. Assim o respirar, o oscilar e o piscar nunca caem certos ao mesmo
    tempo, e ela não parece um relógio.
 */
-function Desenhada({
-  state,
-  portrait,
-  size,
-}: {
-  state: string
-  portrait: boolean
-  size: number
-}) {
+function Desenhada({ state, size }: { state: string; size: number }) {
   return (
     <svg
       className={`claudia claudia--${state}`}
@@ -268,17 +251,6 @@ function Desenhada({
           </g>
         </g>
 
-        {portrait ? (
-          <image
-            className="claudia__photo"
-            href={asset(PORTRAIT)}
-            x="0"
-            y="0"
-            width="120"
-            height="120"
-            preserveAspectRatio="xMidYMid slice"
-          />
-        ) : null}
       </g>
 
       <circle className="claudia__ring" cx="60" cy="60" r="56" />
