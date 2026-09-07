@@ -1222,10 +1222,24 @@ img {
    390px da faixa. Em ecrãs mais baixos esta faixa não existe e ela fica no
    canto, que está vazio em qualquer formato. */
 @media (min-height: 1000px) {
+  /*
+     No ecrã alto da loja ela sobe para o canto de cima.
+
+     Em baixo ficava encostada ao rodapé legal, com os pés cortados, e
+     atravessada no botão de começar — que é onde o cliente toca. Em cima
+     tem a faixa toda para ela: o conteúdo do ecrã está centrado ao meio,
+     e acima do logótipo não há nada.
+
+     Ancorada à direita e não centrada: assim cresce da parede para
+     dentro, e o logótipo — que está ao meio e é estreito — nunca lhe
+     apanha o lugar. O balão abre-lhe à esquerda.
+  */
   .assistant--resting {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    top: var(--station-gutter);
+    bottom: auto;
+    left: auto;
+    right: var(--station-gutter);
+    transform: none;
     display: grid;
     /* Largura explícita e não "encolhe-até-caber": num contentor fixo sem
        largura, a coluna do balão colapsava para 150px e o texto saía em
@@ -1234,8 +1248,24 @@ img {
     /* O max-width de 420px da regra base ganhava a este width. */
     max-width: none;
     grid-template-columns: 1fr auto;
-    align-items: end;
+    align-items: start;
     justify-items: end;
+  }
+
+  /*
+     O tamanho dela passa a sair do ecrã e não de um número em píxeis. Num
+     painel de 1080 de largura dava 15% do ecrã e via-se: encostada ao
+     texto, grande de mais para o sítio onde estava.
+  */
+  .assistant .claudia-figura {
+    /* `width` e não a variável: a variável vem no estilo em linha, e em
+       linha ganha sempre a uma folha de estilo. A largura, essa, não vem
+       — por isso é aqui que se decide. */
+    width: clamp(88px, 9.5vw, 132px);
+  }
+
+  .assistant--resting .claudia-figura {
+    width: clamp(128px, 14.5vw, 200px);
   }
 
   .assistant--resting .assistant__unlock,
@@ -1243,10 +1273,12 @@ img {
     grid-column: 1 / -1;
   }
 
-  /* De lado, o bico do balão muda de parede. */
+  /* De lado, o bico do balão muda de parede — e agora aponta-lhe ao peito,
+     que é onde ela está depois de subir. */
   .assistant--resting .assistant__bubble::after {
     right: -9px;
-    bottom: 56px;
+    top: 56px;
+    bottom: auto;
     border-radius: 0 var(--tne-radius-sm) 0 0;
   }
 }
@@ -1438,13 +1470,22 @@ img {
    ela fica em cima do ecrã como uma pessoa e não como um vídeo a dar dentro
    de uma caixa.
 
-   Duas camadas no mesmo sitio. A parada está sempre lá; o clip só existe
-   enquanto ela fala. Ficar a parada por baixo é de propósito: se o clip
-   demorar a carregar, não há buraco nenhum no ecrã — ela está só sossegada.
+   Duas camadas no mesmo sitio, e nunca as duas à vista. A parada sai
+   quando o movimento entra, e volta quando ele sai — são as duas
+   recortadas, e se ficassem sobrepostas via-se a de baixo pelos buracos
+   da de cima: ela levantava um braço e ficava com dois.
+
+   Mas a parada só sai depois de o movimento estar mesmo pintado, e não à
+   cabeça. Quem decide isso é o `Claudia.tsx`, que espera pelo `onLoad` do
+   clip. Se o clip nunca vier, fica a parada e não há buraco no ecrã.
 
    Não há transição entre as duas. As duas imagens partem do mesmo
    fotograma, por isso a troca já não se vê; um `fade` por cima disso só
    deixaria a figura translúcida durante um quinto de segundo.
+
+   A largura vem de fora, na `--claudia-largura`, e a altura sai da
+   proporção. Assim uma media query muda-lhe o tamanho sem ter de lutar
+   com o estilo em linha, que ganharia sempre.
 
    A sombra é `drop-shadow` e não `box-shadow`: uma segue o contorno dela, a
    outra desenhava o rectângulo que se acabou de tirar.
@@ -1452,7 +1493,14 @@ img {
 .claudia-figura {
   position: relative;
   line-height: 0;
+  width: var(--claudia-largura);
+  aspect-ratio: 9 / 16;
+  flex: 0 0 auto;
   filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.38));
+}
+
+.claudia-figura--movimento .claudia-figura__parada {
+  visibility: hidden;
 }
 
 .claudia-figura__parada,
@@ -1470,6 +1518,11 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .claudia-figura__clip {
     display: none;
+  }
+
+  /* Sem clip não há nada para tapar a parada. */
+  .claudia-figura--movimento .claudia-figura__parada {
+    visibility: visible;
   }
 }
 

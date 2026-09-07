@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import { asset } from '../assets'
 
@@ -71,7 +72,7 @@ export function Claudia({
 }: {
   speaking: boolean
   thinking: boolean
-  /** Lado do quadrado no desenho; largura da figura no retrato. */
+  /** Lado do quadrado no desenho; largura de partida da figura recortada. */
   size?: number
 }) {
   const state = speaking ? 'speaking' : thinking ? 'thinking' : 'idle'
@@ -113,9 +114,9 @@ function Figura({
 }) {
   /*
      Puxar o clip para a cache assim que se sabe que existe, e não à
-     primeira resposta. São mais de um megabyte: pedi-lo só quando ela
-     começa a falar dava meio segundo de figura quieta em cima de uma
-     pergunta já respondida.
+     primeira resposta. É mais de um megabyte: pedi-lo só quando ela começa
+     a falar dava meio segundo de figura quieta em cima de uma pergunta já
+     respondida.
   */
   useEffect(() => {
     if (!comClip) return
@@ -123,16 +124,48 @@ function Figura({
     aquecer.src = asset(FIGURA.falar)
   }, [comClip])
 
+  /*
+     A parada só desaparece depois de o movimento estar mesmo pintado.
+
+     São as duas recortadas, e por isso a de baixo via-se pelos buracos da
+     de cima: quando ela levantava o braço, o braço parado continuava lá
+     atrás e ela parecia ter dois. Esconder a parada à cabeça também não
+     servia — se o clip demorasse a decidir-se, ficava um vazio no ecrã.
+     Portanto: uma sai quando a outra entra, e nem antes nem depois.
+  */
+  const [clipPronto, setClipPronto] = useState(false)
+  useEffect(() => {
+    if (!speaking) setClipPronto(false)
+  }, [speaking])
+
+  const movimento = comClip && speaking && clipPronto
+
   return (
     <div
-      className={`claudia-figura claudia-figura--${state}`}
-      style={{ width, height: Math.round((width * 16) / 9) }}
+      className={`claudia-figura claudia-figura--${state}${
+        movimento ? ' claudia-figura--movimento' : ''
+      }`}
+      /* A largura vive numa variável e não no `width`: assim uma media
+         query pode dar-lhe outra sem lutar com o estilo em linha, que
+         ganha sempre. A altura sai da proporção, no css. */
+      style={{ '--claudia-largura': `${width}px` } as CSSProperties}
       role="img"
       aria-label="Cláudia, assistente da TopBio"
     >
       <img className="claudia-figura__parada" src={asset(FIGURA.parada)} alt="" />
       {comClip && speaking ? (
-        <img className="claudia-figura__clip" src={asset(FIGURA.falar)} alt="" />
+        <img
+          className="claudia-figura__clip"
+          src={asset(FIGURA.falar)}
+          alt=""
+          /* Vindo da cache, a imagem pode ficar pronta antes de o React
+             pendurar o `onLoad`. O `ref` apanha esse caso; o `onLoad`
+             apanha o outro. */
+          ref={(el) => {
+            if (el?.complete) setClipPronto(true)
+          }}
+          onLoad={() => setClipPronto(true)}
+        />
       ) : null}
     </div>
   )
