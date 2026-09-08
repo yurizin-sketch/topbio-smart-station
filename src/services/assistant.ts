@@ -135,6 +135,10 @@ export const OPENING_STEPS: Record<string, AssistantTurn | undefined> = {
  * Escritas para serem ouvidas, não lidas: frases curtas, sem parênteses, sem
  * listas. E sem uma única promessa de efeito — nota-se que dizem "para a sua
  * rotina" e nunca "para o seu problema".
+ *
+ * Não há aqui fala para o pagamento nem para o comprovante, e é de propósito:
+ * a partir do checkout ela sai do ecrã. Ver `SILENT_SCREENS` em
+ * `state/assistant.tsx` — nesses ecrãs nem se chega a perguntar.
  */
 const LINES: Record<string, string> = {
   attract: 'Oi! Eu sou a Cláudia. Posso te ajudar a escolher?',
@@ -142,10 +146,6 @@ const LINES: Record<string, string> = {
   recommendations: 'Aqui está o que a gente tem pra isso. Quer saber mais de algum?',
   catalog: 'Esse é o catálogo todo. Se preferir, me diz o que você procura.',
   product: 'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
-  checkout: 'Você pode pagar por MB WAY ou no balcão. Como prefere?',
-  mbway: 'Leia o código com o app MB WAY. Eu espero.',
-  ticket: 'Leve esse código no balcão. O colega resolve o resto.',
-  success: 'Está pago. Mostre o comprovante no balcão e é seu.',
 }
 
 class ScriptedAssistant implements Assistant {
@@ -157,14 +157,14 @@ class ScriptedAssistant implements Assistant {
     return { say, choices: GOAL_CHOICES }
   }
 
-  async reply(context: AssistantContext, said: string): Promise<AssistantTurn> {
-    const known = LINES[context.screen]
-    if (said === 'browse') {
-      return { say: 'Claro. Fique à vontade, estou aqui se precisar.', choices: [] }
-    }
+  async reply(context: AssistantContext, _said: string): Promise<AssistantTurn> {
     // A fala do ecrã onde a pessoa está. Se for um ecrã sem fala escrita,
     // calamo-nos: uma assistente que fala por falar é pior que uma calada.
-    return { say: known ?? '', choices: [] }
+    //
+    // Não há caso para o "só estou a olhar" porque ele não chega aqui: quem o
+    // apanha é o `choose` em `state/assistant.tsx`, e a resposta a esse pedido
+    // é silêncio, não mais uma frase.
+    return { say: LINES[context.screen] ?? '', choices: [] }
   }
 
   forget(): void {

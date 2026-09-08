@@ -43,6 +43,39 @@ function screenOf(pathname: string): string {
   return name
 }
 
+/**
+ * Os ecrãs onde ela não aparece de todo.
+ *
+ * A partir do momento em que há dinheiro em jogo o ecrã passa a ser do
+ * cliente: o valor, o número de telemóvel, o QR, o código do balcão. Uma
+ * personagem a comentar por cima disso rouba a atenção ao que a pessoa tem
+ * mesmo de ler — e no comprovante não há nada a acrescentar, está lá escrito.
+ *
+ * Repare que não é só esconder a figura: nestes ecrãs ela nem chega a ser
+ * chamada. Poupa-se uma ida ao modelo e uma ida à voz em cada compra, e não
+ * fica ninguém a falar para um ecrã onde não está.
+ */
+const SILENT_SCREENS = new Set(['checkout', 'mbway', 'ticket', 'success'])
+
+/**
+ * «Só estou a olhar», dito de todas as maneiras que ela é capaz de devolver.
+ *
+ * Os botões não saem de uma lista fixa: o modelo escreve o `value` que
+ * entender, e já se viu `browse`, `olhando` e `sem ajuda` a sair do mesmo
+ * botão. Por isso a decisão é tomada aqui, pelo texto, e não por um valor
+ * combinado que o modelo não tem obrigação nenhuma de respeitar.
+ */
+const QUIET = /\b(browse|olhar|olhando|ver sozinh|sem ajuda|agora nao|so ver|nao obrigad)/
+
+function wantsQuiet(choice: AssistantChoice): boolean {
+  const text = `${choice.value} ${choice.label}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z]+/g, ' ')
+  return QUIET.test(text)
+}
+
 interface AssistantApi {
   /** O que ela está a dizer agora. `null` = calada, sem balão no ecrã. */
   turn: AssistantTurn | null
@@ -55,6 +88,8 @@ interface AssistantApi {
   /** A voz do tablet ainda não foi destrancada por um toque. */
   needsUnlock: boolean
   /** Está alguém à frente da câmara. `null` = sem câmara. */
+  /** Ecrã de pagamento ou comprovante: ela sai do ecrã e cala-se. */
+  hidden: boolean
   present: boolean | null
   /** Porque é que a câmara não está a ver. */
   presenceFailure: string | null
@@ -91,6 +126,10 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   contextRef.current = { screen, goal, products, product }
 
   const lastGreetRef = useRef(0)
+  // O cliente pediu para o deixarem em paz. Numa ref e não num estado: quem
+  // precisa disto é o efeito de mudança de ecrã, e pô-lo nas dependências
+  // fazia-o correr outra vez à conta de uma coisa que ele só lê.
+  const quietRef = useRef(false)
   const mutedRef = useRef(muted)
   mutedRef.current = muted
 
@@ -221,8 +260,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       voice.stop()
       setTurn(null)
       brain.forget()
+      quietRef.current = false
       return
     }
+
+    // Pagamento e comprovante: sai do ecrã e cala-se. Nem se pergunta ao
+    // modelo o que dizer, porque não há onde o mostrar.
+    if (SILENT_SCREENS.has(screen)) {
+      voice.stop()
+      setTurn(null)
+      return
+    }
+
+    // Quem pediu para ficar a olhar fica a olhar. Sem esta linha o balão
+    // reabria no ecrã seguinte e a recusa não valia nada.
+    if (quietRef.current) return
+
     void ask(`__ecra__:${screen}`)
   }, [screen, ask, brain, voice])
 
@@ -235,10 +288,25 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     [ask],
   )
 
+  /**
+   * Fecha o balão e deixa-a calada.
+   *
+   * Vale para o ✕ do balão e para o botão de «só estou a olhar»: são o mesmo
+   * pedido feito de duas maneiras, e um «não» que só dura até ao ecrã
+   * seguinte não é um «não». Fica assim até o cliente lhe tocar ou até chegar
+   * gente nova ao repouso.
+   */
+  const hush = useCallback(() => {
+    quietRef.current = true
+    voice.stop()
+    setTurn(null)
+  }, [voice])
+
   // Tocar na personagem é o caminho de quem não espera pela câmara — e de quem
   // lhe fechou o balão e se arrependeu. Volta ao princípio da conversa, com as
   // opções todas, porque quem pede ajuda quer escolhas e não um comentário.
   const summon = useCallback(() => {
+    quietRef.current = false
     lastGreetRef.current = Date.now()
     void ask(null)
   }, [ask])
@@ -254,19 +322,17 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         navigate('/recommendations')
         return
       }
-      if (choice.value === 'browse') {
+      // «Só estou a olhar» é um pedido, não um passo do funil: leva-se a
+      // pessoa ao catálogo e cala-se.
+      if (wantsQuiet(choice)) {
+        hush()
         navigate('/catalog')
         return
       }
       void ask(choice.value)
     },
-    [ask, navigate, selectGoal],
+    [ask, hush, navigate, selectGoal],
   )
-
-  const dismiss = useCallback(() => {
-    voice.stop()
-    setTurn(null)
-  }, [voice])
 
   const toggleMute = useCallback(() => {
     setMuted((was) => {
@@ -282,12 +348,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       speaking,
       muted,
       needsUnlock: !unlocked,
+      hidden: SILENT_SCREENS.has(screen),
       present,
       presenceFailure,
       say,
       summon,
       choose,
-      dismiss,
+      dismiss: hush,
       toggleMute,
     }),
     [
@@ -296,12 +363,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       speaking,
       muted,
       unlocked,
+      screen,
       present,
       presenceFailure,
       say,
       summon,
       choose,
-      dismiss,
+      hush,
       toggleMute,
     ],
   )

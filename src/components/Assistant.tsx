@@ -9,18 +9,35 @@ import { useAssistant } from '../state/assistant'
  * se fosse desenhada dentro de cada ecrã, desaparecia e reaparecia a cada
  * toque e a conversa parecia recomeçar do zero.
  *
- * No repouso é maior, porque é ela que chama a pessoa. Assim que a compra
- * começa encolhe para o canto: quem está a pagar não quer uma personagem a
- * disputar-lhe a atenção com o preço.
+ * No repouso é maior, porque é ela que chama a pessoa. Depois encolhe para o
+ * canto, e a partir do pagamento sai do ecrã: quem está a pagar não quer uma
+ * personagem a disputar-lhe a atenção com o preço.
  */
 export function Assistant() {
   const { pathname } = useLocation()
-  const { turn, thinking, speaking, muted, needsUnlock, present, summon, choose, dismiss, toggleMute } =
-    useAssistant()
+  const {
+    turn,
+    thinking,
+    speaking,
+    muted,
+    needsUnlock,
+    hidden,
+    present,
+    summon,
+    choose,
+    dismiss,
+    toggleMute,
+  } = useAssistant()
 
   // O balcão não tem nada a ver com isto. Uma personagem a falar por cima da
   // fila de pedidos só atrapalharia quem está a trabalhar.
   if (pathname.startsWith('/staff')) return null
+
+  // Pagamento e comprovante. O ecrã ali é todo do cliente — o valor, o QR, o
+  // código do balcão — e ela não tem nada a acrescentar que não esteja já
+  // escrito. A lista dos ecrãs está em `SILENT_SCREENS`, no
+  // `state/assistant.tsx`, que é também quem a impede de falar para o vazio.
+  if (hidden) return null
 
   const resting = pathname === '/kiosk' || pathname === '/'
   const open = Boolean(turn?.say) || thinking

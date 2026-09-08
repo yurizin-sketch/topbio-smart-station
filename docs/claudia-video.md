@@ -125,11 +125,18 @@ Os `.mp4` abaixo são o que sai do HeyGen; o que fica em `public/claudia/` é o
 | `sugestoes.mp4` | Aqui está o que a gente tem pra isso. Quer saber mais de algum? |
 | `catalogo.mp4` | Esse é o catálogo todo. Se preferir, me diz o que você procura. |
 | `produto.mp4` | Se quiser levar, é só tocar em comprar. Você retira no balcão. |
-| `pagamento.mp4` | Você pode pagar por MB WAY ou no balcão. Como prefere? |
-| `mbway.mp4` | Leia o código com o app MB WAY. Eu espero. |
-| `talao.mp4` | Leve esse código no balcão. O colega resolve o resto. |
-| `pago.mp4` | Está pago. Mostre o comprovante no balcão e é seu. |
-| `so-olhando.mp4` | Claro. Fique à vontade, estou aqui se precisar. |
+
+São sete, e eram doze. **A partir do pagamento ela sai do ecrã** — no checkout,
+no MB WAY, no talão do balcão e no comprovante não aparece nem fala. Dali para
+a frente o ecrã é do cliente: o valor, o número, o QR, o código. Uma
+personagem a comentar por cima disso rouba a atenção ao que a pessoa tem mesmo
+de ler, e no comprovante não há nada a acrescentar que não esteja já escrito.
+Por isso não se gravam clips para esses quatro ecrãs.
+
+O quinto que caiu é o «só estou a olhar». A resposta a esse pedido passou a ser
+**silêncio**: o balão fecha-se e ela não volta a abrir a boca sozinha até lhe
+tocarem ou até chegar gente nova. Uma frase simpática a dizer que vai calar-se
+é mais uma frase, e era exactamente isso que a pessoa acabou de recusar.
 
 As três de `atrair` são a mesma frase dita de três maneiras. É de propósito:
 quem trabalha na loja ouve isto o dia todo, e três versões cansam menos do que
