@@ -44,6 +44,21 @@ ELEVENLABS_VOICE_ID = "7eNTDDQVOfe6PkLOmu23"
 # que conta num balcão. Para mais qualidade: "eleven_multilingual_v2".
 ELEVENLABS_MODEL = "eleven_turbo_v2_5"
 
+# A palavra-passe da matriz e a chave que assina as sessões também são
+# segredos, e entram do mesmo modo:
+#
+#   npx wrangler secret put SESSION_SECRET
+#   npx wrangler secret put MATRIZ_PASSWORD
+#
+# O SESSION_SECRET é o que impede alguém de fabricar um bilhete de sessão e
+# entrar na matriz sem saber a palavra-passe. Deve ser uma cadeia comprida e ao
+# acaso — não é para ser escrita por ninguém, é só para o worker assinar. Se um
+# dia for trocada, toda a gente tem de voltar a entrar, e mais nada acontece.
+#
+# A MATRIZ_PASSWORD é a do dono. Essa escreve-se à mão, portanto que seja uma
+# frase e não quatro dígitos: o PIN do balcão guarda uma gaveta que já está
+# dentro da loja, esta guarda as contas de todas as lojas a partir da internet.
+
 # As chaves NÃO vêm aqui. Este ficheiro está no repositório e o repositório é
 # público. Entram uma vez cada, por:
 #
@@ -64,3 +79,22 @@ ELEVENLABS_MODEL = "eleven_turbo_v2_5"
 [[kv_namespaces]]
 binding = "TTS_CACHE"
 id = "aba57a5a683b468a8e7010a4cfad6124"
+
+
+# A base de dados: pedidos, stock e o mapa da matriz.
+#
+# Cria-se uma vez com
+#
+#   npx wrangler d1 create topbio
+#
+# que imprime o database_id que está aqui em baixo, e depois carrega-se o
+# desenho das tabelas com
+#
+#   npx wrangler d1 execute topbio --remote --file=server/schema.sql
+#
+# O id não é segredo — é um nome de gaveta, como o do KV acima.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "topbio"
+database_id = "POR-PREENCHER"

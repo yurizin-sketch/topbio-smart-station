@@ -13,6 +13,8 @@
  * Deploy: ver `server/README.md`.
  */
 
+import { handleApi, isApi } from './api.js'
+
 /* ── O que a Cláudia pode e não pode dizer ─────────────────────────────────────
 
    Esta é a parte com consequências legais, não a parte com consequências de
@@ -96,7 +98,9 @@ function cors(origin, allowed) {
   return {
     'access-control-allow-origin': allowed.includes(origin) ? origin : allowed[0] ?? '',
     'access-control-allow-methods': 'POST, OPTIONS',
-    'access-control-allow-headers': 'content-type',
+    // `authorization` é o bilhete de sessão do balcão e da matriz. Sem estar
+    // aqui, o browser recusa o pedido antes sequer de o fazer.
+    'access-control-allow-headers': 'content-type, authorization',
     // Sem isto o JS do tablet nem chega a ver estes cabecalhos: o browser
     // esconde tudo o que nao esteja na lista curta do CORS. Sao so
     // diagnostico -- dizem o que correu mal, nunca nada vindo de uma chave.
@@ -285,6 +289,21 @@ export default {
     }
 
     const ip = request.headers.get('cf-connecting-ip') ?? 'sem-ip'
+    const path = new URL(request.url).pathname
+
+    // A contabilidade — pedidos, stock, matriz — vive no `api.js`. É o mesmo
+    // worker porque é a mesma origem e a mesma conta; é outro ficheiro porque
+    // não tem nada a ver com falar.
+    //
+    // Fica antes do travão de baixo de propósito. Aquele existe para segurar a
+    // conta da Anthropic, e uma loja inteira sai por um endereço só: o tablet,
+    // o balcão e a matriz partilhavam os mesmos vinte por minuto, e o balcão
+    // ficava sem conseguir cobrar por causa de uma conversa. Estes pedidos são
+    // baratos e têm travão próprio, lá dentro.
+    if (isApi(path)) {
+      return handleApi(request, env, headers, path, ip)
+    }
+
     if (overLimit(ip)) {
       // 429 com a frase neutra em vez de erro: quem está à frente do tablet não
       // tem culpa nem quer saber, e a estação sabe usar isto na mesma.
@@ -293,7 +312,7 @@ export default {
 
     // A raiz continua a ser o cérebro da Cláudia, para não partir os endereços já
     // configurados. A voz é um caminho à parte porque devolve áudio, não JSON.
-    if (new URL(request.url).pathname === '/speak') {
+    if (path === '/speak') {
       return speak(request, env, headers)
     }
 

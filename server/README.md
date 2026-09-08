@@ -146,6 +146,101 @@ site — o build deita-o fora. Não há nada a desligar.
 
 ---
 
+## A base de dados (D1)
+
+Isto é a segunda metade do worker: o que guarda pedidos, stock e o mapa da
+matriz. Sem ela a estação continua a vender — o tablet guarda tudo em casa —
+mas o balcão fica preso ao mesmo aparelho e a matriz não vê nada.
+
+Corre-se de dentro de `server/`, uma vez.
+
+### 1. Criar a base
+
+```sh
+npx wrangler d1 create topbio
+```
+
+Imprime um `database_id`. Copie-o para o `wrangler.toml`, no lugar do
+`POR-PREENCHER`. **Não é segredo** — é um nome de gaveta, como o do KV.
+
+### 2. Desenhar as tabelas
+
+```sh
+npx wrangler d1 execute topbio --remote --file=schema.sql
+```
+
+Pode correr-se as vezes que forem precisas: está tudo em `IF NOT EXISTS`.
+
+### 3. Os dois segredos
+
+```sh
+npx wrangler secret put SESSION_SECRET
+npx wrangler secret put MATRIZ_PASSWORD
+```
+
+O **SESSION_SECRET** é a chave com que o worker assina os bilhetes de sessão.
+Ninguém a escreve nem a decora: gere-a ao acaso e comprida. Com ela, alguém
+fabricava um bilhete de matriz sem saber palavra-passe nenhuma.
+
+Para a gerar, no PowerShell:
+
+```powershell
+[Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))
+```
+
+A **MATRIZ_PASSWORD** é a do dono, e escreve-se à mão — por isso que seja uma
+frase, não quatro dígitos. O PIN do balcão tranca uma gaveta que já está dentro
+da loja; esta tranca as contas de todas as lojas, a partir de qualquer sítio.
+
+### 4. Registar cada posto
+
+Um posto é um tablet. O PIN do balcão fica em resumo (sha-256), nunca em claro
+e nunca no repositório.
+
+Gerar o resumo do PIN, no PowerShell:
+
+```powershell
+$pin = "2468"
+-join ([System.Security.Cryptography.SHA256]::Create().
+  ComputeHash([Text.Encoding]::UTF8.GetBytes($pin)) | % { $_.ToString("x2") })
+```
+
+E inserir:
+
+```sh
+npx wrangler d1 execute topbio --remote --command   "INSERT INTO stations (id, name, counter_pin, active, created_at)
+   VALUES ('loja-lisboa', 'Loja de Lisboa', '<o-resumo>', 1, 0)"
+```
+
+O `id` é o que anda em cada pedido e é por ele que a matriz separa as lojas.
+Escolha-o legível — `loja-lisboa`, `academia-benfica` — porque vai aparecer em
+listagens durante anos.
+
+### 5. Pôr lá o stock que existe
+
+Não há atalho honesto: alguém tem de contar a prateleira uma vez. Depois disso
+é a estação que desconta.
+
+Pela matriz, no ecrã, ou à mão:
+
+```sh
+npx wrangler d1 execute topbio --remote --command   "INSERT INTO stock (station_id, product_id, qty, updated_at)
+   VALUES ('loja-lisboa', 'top-brain', 12, 0)"
+```
+
+### Experimentar sem tocar no que está no ar
+
+```sh
+npx wrangler dev --local
+npx wrangler d1 execute topbio --local --file=schema.sql
+```
+
+O `--local` guarda tudo em `.wrangler/`, que está fora do repositório. Os
+segredos, nesse modo, vêm de um ficheiro `.dev.vars` — também fora do
+repositório, e que nunca deve levar as palavras-passe verdadeiras.
+
+---
+
 ## Depois de publicado
 
 ### Confirmar que está de pé

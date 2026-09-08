@@ -17,6 +17,13 @@ Product/
 .env.*
 !.env.example
 
+# Segredos do `wrangler dev`: palavras-passe e chaves de assinatura para
+# experimentar na própria máquina. Em produção isto vive em
+# `wrangler secret put`, que nunca toca no disco do repositório. Este ficheiro
+# não pode entrar aqui em circunstância nenhuma — o repositório é público.
+.dev.vars
+.dev.vars.*
+
 # Estado local do wrangler: cache, ficheiros temporários do `wrangler dev` e a
 # simulação do KV. Nada disto serve a outra máquina.
 .wrangler/
