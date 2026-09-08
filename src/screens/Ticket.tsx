@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Frame, Receipt } from '../components/ui'
 import { useSession } from '../state/session'
-import { getGateway } from '../services/payments'
+import { issueTicket } from '../services/tickets'
 import { legal } from '../data/legal'
-import type { PaymentIntent } from '../services/payments'
+import type { Ticket as TicketData } from '../services/tickets'
 
 /**
  * Ticket para pagamento ao balcão.
@@ -17,7 +17,7 @@ import type { PaymentIntent } from '../services/payments'
 export function Ticket() {
   const navigate = useNavigate()
   const { product, order, updateOrder, reset } = useSession()
-  const [intent, setIntent] = useState<PaymentIntent | null>(null)
+  const [intent, setIntent] = useState<TicketData | null>(null)
   const [minutesLeft, setMinutesLeft] = useState<number | null>(null)
 
   useEffect(() => {
@@ -25,21 +25,13 @@ export function Ticket() {
       navigate('/goals', { replace: true })
       return
     }
-    let alive = true
-    void getGateway()
-      .start(order)
-      .then((result) => {
-        if (!alive) return
-        setIntent(result)
-        updateOrder({
-          status: 'awaiting_counter',
-          ticketCode: result.ticketCode,
-          expiresAt: result.expiresAt,
-        })
-      })
-    return () => {
-      alive = false
-    }
+    const ficha = issueTicket(order)
+    setIntent(ficha)
+    updateOrder({
+      status: 'awaiting_counter',
+      ticketCode: ficha.code,
+      expiresAt: ficha.expiresAt,
+    })
     // Corre uma vez por encomenda: emitir um segundo ticket para a mesma
     // encomenda reservaria stock a dobrar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,9 +62,9 @@ export function Ticket() {
 
       <div className="pay">
         <div>
-          {intent?.ticketCode ? (
+          {intent?.code ? (
             <Receipt
-              code={intent.ticketCode}
+              code={intent.code}
               order={order}
               productName={product.name}
               state="to_pay"

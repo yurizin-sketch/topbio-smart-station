@@ -1,4 +1,4 @@
-import type { Order } from '../types'
+import type { Order, PaymentMethod } from '../types'
 
 /**
  * Livro de encomendas partilhado entre o quiosque e o /staff.
@@ -34,8 +34,9 @@ export type StoredOrder = Order & {
 const OPEN_STATUSES: ReadonlyArray<Order['status']> = ['awaiting_counter', 'paid']
 
 /**
- * O código que o cliente mostra depois de já ter pago por MB WAY. É derivado do
- * id, não guardado, para não haver duas fontes de verdade.
+ * Código de recurso, derivado do id e não guardado, para não haver duas fontes
+ * de verdade. Serve os pedidos antigos que ficaram no aparelho sem
+ * `ticketCode` — hoje todos nascem com um.
  */
 export function pickupCodeFor(order: Pick<Order, 'id'>): string {
   return order.id.slice(0, 6).toUpperCase()
@@ -89,9 +90,9 @@ export function upsertOrder(order: Order): void {
 }
 
 /**
- * Aceita tanto o ticket por pagar (`TB-XXXX`) como o código de levantamento de
- * quem já pagou por MB WAY. O funcionário não sabe qual é qual — lê o que está
- * no ecrã do cliente e escreve.
+ * Aceita o ticket (`TB-XXXX`) e também o código de recurso dos pedidos
+ * antigos. O funcionário não sabe qual é qual — lê o que está no ecrã do
+ * cliente e escreve.
  */
 export function findByCode(input: string): StoredOrder | null {
   const code = input.trim().toUpperCase().replace(/\s+/g, '')
@@ -104,9 +105,16 @@ export function findByCode(input: string): StoredOrder | null {
   )
 }
 
-/** O funcionário recebeu o dinheiro ao balcão. Só depois disto se entrega. */
-export function markPaid(id: string): StoredOrder | null {
-  return patch(id, { status: 'paid', method: 'counter' })
+/**
+ * O funcionário recebeu o dinheiro.
+ *
+ * Exige que se diga **como** — e é de propósito que não tem valor por defeito.
+ * Ao fim do dia a matriz vai querer saber quanto entrou em numerário, quanto
+ * em MB WAY e quanto em cartão, e um valor assumido aqui é um número errado
+ * num relatório que ninguém vai conseguir explicar.
+ */
+export function markPaid(id: string, method: PaymentMethod): StoredOrder | null {
+  return patch(id, { status: 'paid', method })
 }
 
 /** Produto entregue em mão ao cliente. Fecha o pedido. */

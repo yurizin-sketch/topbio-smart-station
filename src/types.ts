@@ -46,16 +46,37 @@ export interface Product {
   active: boolean
 }
 
-export type PaymentMethod = 'mbway' | 'counter'
+/**
+ * Como é que o dinheiro entrou, na caixa da loja.
+ *
+ * Não é uma escolha do quiosque: o quiosque não cobra nada. É o que o
+ * funcionário carrega no balcão depois de receber, e é o que deixa a matriz
+ * fechar a caixa ao fim do dia sem andar a adivinhar.
+ *
+ * O MB WAY continua a existir na loja — o que deixou de existir foi o MB WAY
+ * *no tablet*. Quem paga por MB WAY paga à pessoa do balcão, tal como paga
+ * com uma nota ou com o cartão.
+ */
+export type PaymentMethod = 'dinheiro' | 'mbway' | 'cartao'
+
+/** O nome de cada um, para os botões do balcão e para os relatórios. */
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  dinheiro: 'Dinheiro',
+  mbway: 'MB WAY',
+  cartao: 'Cartão',
+}
 
 export type OrderStatus =
-  /** Criada no quiosque, ainda sem método escolhido. */
+  /** Criada no quiosque, ainda sem ficha emitida. */
   | 'created'
-  /** Pedido enviado ao MB WAY, à espera de confirmação do cliente. */
-  | 'awaiting_payment'
-  /** Ticket emitido, cliente vai pagar ao balcão. */
+  /** Ficha emitida, o cliente vai a caminho do balcão. */
   | 'awaiting_counter'
-  /** Confirmada pelo servidor (webhook ou staff). Só aqui é que se entrega. */
+  /**
+   * O funcionário recebeu o dinheiro e confirmou. Só aqui é que se entrega.
+   *
+   * Quem escreve este estado é sempre uma pessoa, no `/staff`. O quiosque não
+   * o escreve em circunstância nenhuma: não tem como saber se pagaram.
+   */
   | 'paid'
   /** Produto entregue em mão pelo balcão. Fim de linha. */
   | 'delivered'
@@ -68,12 +89,11 @@ export interface Order {
   stationId: string
   productId: string
   amountCents: number
+  /** Como pagaram. Preenchido pelo balcão ao receber; antes disso, `null`. */
   method: PaymentMethod | null
   status: OrderStatus
   /** Código curto legível para o balcão, ex.: `TB-4821`. */
   ticketCode?: string
-  /** Telemóvel usado no MB WAY, só os últimos 3 dígitos são persistidos. */
-  phoneSuffix?: string
   createdAt: number
   expiresAt: number
   failureReason?: string

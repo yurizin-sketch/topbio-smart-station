@@ -57,13 +57,13 @@ export const config = {
   /** Últimos segundos, em que o ecrã avisa que vai fechar. */
   successWarnMs: 10_000,
 
-  /** Quanto tempo o MB WAY espera pela confirmação do cliente. */
-  mbwayTimeoutMs: 180_000,
-
   /**
-   * Validade do ticket de pagamento ao balcão.
-   * Enquanto está válido o stock fica reservado, por isso não pode ser
-   * generoso — senão uma pessoa que desiste bloqueia a última unidade.
+   * Validade da ficha do balcão.
+   *
+   * Curta de propósito: é o tempo que uma pessoa demora a atravessar a loja.
+   * Passado isto o funcionário vê a ficha como expirada e não a cobra — evita
+   * que apareça alguém ao balcão, uma hora depois, com um código de um preço
+   * que entretanto mudou.
    */
   ticketValidityMs: 10 * 60_000,
 

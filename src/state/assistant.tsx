@@ -37,7 +37,6 @@ function screenOf(pathname: string): string {
   if (pathname.startsWith('/product/')) return 'product'
   const name = pathname.replace(/^\//, '').replace(/\//g, '-')
   if (!name || name === 'kiosk') return 'attract'
-  if (name === 'checkout-mbway') return 'mbway'
   if (name === 'checkout-ticket') return 'ticket'
   if (name === 'checkout-success' || name === 'success') return 'success'
   return name
@@ -47,7 +46,7 @@ function screenOf(pathname: string): string {
  * Os ecrãs onde ela não aparece de todo.
  *
  * A partir do momento em que há dinheiro em jogo o ecrã passa a ser do
- * cliente: o valor, o número de telemóvel, o QR, o código do balcão. Uma
+ * cliente: o valor, o código do balcão, o caminho até lá. Uma
  * personagem a comentar por cima disso rouba a atenção ao que a pessoa tem
  * mesmo de ler — e no comprovante não há nada a acrescentar, está lá escrito.
  *
@@ -55,7 +54,7 @@ function screenOf(pathname: string): string {
  * chamada. Poupa-se uma ida ao modelo e uma ida à voz em cada compra, e não
  * fica ninguém a falar para um ecrã onde não está.
  */
-const SILENT_SCREENS = new Set(['checkout', 'mbway', 'ticket', 'success'])
+const SILENT_SCREENS = new Set(['checkout', 'ticket', 'success'])
 
 /**
  * «Só estou a olhar», dito de todas as maneiras que ela é capaz de devolver.

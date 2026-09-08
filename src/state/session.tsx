@@ -6,7 +6,7 @@ import {
   useReducer,
   type ReactNode,
 } from 'react'
-import type { GoalId, Order, OrderStatus, PaymentMethod, Product } from '../types'
+import type { GoalId, Order, OrderStatus, Product } from '../types'
 import { config, getStationId } from '../config'
 import { getCatalog, purchasable } from '../services/catalog'
 import { upsertOrder } from '../services/orders'
@@ -94,7 +94,7 @@ function reducer(state: SessionState, action: Action): SessionState {
 interface SessionApi extends SessionState {
   selectGoal(goal: GoalId): void
   selectProduct(product: Product): void
-  createOrder(method: PaymentMethod): Order
+  createOrder(): Order
   updateOrder(patch: Partial<Order>): void
   setOrderStatus(status: OrderStatus): void
   reset(): void
@@ -136,7 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       selectProduct: (product) => dispatch({ type: 'product_selected', product }),
 
-      createOrder: (method) => {
+      createOrder: () => {
         const product = state.product
         if (!product) throw new Error('createOrder sem produto selecionado')
 
@@ -146,12 +146,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           stationId: getStationId(),
           productId: product.id,
           amountCents: product.priceCents,
-          method,
+          // Nasce a null e assim fica até uma pessoa receber o dinheiro.
+          method: null,
           status: 'created',
           createdAt: now,
-          expiresAt:
-            now +
-            (method === 'counter' ? config.ticketValidityMs : config.mbwayTimeoutMs),
+          expiresAt: now + config.ticketValidityMs,
         }
         dispatch({ type: 'order_created', order })
         return order

@@ -126,12 +126,12 @@ Os `.mp4` abaixo são o que sai do HeyGen; o que fica em `public/claudia/` é o
 | `catalogo.mp4` | Esse é o catálogo todo. Se preferir, me diz o que você procura. |
 | `produto.mp4` | Se quiser levar, é só tocar em comprar. Você retira no balcão. |
 
-São sete, e eram doze. **A partir do pagamento ela sai do ecrã** — no checkout,
-no MB WAY, no talão do balcão e no comprovante não aparece nem fala. Dali para
-a frente o ecrã é do cliente: o valor, o número, o QR, o código. Uma
-personagem a comentar por cima disso rouba a atenção ao que a pessoa tem mesmo
-de ler, e no comprovante não há nada a acrescentar que não esteja já escrito.
-Por isso não se gravam clips para esses quatro ecrãs.
+São sete, e eram doze. **A partir do pagamento ela sai do ecrã** — no talão do
+balcão e no comprovante não aparece nem fala. Dali para a frente o ecrã é do
+cliente: o valor, o código, o caminho até ao balcão. Uma personagem a comentar
+por cima disso rouba a atenção ao que a pessoa tem mesmo de ler, e no
+comprovante não há nada a acrescentar que não esteja já escrito. Por isso não
+se gravam clips para esses ecrãs.
 
 O quinto que caiu é o «só estou a olhar». A resposta a esse pedido passou a ser
 **silêncio**: o balão fecha-se e ela não volta a abrir a boca sozinha até lhe

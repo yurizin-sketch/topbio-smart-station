@@ -12,9 +12,19 @@ import {
   subscribe,
   type StoredOrder,
 } from '../services/orders'
-import type { Product } from '../types'
+import { track } from '../services/telemetry'
+import { PAYMENT_LABELS, type PaymentMethod, type Product } from '../types'
 import { useAssistant } from '../state/assistant'
 import { assistantIsLive } from '../services/assistant'
+
+/**
+ * Os três botões de cobrança, por esta ordem.
+ *
+ * É a ordem por que o dinheiro costuma entrar numa loja de rua, e não a
+ * alfabética: quem está ao balcão com fila carrega no primeiro sem ler.
+ * O MB WAY continua a existir — deixou de estar é no tablet do cliente.
+ */
+const TENDERS: PaymentMethod[] = ['dinheiro', 'mbway', 'cartao']
 
 /**
  * Painel do balcão.
@@ -101,18 +111,35 @@ export function Staff() {
     )
   }
 
-  const deliver = (order: StoredOrder) => {
+  /**
+   * Recebeu e entregou.
+   *
+   * O `method` é como o dinheiro entrou, e só é pedido para pedidos por
+   * cobrar — quem já está pago não volta a pagar. É a única escrita de
+   * «pago» que existe na estação: o quiosque não tem nenhuma.
+   */
+  const deliver = (order: StoredOrder, method: PaymentMethod | null) => {
     setBusy(true)
     try {
       // Ordem deliberada: primeiro regista-se o pagamento, só depois se fecha a
       // entrega. Ao contrário, uma falha a meio deixa mercadoria entregue sem
       // registo de que foi paga.
-      const paid = order.status === 'awaiting_counter' ? markPaid(order.id) ?? order : order
+      const paid =
+        order.status === 'awaiting_counter' && method
+          ? markPaid(order.id, method) ?? order
+          : order
+
+      if (method) track({ type: 'payment_confirmed', orderId: paid.id, method })
 
       markDelivered(paid.id)
       setSelected(null)
       setCode('')
-      setFeedback({ tone: 'ok', text: 'Entregue. Pedido fechado.' })
+      setFeedback({
+        tone: 'ok',
+        text: method
+          ? `Recebido em ${PAYMENT_LABELS[method]}. Entregue.`
+          : 'Entregue. Pedido fechado.',
+      })
     } finally {
       setBusy(false)
     }
@@ -170,7 +197,7 @@ export function Staff() {
           order={selected}
           product={productById.get(selected.productId)}
           busy={busy}
-          onDeliver={() => deliver(selected)}
+          onDeliver={(method) => deliver(selected, method)}
           onCancel={() => cancel(selected)}
         />
       )}
@@ -222,7 +249,7 @@ function OrderCard({
   order: StoredOrder
   product: Product | undefined
   busy: boolean
-  onDeliver: () => void
+  onDeliver: (method: PaymentMethod | null) => void
   onCancel: () => void
 }) {
   const closed = order.status === 'delivered' || order.status === 'cancelled'
@@ -257,16 +284,39 @@ function OrderCard({
           {order.status === 'delivered' ? 'Já foi entregue.' : 'Este pedido foi cancelado.'}
         </p>
       ) : (
-        <div className="staff__actions">
-          <Button onClick={onDeliver} disabled={busy}>
-            {busy ? 'A fechar…' : owes ? `Recebi ${formatPrice(order.amountCents)} · Entregar` : 'Entregar'}
-          </Button>
-          {/* `ghost` é o botão de ícone da barra do topo — com texto, transborda
-              da caixa. Aqui a ação é secundária mas continua a ser texto. */}
-          <Button variant="secondary" onClick={onCancel} disabled={busy}>
-            Cancelar pedido
-          </Button>
-        </div>
+        <>
+          {/* Por cobrar: o botão é o meio de pagamento. Não há um «Entregar»
+              genérico ao lado, de propósito — se houvesse, seria o caminho
+              rápido num balcão com fila, e a matriz ficava sem saber como o
+              dinheiro entrou. Quem recebe carrega no que recebeu. */}
+          {owes && (
+            <>
+              <p className="staff__tender-ask">
+                Recebi {formatPrice(order.amountCents)} em:
+              </p>
+              <div className="staff__actions">
+                {TENDERS.map((method) => (
+                  <Button key={method} onClick={() => onDeliver(method)} disabled={busy}>
+                    {busy ? 'A fechar…' : PAYMENT_LABELS[method]}
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="staff__actions">
+            {!owes && (
+              <Button onClick={() => onDeliver(null)} disabled={busy}>
+                {busy ? 'A fechar…' : 'Entregar'}
+              </Button>
+            )}
+            {/* `ghost` é o botão de ícone da barra do topo — com texto, transborda
+                da caixa. Aqui a ação é secundária mas continua a ser texto. */}
+            <Button variant="secondary" onClick={onCancel} disabled={busy}>
+              Cancelar pedido
+            </Button>
+          </div>
+        </>
       )}
     </div>
   )

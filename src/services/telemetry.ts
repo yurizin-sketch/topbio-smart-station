@@ -1,4 +1,5 @@
 import { getStationId } from '../config'
+import type { PaymentMethod } from '../types'
 
 /**
  * Telemetria da estação.
@@ -16,8 +17,9 @@ export type StationEvent =
   | { type: 'session_start' }
   | { type: 'goal_selected'; goal: string }
   | { type: 'product_viewed'; productId: string }
-  | { type: 'checkout_started'; productId: string; method: string }
-  | { type: 'payment_confirmed'; orderId: string }
+  | { type: 'checkout_started'; productId: string }
+  /** Confirmado por uma pessoa no balcão. `method` é como recebeu. */
+  | { type: 'payment_confirmed'; orderId: string; method: PaymentMethod }
   | { type: 'payment_failed'; orderId: string; reason: string }
   | { type: 'session_timeout'; screen: string }
   /** A assistente falou primeiro, porque a câmara viu chegar alguém. */

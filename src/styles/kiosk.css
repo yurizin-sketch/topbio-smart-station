@@ -945,6 +945,16 @@ img {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.staff__tender-ask {
+  margin: var(--tne-space-lg) 0 var(--tne-space-xs);
+  font-weight: 600;
+  /* O cartao do balcao e verde escuro: --tne-text e quase preto e desaparece. */
+  color: rgba(255, 255, 255, 0.9);
+}
+.staff__tender-ask + .staff__actions {
+  margin-top: 0;
+}
+
 .staff__actions {
   display: flex;
   gap: var(--tne-space-sm);

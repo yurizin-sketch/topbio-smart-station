@@ -4,6 +4,7 @@ import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui
 import { useSession } from '../state/session'
 import { isAvailable } from '../services/catalog'
 import { formatPrice } from '../config'
+import { track } from '../services/telemetry'
 import { legal } from '../data/legal'
 
 type TabId = 'beneficios' | 'composicao' | 'uso'
@@ -17,7 +18,7 @@ const TABS: ReadonlyArray<{ id: TabId; label: string }> = [
 export function ProductDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { products, product, selectProduct } = useSession()
+  const { products, product, selectProduct, createOrder } = useSession()
   const [tab, setTab] = useState<TabId>('beneficios')
 
   // Permite abrir /product/xxx diretamente (útil para testes e QR internos).
@@ -27,6 +28,19 @@ export function ProductDetail() {
     if (found) selectProduct(found)
     else if (products.length) navigate('/goals', { replace: true })
   }, [id, product, products, selectProduct, navigate])
+
+  /**
+   * Comprar já não pergunta nada.
+   *
+   * Havia aqui um ecrã pelo meio a perguntar «MB WAY ou balcão?». Com o
+   * pagamento a ser sempre ao balcão, esse ecrã era um toque a mais para
+   * chegar exactamente ao mesmo sítio.
+   */
+  const comprar = () => {
+    createOrder()
+    track({ type: 'checkout_started', productId: product!.id })
+    navigate('/checkout/ticket')
+  }
 
   if (!product) return null
 
@@ -110,7 +124,7 @@ export function ProductDetail() {
               <p className="section-label">Preço</p>
               <span className="price">{formatPrice(product.priceCents)}</span>
             </div>
-            <Button onClick={() => navigate('/checkout')} disabled={!isAvailable(product)}>
+            <Button onClick={comprar} disabled={!isAvailable(product)}>
               Comprar →
             </Button>
           </div>
