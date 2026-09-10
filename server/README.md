@@ -185,8 +185,14 @@ fabricava um bilhete de matriz sem saber palavra-passe nenhuma.
 Para a gerar, no PowerShell:
 
 ```powershell
-[Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))
+$b = New-Object byte[] 48
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+[Convert]::ToBase64String($b)
 ```
+
+O `Get-Random` do PowerShell **não** serve para isto: é previsível o
+suficiente para se reconstruir, e uma chave de assinatura que se adivinha não
+assina nada. O `RandomNumberGenerator` é o gerador criptográfico do sistema.
 
 A **MATRIZ_PASSWORD** é a do dono, e escreve-se à mão — por isso que seja uma
 frase, não quatro dígitos. O PIN do balcão tranca uma gaveta que já está dentro
