@@ -282,11 +282,16 @@ async function settle(env, claims, body) {
   const method = String(body?.method ?? '')
   if (!id) return { erro: 'pedido', status: 400 }
 
-  const order = await env.DB.prepare(
-    `SELECT ${ORDER_COLS} FROM orders WHERE id = ?1 AND station_id = ?2`,
-  )
-    .bind(id, claims.stationId)
-    .first()
+  // O posto vem junto por causa do `tracks_stock`: no armazém a venda
+  // regista-se, mas não desce nenhum número — ver o `schema.sql`.
+  const [order, posto] = await Promise.all([
+    env.DB.prepare(`SELECT ${ORDER_COLS} FROM orders WHERE id = ?1 AND station_id = ?2`)
+      .bind(id, claims.stationId)
+      .first(),
+    env.DB.prepare('SELECT tracks_stock AS tracksStock FROM stations WHERE id = ?1')
+      .bind(claims.stationId)
+      .first(),
+  ])
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status === 'delivered') return { ok: true, order, ja: true }
   if (order.status === 'cancelled') return { erro: 'cancelado', status: 409 }
@@ -308,19 +313,26 @@ async function settle(env, claims, body) {
   // descontou nessa altura, e o índice único em `order_id` é a rede que
   // apanha o resto: dois toques no botão, duas tentativas do tablet.
   if (owes) {
+    // A saída escreve-se sempre, mesmo no armazém: é o registo de o que saiu
+    // pela porta, e é dele que se tira a conta no dia em que alguém contar.
     writes.push(
       env.DB.prepare(
         `INSERT OR IGNORE INTO stock_moves
            (station_id, product_id, delta, reason, order_id, actor, at)
          VALUES (?1, ?2, -1, 'venda', ?3, ?4, ?5)`,
       ).bind(order.stationId, order.productId, id, `balcao:${claims.stationId}`, now),
-      env.DB.prepare(
-        `INSERT INTO stock (station_id, product_id, qty, updated_at)
-         VALUES (?1, ?2, -1, ?3)
-         ON CONFLICT(station_id, product_id)
-         DO UPDATE SET qty = qty - 1, updated_at = ?3`,
-      ).bind(order.stationId, order.productId, now),
     )
+    // O número só desce onde há um número contado a que descer.
+    if (posto?.tracksStock !== 0) {
+      writes.push(
+        env.DB.prepare(
+          `INSERT INTO stock (station_id, product_id, qty, updated_at)
+           VALUES (?1, ?2, -1, ?3)
+           ON CONFLICT(station_id, product_id)
+           DO UPDATE SET qty = qty - 1, updated_at = ?3`,
+        ).bind(order.stationId, order.productId, now),
+      )
+    }
   }
 
   await env.DB.batch(writes)
@@ -423,7 +435,9 @@ async function overview(env, body) {
   const from = Number(body?.from) || to - 30 * 24 * 60 * 60 * 1000
 
   const [postos, porPosto, porProduto, porMetodo, stock] = await Promise.all([
-    env.DB.prepare('SELECT id, name, active FROM stations ORDER BY name').all(),
+    env.DB.prepare(
+      'SELECT id, name, active, tracks_stock AS tracksStock FROM stations ORDER BY name',
+    ).all(),
     env.DB.prepare(
       `SELECT station_id AS stationId, COUNT(*) AS vendas, SUM(amount_cents) AS totalCents
        FROM orders WHERE paid_at BETWEEN ?1 AND ?2 GROUP BY station_id`,

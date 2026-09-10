@@ -21,11 +21,19 @@
 -- O PIN do balcão vive aqui em resumo (hash), e não no código. O que estava
 -- em `src/config.ts` ia para o repositório público — servia para trancar uma
 -- gaveta que já está dentro da loja, não serve para trancar contas.
+--
+-- `tracks_stock` a 0 é o armazém: o posto que tem a mercadoria toda e que
+-- ninguém conta ao balcão. Vende na mesma e a venda fica escrita em
+-- `stock_moves` como qualquer outra — o que não acontece é descer um número
+-- que nunca foi levantado, e que ao fim de um mês apareceria em negativo
+-- na matriz a parecer avaria. No dia em que se contar a prateleira, põe-se
+-- isto a 1 e a partir daí conta como os outros.
 CREATE TABLE IF NOT EXISTS stations (
   id            TEXT PRIMARY KEY,           -- 'loja-lisboa', 'academia-benfica'
   name          TEXT NOT NULL,              -- como aparece na matriz
   counter_pin   TEXT NOT NULL,              -- sha-256 do PIN do balcão
   active        INTEGER NOT NULL DEFAULT 1,
+  tracks_stock  INTEGER NOT NULL DEFAULT 1, -- 0 = armazém, não se conta
   created_at    INTEGER NOT NULL
 );
 
