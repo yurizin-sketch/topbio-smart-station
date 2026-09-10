@@ -19,6 +19,16 @@ worker, o worker é que fala com a Anthropic e com a ElevenLabs.
 **Sem isto publicado a estação funciona na mesma.** A Cláudia diz uma frase fixa por
 ecrã, com a voz do próprio aparelho. Só não conversa e não soa a pessoa.
 
+> **Todos os comandos deste ficheiro se correm de dentro da pasta `server/`.**
+>
+> ```powershell
+> cd <a-pasta-do-projecto>\server
+> ```
+>
+> É daqui que o wrangler encontra o `wrangler.toml` sozinho. Corridos da raiz
+> do projecto dão `ENOENT`, e o erro mostra o caminho com a pasta repetida
+> — `server\server\wrangler.toml` — que é o sinal de se estar no sítio errado.
+
 ---
 
 ## Publicar, passo a passo
