@@ -185,6 +185,10 @@ fabricava um bilhete de matriz sem saber palavra-passe nenhuma.
 Para a gerar, no PowerShell:
 
 ```powershell
+# ATENCAO: o que este bloco imprime NAO se mostra a ninguem — nem a mim,
+# nem por email, nem no WhatsApp. Copia-se e cola-se so no `secret put` a
+# seguir. Se alguma vez sair daqui, gere outro e volte a por: a chave
+# antiga deixa de valer no momento em que a nova entra.
 $b = New-Object byte[] 48
 [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
 [Convert]::ToBase64String($b)
@@ -204,6 +208,17 @@ Um posto é um tablet. O PIN do balcão fica em resumo (sha-256), nunca em claro
 e nunca no repositório.
 
 Gerar o resumo do PIN, no PowerShell:
+
+> **Os dois blocos deste ficheiro dão 64 caracteres, e são coisas opostas.**
+> Antes de copiar seja o que for, olhe para o que saiu:
+>
+> | O que saiu | O que é | Pode mostrar-se? |
+> | --- | --- | --- |
+> | só `0-9a-f` | o resumo do PIN, aqui em baixo | **sim** — vai para o SQL |
+> | tem maiúsculas, `+`, `/` | a chave de assinatura, no ponto 3 | **não, nunca** |
+>
+> O resumo não se desfaz: de `dadbc563…` ninguém tira o PIN de volta. Por isso
+> este pode andar por email, por mensagem, por onde for preciso.
 
 ```powershell
 $pin = "2468"
