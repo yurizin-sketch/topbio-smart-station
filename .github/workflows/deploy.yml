@@ -46,6 +46,17 @@ jobs:
           # falas escritas. Não parte nada.
           VITE_ASSISTANT_URL: ${{ secrets.VITE_ASSISTANT_URL }}
 
+          # Onde ficam as contas. Vazio = mesmo endereço do worker acima, que é
+          # o caso normal: é o mesmo servidor a atender as duas coisas.
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+          # Deliberadamente não se define o posto aqui.
+          #
+          # Esta publicação serve todas as lojas a partir do mesmo endereço —
+          # fixar um posto no build punha as vendas de qualquer tablet a entrar
+          # na conta dessa loja. Cada aparelho aprende quem é quando alguém
+          # entra no /staff com o PIN da loja.
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

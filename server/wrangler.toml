@@ -78,7 +78,7 @@ ELEVENLABS_MODEL = "eleven_turbo_v2_5"
 
 [[kv_namespaces]]
 binding = "TTS_CACHE"
-id = "aba57a5a683b468a8e7010a4cfad6124"
+id = "f0ebba6b95744c23b038d6c7e5351812"
 
 
 # A base de dados: pedidos, stock e o mapa da matriz.
@@ -97,4 +97,4 @@ id = "aba57a5a683b468a8e7010a4cfad6124"
 [[d1_databases]]
 binding = "DB"
 database_name = "topbio"
-database_id = "2e2ddfbd-c426-4d95-bcbf-9899a4e3c2a2"
+database_id = "b41bafc7-43ab-420b-a62d-62fc2901a682"

@@ -247,6 +247,16 @@ O `id` é o que anda em cada pedido e é por ele que a matriz separa as lojas.
 Escolha-o legível — `loja-lisboa`, `academia-benfica` — porque vai aparecer em
 listagens durante anos.
 
+**Como é que o tablet fica a saber que posto é.** Não se edita ficheiro nenhum:
+monta-se o tablet, abre-se o `/staff` uma vez e escreve-se o `id` do posto e o
+PIN. Quem confirma é o worker, e é a resposta dele que fica guardada no
+aparelho — a partir daí as vendas do quiosque saem com o nome certo, sem mais
+ninguém tocar em nada.
+
+Enquanto esse primeiro acesso não acontecer, a estação vende à mesma, mas os
+pedidos ficam só naquele tablet: um posto que o servidor não conhece é recusado
+com `posto-desconhecido`, e o quiosque nem tenta.
+
 ### 5. Pôr lá o stock que existe
 
 Não há atalho honesto: alguém tem de contar a prateleira uma vez. Depois disso
@@ -277,13 +287,13 @@ repositório, e que nunca deve levar as palavras-passe verdadeiras.
 ### Confirmar que está de pé
 
 O endereço da loja é
-`https://topbio-assistente.topbio-europa.workers.dev`.
+`https://topbio-assistente.biosupplex.workers.dev`.
 
 Não é segredo nenhum: vai dentro do site, que é público. Guarda-se como
 *secret* no GitHub por hábito, não por precisar.
 
 ```bash
-curl -X POST https://topbio-assistente.topbio-europa.workers.dev/speak \
+curl -X POST https://topbio-assistente.biosupplex.workers.dev/speak \
   -H "content-type: application/json" \
   -H "origin: https://yurizin-sketch.github.io" \
   -d '{"text":"Oi, tudo bem?"}' --output teste.mp3
@@ -303,7 +313,7 @@ O worker nunca devolve erro ao tablet: uma estacão calada ao pé de um cliente
 cabeçalho chamado `x-claudia`. Para o ver:
 
 ```bash
-curl -i -X POST https://topbio-assistente.topbio-europa.workers.dev/ \
+curl -i -X POST https://topbio-assistente.biosupplex.workers.dev/ \
   -H "content-type: application/json" \
   -H "origin: https://yurizin-sketch.github.io" \
   -d '{}' | findstr x-claudia

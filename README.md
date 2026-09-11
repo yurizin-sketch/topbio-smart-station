@@ -28,16 +28,27 @@ estação emite um código e é o balcão que cobra. «Pago» só se escreve em
 `/staff`, com PIN, e o funcionário diz como recebeu — dinheiro, MB WAY ou
 cartão.
 
+As encomendas já não ficam presas ao tablet. O quiosque escreve primeiro em
+casa — é o que lhe permite vender com a internet em baixo — e espelha para o D1
+assim que houver rede. O `/staff` vê a fila de toda a loja, não só a deste
+browser, e o que ficar por enviar sai sozinho quando a ligação voltar.
+
 Falta, para ir para produção:
 
-- tirar as encomendas do `localStorage` — hoje o `/staff` só vê os pedidos
-  feitos no mesmo browser, e a matriz não vê nada;
+- o ecrã da matriz. O `/api/matriz/overview` responde com as vendas por posto,
+  por produto e por meio de pagamento, mas não há nada que o mostre;
+- stock a sério no quiosque: o catálogo ainda traz um `inStore` fixo, sem olhar
+  para o que o `/api/stock/list` sabe da prateleira;
+- gravar os sete clips da Cláudia (ver `docs/claudia-video.md`);
 - ligar impressora, se o comprovante passar a sair em papel. O bloco já está
   isolado no componente `Receipt` e há um `@media print` a limpar o resto da
   página — falta só decidir o modelo e disparar a impressão.
 
-O PIN do balcão está em `src/config.ts` e viaja no pacote do browser. Serve
-para demonstrar, não para proteger.
+O PIN do `src/config.ts` deixou de ser o do balcão. Com servidor configurado
+quem valida é o worker, contra o resumo guardado na tabela `stations`, e o que
+volta é uma sessão assinada que dura um turno. Aquele valor no ficheiro só abre
+a demonstração publicada, onde não há base de dados nenhuma por trás — e viaja
+no pacote do browser, por isso não protege nada.
 
 ## Regenerar dados
 

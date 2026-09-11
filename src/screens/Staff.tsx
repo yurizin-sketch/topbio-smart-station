@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Frame } from '../components/ui'
-import { config, formatPrice } from '../config'
+import { formatPrice, getStationId } from '../config'
 import { getCatalog } from '../services/catalog'
+import { apiEnabled, loadSession } from '../services/api'
 import {
-  findByCode,
-  listOpen,
-  markCancelled,
-  markDelivered,
-  markPaid,
-  pickupCodeFor,
-  subscribe,
-  type StoredOrder,
-} from '../services/orders'
+  counterCancel,
+  counterFind,
+  counterLogin,
+  counterLogout,
+  counterPending,
+  counterSettle,
+  explain,
+  type CounterSession,
+} from '../services/counter'
+import { listOpen, pickupCodeFor, subscribe, type StoredOrder } from '../services/orders'
 import { track } from '../services/telemetry'
 import { PAYMENT_LABELS, type PaymentMethod, type Product } from '../types'
 import { useAssistant } from '../state/assistant'
@@ -27,6 +29,16 @@ import { assistantIsLive } from '../services/assistant'
 const TENDERS: PaymentMethod[] = ['dinheiro', 'mbway', 'cartao']
 
 /**
+ * De quanto em quanto tempo se pergunta ao servidor pela fila.
+ *
+ * Uma venda emitida noutro tablet da mesma loja tem de aparecer aqui sem
+ * ninguém recarregar nada. Dez segundos é mais depressa do que o cliente
+ * atravessa a loja, e são seis pedidos por minuto — cabe à vontade no travão
+ * do worker, que deixa passar vinte.
+ */
+const POLL_MS = 10_000
+
+/**
  * Painel do balcão.
  *
  * A estação está na loja e não entrega nada: o cliente chega ao balcão com uma
@@ -34,7 +46,7 @@ const TENDERS: PaymentMethod[] = ['dinheiro', 'mbway', 'cartao']
  * São dois códigos diferentes e o funcionário não tem de saber a diferença:
  *
  *  - `TB-XXXX` — ainda não pagou. Recebe-se o dinheiro e só depois se entrega.
- *  - seis caracteres — já pagou por MB WAY. Só falta entregar.
+ *  - seis caracteres — código de recurso de um pedido antigo.
  *
  * Por isso há um único campo. Quem está ao balcão lê o que vê e escreve.
  */
@@ -42,50 +54,120 @@ const TENDERS: PaymentMethod[] = ['dinheiro', 'mbway', 'cartao']
 type Feedback = { tone: 'ok' | 'warn'; text: string } | null
 
 export function Staff() {
-  const [unlocked, setUnlocked] = useState(false)
+  // A sessão pode ter sobrevivido a um recarregar da página — o bilhete vale
+  // doze horas, que é um turno. Quem já entrou não volta a escrever o PIN
+  // porque o tablet se distraiu.
+  const retomada = apiEnabled() ? loadSession() : null
+  const [unlocked, setUnlocked] = useState(retomada?.scope === 'balcao')
+  const [session, setSession] = useState<CounterSession>(
+    retomada?.scope === 'balcao' ? retomada : null,
+  )
+  const [stationName, setStationName] = useState(retomada?.stationName ?? '')
+
+  const [stationId, setStationId] = useState(getStationId())
   const [pin, setPin] = useState('')
   const [code, setCode] = useState('')
   const [selected, setSelected] = useState<StoredOrder | null>(null)
   const [open, setOpen] = useState<StoredOrder[]>([])
   const [feedback, setFeedback] = useState<Feedback>(null)
   const [busy, setBusy] = useState(false)
+  const [linked, setLinked] = useState(true)
   const [products, setProducts] = useState<Product[]>([])
 
   useEffect(() => getCatalog().subscribe(setProducts), [])
 
-  // A lista tem de reagir a um ticket emitido na tab do quiosque sem ninguém
-  // carregar em nada — o funcionário não vai andar a recarregar a página.
+  /** A sessão morreu a meio do turno. Volta-se ao PIN, sem perder o que está em casa. */
+  const expired = useCallback(() => {
+    counterLogout()
+    setSession(null)
+    setUnlocked(false)
+    setSelected(null)
+    setFeedback({ tone: 'warn', text: 'A sessão expirou. Introduza o PIN outra vez.' })
+  }, [])
+
+  // O que está em casa. Reage a um ticket emitido na tab do quiosque sem
+  // ninguém carregar em nada — o funcionário não vai recarregar a página.
   useEffect(() => {
     if (!unlocked) return
-    const refresh = () => {
-      setOpen(listOpen())
-      setSelected((current) => (current ? findByCode(current.ticketCode ?? pickupCodeFor(current)) : null))
-    }
+    const refresh = () => setOpen(listOpen())
     refresh()
     return subscribe(refresh)
   }, [unlocked])
 
+  // O que o servidor sabe. Traz para casa o que outro tablet da mesma loja
+  // emitiu; a escrita local dispara o efeito de cima, que repinta a lista.
+  const sessionRef = useRef(session)
+  sessionRef.current = session
+  useEffect(() => {
+    if (!unlocked) return
+    let vivo = true
+    const puxar = async () => {
+      try {
+        const { remote } = await counterPending(sessionRef.current)
+        if (vivo) setLinked(remote)
+      } catch (e) {
+        if (!vivo) return
+        if (e instanceof Error && 'expired' in e && e.expired) expired()
+      }
+    }
+    void puxar()
+    const timer = window.setInterval(() => void puxar(), POLL_MS)
+    return () => {
+      vivo = false
+      window.clearInterval(timer)
+    }
+  }, [unlocked, expired])
+
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
+
+  // O pedido escolhido tem de acompanhar o livro: se outro tablet o entregou
+  // entretanto, o cartão em cima tem de deixar de oferecer o botão de entregar.
+  const current = selected ? (open.find((o) => o.id === selected.id) ?? selected) : null
 
   if (!unlocked) {
     return (
       <Frame dark>
         <p className="eyebrow">Acesso reservado</p>
         <h1 className="title">Balcão</h1>
-        <p className="subtitle">Introduza o PIN para validar levantamentos.</p>
+        <p className="subtitle">
+          {apiEnabled()
+            ? 'Introduza o posto e o PIN da loja.'
+            : 'Introduza o PIN para validar levantamentos.'}
+        </p>
         <form
           className="staff__pin"
           onSubmit={(e) => {
             e.preventDefault()
-            if (pin === config.staffPin) {
-              setUnlocked(true)
-              setPin('')
-            } else {
-              setFeedback({ tone: 'warn', text: 'PIN incorreto.' })
-              setPin('')
-            }
+            if (busy) return
+            setBusy(true)
+            setFeedback(null)
+            counterLogin(stationId, pin)
+              .then((out) => {
+                setSession(out.session)
+                setStationName(out.stationName)
+                setUnlocked(true)
+                setPin('')
+              })
+              .catch((err) => setFeedback({ tone: 'warn', text: explain(err) }))
+              .finally(() => {
+                setBusy(false)
+                setPin('')
+              })
           }}
         >
+          {/* Sem servidor não há posto que valha: o livro é o deste browser. */}
+          {apiEnabled() && (
+            <input
+              className="staff__input"
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
+              aria-label="Posto"
+              placeholder="posto-da-loja"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+          )}
           <input
             className="staff__input"
             type="password"
@@ -94,9 +176,11 @@ export function Staff() {
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             aria-label="PIN"
-            placeholder="••••"
+            placeholder="••••••"
           />
-          <Button type="submit">Entrar</Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? 'A verificar…' : 'Entrar'}
+          </Button>
         </form>
         {feedback && <p className="staff__feedback staff__feedback--warn">{feedback.text}</p>}
       </Frame>
@@ -104,11 +188,19 @@ export function Staff() {
   }
 
   const lookup = (raw: string) => {
-    const found = findByCode(raw)
-    setSelected(found)
-    setFeedback(
-      found ? null : { tone: 'warn', text: `Nenhum pedido com o código "${raw.trim()}".` },
-    )
+    setBusy(true)
+    counterFind(session, raw)
+      .then((found) => {
+        setSelected(found)
+        setFeedback(
+          found ? null : { tone: 'warn', text: `Nenhum pedido com o código "${raw.trim()}".` },
+        )
+      })
+      .catch((e) => {
+        if (e instanceof Error && 'expired' in e && e.expired) expired()
+        else setFeedback({ tone: 'warn', text: explain(e) })
+      })
+      .finally(() => setBusy(false))
   }
 
   /**
@@ -120,49 +212,81 @@ export function Staff() {
    */
   const deliver = (order: StoredOrder, method: PaymentMethod | null) => {
     setBusy(true)
-    try {
-      // Ordem deliberada: primeiro regista-se o pagamento, só depois se fecha a
-      // entrega. Ao contrário, uma falha a meio deixa mercadoria entregue sem
-      // registo de que foi paga.
-      const paid =
-        order.status === 'awaiting_counter' && method
-          ? markPaid(order.id, method) ?? order
-          : order
-
-      if (method) track({ type: 'payment_confirmed', orderId: paid.id, method })
-
-      markDelivered(paid.id)
-      setSelected(null)
-      setCode('')
-      setFeedback({
-        tone: 'ok',
-        text: method
-          ? `Recebido em ${PAYMENT_LABELS[method]}. Entregue.`
-          : 'Entregue. Pedido fechado.',
+    counterSettle(session, order, method)
+      .then(() => {
+        if (method) track({ type: 'payment_confirmed', orderId: order.id, method })
+        setSelected(null)
+        setCode('')
+        setOpen(listOpen())
+        setFeedback({
+          tone: 'ok',
+          text: method
+            ? `Recebido em ${PAYMENT_LABELS[method]}. Entregue.`
+            : 'Entregue. Pedido fechado.',
+        })
       })
-    } finally {
-      setBusy(false)
-    }
+      .catch((e) => {
+        if (e instanceof Error && 'expired' in e && e.expired) expired()
+        else setFeedback({ tone: 'warn', text: explain(e) })
+      })
+      .finally(() => setBusy(false))
   }
 
   const cancel = (order: StoredOrder) => {
-    markCancelled(order.id)
-    setSelected(null)
-    setCode('')
-    setFeedback({ tone: 'ok', text: 'Pedido cancelado e unidade libertada.' })
+    setBusy(true)
+    counterCancel(session, order)
+      .then(() => {
+        setSelected(null)
+        setCode('')
+        setOpen(listOpen())
+        setFeedback({ tone: 'ok', text: 'Pedido cancelado e unidade libertada.' })
+      })
+      .catch((e) => {
+        if (e instanceof Error && 'expired' in e && e.expired) expired()
+        else setFeedback({ tone: 'warn', text: explain(e) })
+      })
+      .finally(() => setBusy(false))
   }
 
   return (
     <Frame
       dark
       actions={
-        <Button variant="ghost" onClick={() => setUnlocked(false)} label="Sair">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            counterLogout()
+            setSession(null)
+            setUnlocked(false)
+          }}
+          label="Sair"
+        >
           ⏻
         </Button>
       }
     >
-      <p className="eyebrow">Balcão</p>
+      <p className="eyebrow">Balcão{stationName ? ` · ${stationName}` : ''}</p>
       <h1 className="title">Validar levantamento</h1>
+
+      {/* Quem está ao balcão tem de saber que está a trabalhar só com o que o
+          tablet tem — senão entrega à mesma e fica a pensar que a matriz viu.
+          São três casos, e cada um diz o que é para não haver enganos. */}
+      {session && !linked && (
+        <p className="notice notice--warn" role="status">
+          A ligação ao servidor caiu. Continua a poder cobrar e entregar; fica
+          tudo guardado neste tablet e sai assim que a rede voltar.
+        </p>
+      )}
+      {!session && apiEnabled() && (
+        <p className="notice notice--warn" role="status">
+          Balcão de recurso, sem ligação ao servidor. Pode cobrar e entregar;
+          fica tudo guardado neste tablet e sai quando alguém voltar a entrar com
+          a rede a funcionar.
+        </p>
+      )}
+      {!session && !apiEnabled() && (
+        <p className="notice notice--info">Sem servidor: só vê os pedidos deste aparelho.</p>
+      )}
 
       <form
         className="staff__search"
@@ -181,7 +305,7 @@ export function Staff() {
           autoCapitalize="characters"
           spellCheck={false}
         />
-        <Button type="submit" disabled={code.trim().length < 4}>
+        <Button type="submit" disabled={busy || code.trim().length < 4}>
           Procurar
         </Button>
       </form>
@@ -192,13 +316,13 @@ export function Staff() {
         </p>
       )}
 
-      {selected && (
+      {current && (
         <OrderCard
-          order={selected}
-          product={productById.get(selected.productId)}
+          order={current}
+          product={productById.get(current.productId)}
           busy={busy}
-          onDeliver={(method) => deliver(selected, method)}
-          onCancel={() => cancel(selected)}
+          onDeliver={(method) => deliver(current, method)}
+          onCancel={() => cancel(current)}
         />
       )}
 
