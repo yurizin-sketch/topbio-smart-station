@@ -73,23 +73,6 @@ export function Attract() {
         </div>
 
         <span className="attract__hint">Toque em qualquer parte do ecrã</span>
-
-        {/*
-          Porta de serviço. Discreta de propósito: o cliente não a procura, mas
-          quem trabalha na loja sabe que o canto leva ao balcão. O
-          stopPropagation impede que o toque aqui comece uma sessão de cliente.
-        */}
-        <button
-          type="button"
-          className="attract__staff"
-          aria-label="Acesso ao balcão"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate('/staff')
-          }}
-        >
-          Balcão
-        </button>
       </div>
     </Frame>
   )

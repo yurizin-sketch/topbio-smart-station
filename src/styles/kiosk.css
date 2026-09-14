@@ -783,33 +783,6 @@ img {
   }
 }
 
-/* Acesso ao balcão a partir do ecrã de repouso: fica no canto, discreto, para
-   o cliente não lhe tocar por engano mas o funcionário o encontrar. */
-.attract__staff {
-  position: absolute;
-  bottom: var(--tne-space-md);
-  right: var(--tne-space-md);
-  z-index: 2;
-  padding: 12px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.55);
-  font-family: inherit;
-  font-size: var(--station-small);
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  transition: color var(--tne-duration-quick) var(--tne-ease-soft),
-    border-color var(--tne-duration-quick) var(--tne-ease-soft);
-}
-
-.attract__staff:hover,
-.attract__staff:focus-visible {
-  color: #fff;
-  border-color: var(--tne-gold);
-  outline: none;
-}
-
 /* ── Transição entre ecrãs ───────────────────────────────────────────── */
 
 .enter {

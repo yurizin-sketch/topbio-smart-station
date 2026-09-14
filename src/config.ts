@@ -163,7 +163,12 @@ export const config = {
    * deste tablet e mais nada. Não parte, encolhe.
    */
   api: {
-    endpoint: import.meta.env.VITE_API_URL ?? import.meta.env.VITE_ASSISTANT_URL ?? '',
+    // Usa-se || e não ??: no GitHub Actions um secret que não existe (o
+    // VITE_API_URL) entra no build como string vazia "", e o ?? só recua em
+    // null/undefined — deixaria "" a tapar o VITE_ASSISTANT_URL e a app ficava
+    // sem servidor (modo offline, só o PIN de recurso). Com || o vazio conta
+    // como ausente e o endereço da Cláudia serve também o balcão.
+    endpoint: import.meta.env.VITE_API_URL || import.meta.env.VITE_ASSISTANT_URL || '',
 
     /**
      * Espera máxima por uma resposta da contabilidade.
@@ -184,7 +189,7 @@ export const config = {
      * worker, que é quem tem a chave da API. A chave nunca entra aqui: este
      * repositório é público.
      */
-    endpoint: import.meta.env.VITE_ASSISTANT_URL ?? '',
+    endpoint: import.meta.env.VITE_ASSISTANT_URL || '',
 
     /** Depois disto desistimos do modelo e dizemos a fala escrita. */
     timeoutMs: 6_000,
