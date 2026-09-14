@@ -1864,3 +1864,64 @@ img {
   margin: 2px 0 0;
   font-weight: var(--tne-weight-semibold);
 }
+
+/* ==========================================================================
+   Ecrã de descanso com vídeo
+   ==========================================================================
+   Quando há clips em `data/attract.ts`, o vídeo ocupa todo o ecrã por trás do
+   mesmo convite de sempre (logótipo + "Toque para começar"). Um véu por cima
+   garante que o texto branco se lê sobre qualquer imagem. Sem clips, nada disto
+   se aplica e fica o fundo com a marca. */
+.attract__video {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  /* Preenche o ecrã ao alto sem barras pretas, cortando o que sobra. */
+  object-fit: cover;
+}
+
+.attract--video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    160deg,
+    rgba(0, 46, 38, 0.5) 0%,
+    rgba(0, 46, 38, 0.32) 45%,
+    rgba(0, 46, 38, 0.72) 100%
+  );
+}
+
+/* ==========================================================================
+   Endurecimento do quiosque (parte CSS)
+   ==========================================================================
+   Tira os gestos de telemóvel que tiram o cliente do fluxo sem querer. A parte
+   de JavaScript (ecrã aceso, menu do toque longo) está em `services/kiosk.ts`,
+   e o cadeado que impede fechar a app é no próprio aparelho — nada disto é
+   segurança, é só bom comportamento de montra. */
+html,
+body {
+  /* Sem "puxar para recarregar" nem o ressalto elástico no fim do scroll. */
+  overscroll-behavior: none;
+  /* Rola na vertical; corta a pinça e o duplo-toque para ampliar. */
+  touch-action: pan-y;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  /* Sem o balão de "copiar / partilhar" no toque longo (iOS). */
+  -webkit-touch-callout: none;
+}
+
+/* Os campos onde se escreve (posto, PIN) continuam a deixar selecionar e
+   editar — o resto do quiosque é que não é para andar a marcar texto. */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

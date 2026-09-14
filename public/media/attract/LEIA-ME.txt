@@ -1,0 +1,23 @@
+VÍDEOS DO ECRÃ DE DESCANSO
+==========================
+
+Põe aqui os vídeos que o tablet passa quando ninguém está a usar a estação.
+
+Passos:
+  1. Copia os ficheiros de vídeo para esta pasta (public/media/attract/).
+  2. Abre  src/data/attract.ts  e escreve lá os nomes, por ordem. Exemplo:
+         export const attractVideos = [
+           '/media/attract/1.mp4',
+           '/media/attract/2.mp4',
+         ]
+
+Recomendações:
+  - Formato MP4 (H.264). WebM também serve.
+  - Ao alto (retrato), que é como o tablet fica montado.
+  - Curtos: 2 ou 3 clips de 10-20 segundos passam melhor que um longo.
+  - SEM SOM: os clips passam mudos de propósito (o browser não deixa um vídeo
+    arrancar sozinho com áudio, e um quiosque a falar sozinho o dia todo cansa).
+
+Se esta lista ficar vazia, o ecrã de descanso volta ao fundo com a marca TopBio,
+como estava antes. Se um vídeo faltar ou não tocar, a estação recua para esse
+mesmo fundo — nunca fica com um retângulo preto.

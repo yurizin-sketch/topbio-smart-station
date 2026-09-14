@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import { App } from './App'
 import { SessionProvider } from './state/session'
 import { AssistantProvider } from './state/assistant'
+import { ativarModoQuiosque } from './services/kiosk'
 import './styles/fonts.css'
 import './styles/tokens.css'
 import './styles/kiosk.css'
@@ -16,6 +17,11 @@ import './styles/kiosk.css'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root não encontrado')
+
+// Pôr o tablet a portar-se como quiosque: ecrã sempre aceso, sem menu de toque
+// longo nem zoom. O cadeado a sério — não deixar fechar a app — é no aparelho
+// (Android: fixar ecrã / Fully Kiosk; iPad: Acesso Guiado). Ver services/kiosk.ts.
+ativarModoQuiosque()
 
 createRoot(root).render(
   <StrictMode>
