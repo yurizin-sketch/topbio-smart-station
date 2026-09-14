@@ -30,3 +30,6 @@ Product/
 
 .DS_Store
 Thumbs.db
+
+# Vídeos originais do descanso (os usados estão em public/media/attract/)
+Videos Descanso/
