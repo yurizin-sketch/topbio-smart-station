@@ -21,6 +21,7 @@
  * longo, que o cliente não vai ficar a ver até ao fim.
  */
 export const attractVideos: string[] = [
-  // '/media/attract/1.mp4',
-  // '/media/attract/2.mp4',
+  '/media/attract/top-shot.mp4',
+  '/media/attract/verisol.mp4',
+  '/media/attract/arti.mp4',
 ]
