@@ -99,7 +99,7 @@ export const config = {
   pricesConfirmed: true,
 
   /** Volta ao ecrã de atração após este tempo sem toques. */
-  idleTimeoutMs: 90_000,
+  idleTimeoutMs: 30_000,
 
   /**
    * O PIN de recurso do balcão — o que abre quando o servidor não responde.
