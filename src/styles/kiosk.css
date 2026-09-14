@@ -75,7 +75,15 @@ img {
 }
 
 .station--dark {
-  background: var(--tne-green-dark);
+  /* Não é verde chapado: leva o mesmo brilho dourado ao fundo que o ecrã de
+     repouso, para o balcão e os avisos não parecerem uma parede lisa. */
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 82% 10%,
+      rgba(202, 150, 73, 0.2) 0%,
+      transparent 58%
+    ),
+    linear-gradient(158deg, var(--tne-green) 0%, var(--tne-green-dark) 64%);
   color: var(--tne-white);
 }
 
@@ -775,6 +783,33 @@ img {
   }
 }
 
+/* Acesso ao balcão a partir do ecrã de repouso: fica no canto, discreto, para
+   o cliente não lhe tocar por engano mas o funcionário o encontrar. */
+.attract__staff {
+  position: absolute;
+  bottom: var(--tne-space-md);
+  right: var(--tne-space-md);
+  z-index: 2;
+  padding: 12px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-family: inherit;
+  font-size: var(--station-small);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color var(--tne-duration-quick) var(--tne-ease-soft),
+    border-color var(--tne-duration-quick) var(--tne-ease-soft);
+}
+
+.attract__staff:hover,
+.attract__staff:focus-visible {
+  color: #fff;
+  border-color: var(--tne-gold);
+  outline: none;
+}
+
 /* ── Transição entre ecrãs ───────────────────────────────────────────── */
 
 .enter {
@@ -840,12 +875,53 @@ img {
    sítio errado antes de tocar em nada.
    --------------------------------------------------------------------------- */
 
-.staff__pin,
 .staff__search {
   display: flex;
   gap: var(--tne-space-sm);
   margin: var(--tne-space-lg) 0;
   max-width: 520px;
+}
+
+/* Entrada do balcão: campos empilhados, cada um com o nome por cima e uma
+   dica por baixo. Antes era uma fila de caixas sem rótulo — ninguém sabia o
+   que ia em cada uma nem que PIN pôr. */
+.staff__login {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tne-space-md);
+  margin: var(--tne-space-lg) 0;
+  max-width: 420px;
+}
+
+.staff__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Dentro do campo o input não estica na vertical: ocupa a largura toda e
+   fica com a sua altura natural. */
+.staff__field .staff__input {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.staff__label {
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tne-gold);
+}
+
+.staff__hint {
+  font-size: var(--station-small);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.staff__login .btn {
+  margin-top: var(--tne-space-xs);
 }
 
 .staff__input {

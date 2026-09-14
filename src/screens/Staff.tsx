@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Frame } from '../components/ui'
-import { formatPrice, getStationId } from '../config'
+import { formatPrice, getStationId, stationIsRegistered } from '../config'
 import { getCatalog } from '../services/catalog'
 import { apiEnabled, loadSession } from '../services/api'
 import {
@@ -64,7 +64,11 @@ export function Staff() {
   )
   const [stationName, setStationName] = useState(retomada?.stationName ?? '')
 
-  const [stationId, setStationId] = useState(getStationId())
+  // Vazio enquanto o posto não está registado neste aparelho: assim o campo
+  // mostra a dica ("posto-da-loja") em vez de um id inventado que o servidor
+  // não conhece, e quem monta o tablet escreve o id verdadeiro à primeira.
+  // Depois de uma entrada com sucesso o posto fica fixado e já vem preenchido.
+  const [stationId, setStationId] = useState(stationIsRegistered() ? getStationId() : '')
   const [pin, setPin] = useState('')
   const [code, setCode] = useState('')
   const [selected, setSelected] = useState<StoredOrder | null>(null)
@@ -131,11 +135,11 @@ export function Staff() {
         <h1 className="title">Balcão</h1>
         <p className="subtitle">
           {apiEnabled()
-            ? 'Introduza o posto e o PIN da loja.'
-            : 'Introduza o PIN para validar levantamentos.'}
+            ? 'Zona de funcionários. Confirme o posto e escreva o PIN do balcão.'
+            : 'Zona de funcionários. Escreva o PIN do balcão para validar levantamentos.'}
         </p>
         <form
-          className="staff__pin"
+          className="staff__login"
           onSubmit={(e) => {
             e.preventDefault()
             if (busy) return
@@ -157,27 +161,39 @@ export function Staff() {
         >
           {/* Sem servidor não há posto que valha: o livro é o deste browser. */}
           {apiEnabled() && (
+            <label className="staff__field">
+              <span className="staff__label">Posto</span>
+              <input
+                className="staff__input"
+                value={stationId}
+                onChange={(e) => setStationId(e.target.value)}
+                placeholder="matriz-lisboa"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <span className="staff__hint">
+                {stationIsRegistered()
+                  ? 'Este tablet já está ligado a esta loja — só muda se o levar para outra.'
+                  : 'Escreva o nome desta loja (por ex. matriz-lisboa). Na primeira entrada o tablet fica ligado a ela e depois só pede o PIN.'}
+              </span>
+            </label>
+          )}
+          <label className="staff__field">
+            <span className="staff__label">PIN do balcão</span>
             <input
               className="staff__input"
-              value={stationId}
-              onChange={(e) => setStationId(e.target.value)}
-              aria-label="Posto"
-              placeholder="posto-da-loja"
+              type="password"
+              inputMode="numeric"
               autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="••••••"
             />
-          )}
-          <input
-            className="staff__input"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            aria-label="PIN"
-            placeholder="••••••"
-          />
+            <span className="staff__hint">
+              Os seis dígitos combinados para levantamentos.
+            </span>
+          </label>
           <Button type="submit" disabled={busy}>
             {busy ? 'A verificar…' : 'Entrar'}
           </Button>
