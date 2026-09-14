@@ -21,7 +21,7 @@ import { getPresence } from '../services/presence'
 import { getVoice } from '../services/voice'
 import { track } from '../services/telemetry'
 import { useSession } from './session'
-import type { GoalId } from '../types'
+import type { GoalId, Product } from '../types'
 
 /**
  * A assistente, ligada ao resto da estação.
@@ -328,9 +328,17 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         navigate('/catalog')
         return
       }
+      // A Cláudia sugeriu um produto: o botão tem de abrir a página dele, não
+      // apenas continuar a conversa. Se a escolha casar com um item real do
+      // catálogo, vamos direitos à página desse produto.
+      const produto = produtoDaEscolha(choice, products)
+      if (produto) {
+        navigate(`/product/${produto.id}`)
+        return
+      }
       void ask(choice.value)
     },
-    [ask, hush, navigate, selectGoal],
+    [ask, hush, navigate, selectGoal, products],
   )
 
   const toggleMute = useCallback(() => {
@@ -389,6 +397,41 @@ const GOAL_IDS: GoalId[] = [
 
 function isGoalId(value: string): value is GoalId {
   return (GOAL_IDS as string[]).includes(value)
+}
+
+/**
+ * Quando a Cláudia sugere um produto num botão, o `value` é texto livre — o
+ * modelo escreve o que entende. Casamos esse botão com um produto real do
+ * catálogo: primeiro pelo id, depois pelo nome. Só devolvemos com uma
+ * correspondência clara, para nunca abrir a página do produto errado.
+ */
+function produtoDaEscolha(choice: AssistantChoice, produtos: Product[]): Product | null {
+  const limpar = (s: string): string =>
+    s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+
+  const valor = limpar(choice.value)
+  const rotulo = limpar(choice.label)
+  const alvo = `${valor} ${rotulo}`.trim()
+  if (!alvo) return null
+
+  // 1) O value ou o label é exatamente o id de um produto do catálogo.
+  const porId = produtos.find((p) => {
+    const id = limpar(p.id)
+    return id === valor || id === rotulo
+  })
+  if (porId) return porId
+
+  // 2) O nome do produto aparece no texto do botão (ou o botão é só o nome).
+  const porNome = produtos.find((p) => {
+    const nome = limpar(p.name)
+    return nome.length > 2 && (alvo.includes(nome) || nome === valor || nome === rotulo)
+  })
+  return porNome ?? null
 }
 
 export function useAssistant(): AssistantApi {
