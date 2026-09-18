@@ -364,6 +364,67 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
   /* ── O que o cliente responde ─────────────────────────────────────────── */
 
+  /**
+   * Quanto tempo o balão fica de pé quando ela não chega a falar.
+   *
+   * Só serve para a voz desligada ou ainda por desbloquear. Aí não há fim de
+   * fala para esperar, e o que resta é dar tempo de leitura: à volta de
+   * dezasseis letras por segundo, que é ler sem pressa, com um tecto para não
+   * ficar ali a vida toda.
+   *
+   * O chão são dez segundos, e não é tempo de leitura nenhum — é para este
+   * temporizador nunca ganhar a corrida à voz. A voz remota espera até cinco
+   * segundos pelo worker (`config.voice.timeoutMs`) e só depois passa a vez à
+   * voz do aparelho; numa frase curta, um chão de três segundos fechava o
+   * balão antes de ela chegar a abrir a boca.
+   */
+  const tempoDeLeitura = (texto: string) => Math.min(30_000, Math.max(10_000, texto.length * 60))
+
+  const falouRef = useRef(false)
+  useEffect(() => {
+    falouRef.current = false
+  }, [turn])
+
+  /**
+   * O balão desaparece quando ela acaba de dizer o que tinha a dizer.
+   *
+   * Antes ficava aberto até alguém lhe tocar no ✕, e ninguém lhe tocava: o
+   * balão é grande, tapa parte da ficha, e quem está a ler não faz ideia de
+   * que aquilo se fecha. Acabada a fala, já não serve para nada — o que ela
+   * disse está todo no ecrã por baixo, e melhor escrito.
+   *
+   * Não fecha o balão que tem botões. Esses são o caminho da conversa, e quem
+   * está a ler as opções demora mais do que ela a dizê-las; fechá-los na cara
+   * da pessoa era tirar-lhe o ecrã das mãos.
+   *
+   * Não passa pelo `hush`, e é de propósito: fechar-se sozinha não é o cliente
+   * a pedir silêncio. Com o `hush` ela ficava calada no produto seguinte, como
+   * se lhe tivessem dito que não.
+   */
+  useEffect(() => {
+    if (!turn?.say || turn.choices.length) return
+
+    // Ainda a falar. Fica de pé, e fica a saber que houve fala — é isso que
+    // distingue «acabou» de «ainda nem começou».
+    if (speaking) {
+      falouRef.current = true
+      return
+    }
+
+    if (falouRef.current) {
+      setTurn(null)
+      return
+    }
+
+    // Aqui ela não falou. Ou está muda, ou o áudio ainda vem a caminho do
+    // worker — se vier, este temporizador é cancelado na volta seguinte, bem
+    // antes de chegar ao fim.
+    const t = window.setTimeout(() => setTurn(null), tempoDeLeitura(turn.say))
+    return () => window.clearTimeout(t)
+  }, [turn, speaking])
+
+  /* ── O que o cliente responde ─────────────────────────────────────────── */
+
   const say = useCallback(
     (said: string) => {
       void ask(said)
