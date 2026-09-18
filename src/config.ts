@@ -98,8 +98,16 @@ export const config = {
    */
   pricesConfirmed: true,
 
-  /** Volta ao ecrã de atração após este tempo sem toques. */
-  idleTimeoutMs: 30_000,
+  /**
+   * Volta ao ecrã de atração após este tempo sem toques.
+   *
+   * Dois minutos, e não meio: na ficha de um produto a pessoa está a ler —
+   * composição, modo de uso, preço — e ler não é tocar. Com trinta segundos o
+   * ecrã fugia-lhe a meio da leitura e a estação parecia impaciente. Dois
+   * minutos chegam para ler a ficha toda com calma e continuam a ser pouco
+   * para o cliente seguinte encontrar a sessão de outra pessoa aberta.
+   */
+  idleTimeoutMs: 120_000,
 
   /**
    * O PIN de recurso do balcão — o que abre quando o servidor não responde.

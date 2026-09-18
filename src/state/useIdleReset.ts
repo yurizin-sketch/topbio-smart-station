@@ -16,8 +16,8 @@ import { track } from '../services/telemetry'
  * o produto está a ser despachado.
  *
  * O /staff também: não é sessão de cliente nenhum. Um funcionário que estivesse
- * a contar dinheiro e visse o painel fugir para o ecrã de atração ao fim de 90
- * segundos teria de repetir o login a cada atendimento.
+ * a contar dinheiro e visse o painel fugir para o ecrã de atração ao fim de dois
+ * minutos teria de repetir o login a cada atendimento.
  */
 const EXEMPT = new Set(['/kiosk', '/success', '/staff'])
 

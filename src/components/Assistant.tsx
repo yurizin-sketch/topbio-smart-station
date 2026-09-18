@@ -106,10 +106,11 @@ export function Assistant() {
       </div>
 
       {/*
-        O aviso do toque da manhã.
-        Só no repouso e só antes do primeiro toque: os navegadores não deixam
-        uma página falar sozinha antes de alguém lhe tocar, e sem este aviso
-        quem abre a loja não faz ideia porque é que a Cláudia está muda.
+        O aviso de que não está a sair som.
+        A Cláudia fala assim que a app abre — mas há navegadores que não deixam
+        uma página falar antes de alguém lhe tocar, e o arranque sai calado.
+        Só aparece no repouso e só enquanto a voz não passar mesmo: sem isto,
+        quem abre a loja não faz ideia porque é que ela está muda.
       */}
       {resting && needsUnlock && !muted && (
         <p className="assistant__unlock">Toque uma vez no ecrã para dar voz à Cláudia</p>

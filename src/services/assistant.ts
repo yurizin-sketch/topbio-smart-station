@@ -1,4 +1,4 @@
-import type { GoalId } from '../types'
+import type { GoalId, Product } from '../types'
 import { config } from '../config'
 
 /**
@@ -127,6 +127,69 @@ export const WELCOME: Record<'inicio' | 'ajuda' | 'objetivos', AssistantTurn> = 
 export const OPENING_STEPS: Record<string, AssistantTurn | undefined> = {
   [WELCOME_YES]: WELCOME.ajuda,
   [WELCOME_HELP]: WELCOME.objetivos,
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   A apresentação de um produto
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Termina a frase com ponto final, para a voz respirar entre elas. */
+function frase(texto: string): string {
+  const limpo = texto.trim().replace(/\s+/g, ' ')
+  if (!limpo) return ''
+  return /[.!?…]$/.test(limpo) ? limpo : `${limpo}.`
+}
+
+/** "a, b e c" — como uma pessoa enumera em voz alta, não como uma lista. */
+function enumerar(itens: string[]): string {
+  const limpos = itens.map((i) => i.trim()).filter(Boolean)
+  if (limpos.length === 0) return ''
+  if (limpos.length === 1) return limpos[0]!
+  return `${limpos.slice(0, -1).join(', ')} e ${limpos[limpos.length - 1]}`
+}
+
+/**
+ * O preço por extenso, que é como se diz um preço a alguém.
+ *
+ * O `formatPrice` serve o ecrã — "30,00 €" lê-se bem com os olhos. Dito em voz
+ * alta sai "trinta vírgula zero zero euros", e ninguém fala assim ao balcão.
+ */
+function precoFalado(cents: number): string {
+  const euros = Math.floor(cents / 100)
+  const restantes = cents % 100
+  const parte = `${euros} ${euros === 1 ? 'euro' : 'euros'}`
+  return restantes === 0 ? parte : `${parte} e ${restantes} cêntimos`
+}
+
+/**
+ * Tudo o que a casa sabe deste produto, dito de uma vez.
+ *
+ * Não passa pelo modelo, e é de propósito. O que há para dizer de um frasco já
+ * está escrito na ficha dele — descrição, características, composição, modo de
+ * uso, preço — está certo, é sempre igual e sai no instante em que a página
+ * abre, sem depender de a rede estar boa àquela hora. Mandar o modelo repetir
+ * uma ficha que já temos custa tempo e abre a porta a que ele acrescente uma
+ * promessa de efeito que a lei não deixa fazer (ver o aviso no topo).
+ *
+ * Começa sempre pelo elogio à escolha porque é o que uma pessoa do balcão diria
+ * a quem pega num frasco — e porque quem acabou de escolher quer primeiro ouvir
+ * que escolheu bem, e só depois os pormenores.
+ */
+export function productPitch(product: Product): AssistantTurn {
+  const partes = [
+    'Sua escolha foi muito boa!',
+    frase(`Deixa eu te contar sobre ${product.name}`),
+    frase(product.description),
+    product.highlights.length ? frase(enumerar(product.highlights)) : '',
+    // A composição vem da ficha com pontos a separar; ditos em voz alta não são
+    // nada, e a frase sai toda colada.
+    product.ingredients ? frase(`Na composição: ${product.ingredients.replace(/\s*[·•|]\s*/g, ', ')}`) : '',
+    product.usage ? frase(`Modo de uso: ${product.usage}`) : '',
+    frase(`Sai por ${precoFalado(product.priceCents)}`),
+    'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
+  ]
+
+  return { say: partes.filter(Boolean).join(' '), choices: [] }
 }
 
 /**

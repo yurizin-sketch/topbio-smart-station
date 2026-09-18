@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { config } from '../config'
 import {
   getAssistant,
+  productPitch,
   WELCOME,
   OPENING_STEPS,
   type AssistantChoice,
@@ -111,7 +112,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [thinking, setThinking] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [muted, setMuted] = useState(false)
-  const [unlocked, setUnlocked] = useState(false)
+  // A voz está mesmo a sair. Não é "já tentámos destrancar": é o navegador ter
+  // deixado passar som. Só isso serve para avisar o balcão de um ecrã calado.
+  const [voiceReady, setVoiceReady] = useState(false)
   const [present, setPresent] = useState<boolean | null>(null)
   const [presenceFailure, setPresenceFailure] = useState<string | null>(null)
 
@@ -132,11 +135,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const mutedRef = useRef(muted)
   mutedRef.current = muted
 
+  /**
+   * A frase que foi para o balão mas que ninguém chegou a ouvir.
+   *
+   * Acontece quando o navegador ainda não deixou sair som e a app já começou a
+   * falar. Fica guardada aqui, e sai no instante em que a voz passar — de outra
+   * maneira a primeira frase do dia perdia-se e ela só falava no ecrã seguinte.
+   */
+  const unspokenRef = useRef<string | null>(null)
+
   /** Diz a frase: balão sempre, voz só se houver voz e som ligado. */
   const perform = useCallback(
     (next: AssistantTurn) => {
       setTurn(next)
-      if (!mutedRef.current) voice.speak(next.say)
+      if (mutedRef.current) return
+      voice.speak(next.say)
+      unspokenRef.current = voice.ready ? null : next.say
     },
     [voice],
   )
@@ -184,32 +198,59 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     [brain, perform],
   )
 
-  /* ── A voz precisa de um toque para o dia inteiro ──────────────────────── */
+  /* ── A voz abre com a app, sem esperar por toque nenhum ────────────────── */
 
   useEffect(() => {
-    if (unlocked) return
-    const unlock = () => {
-      voice.unlock()
-      setUnlocked(true)
-    }
-    window.addEventListener('pointerdown', unlock, { once: true })
-    return () => window.removeEventListener('pointerdown', unlock)
-  }, [voice, unlocked])
+    // Ela fala assim que a app abre. Ninguém tem de tocar em nada primeiro:
+    // numa loja, quem chega ao pé de um ecrã calado vai-se embora antes de
+    // descobrir que era preciso tocar para o acordar.
+    //
+    // Os navegadores não gostam disto — é a regra contra páginas que gritam
+    // sozinhas — e o Chrome só deixa se for arrancado com
+    // `--autoplay-policy=no-user-gesture-required`, que é como a máquina da
+    // loja arranca. Onde a regra estiver de pé, o primeiro toque em qualquer
+    // parte do ecrã destranca na mesma: é por isso que o ouvinte fica, em vez
+    // de sair depois da primeira tentativa.
+    voice.unlock()
 
-  useEffect(() => voice.subscribe(() => setSpeaking(voice.speaking)), [voice])
+    const retry = () => voice.unlock()
+    window.addEventListener('pointerdown', retry)
+    return () => window.removeEventListener('pointerdown', retry)
+  }, [voice])
+
+  useEffect(() => {
+    const leia = () => {
+      setSpeaking(voice.speaking)
+      setVoiceReady(voice.ready)
+    }
+    // Uma vez já: a voz destrancou-se no efeito acima, que corre antes deste, e
+    // o aviso que ela deu nessa altura não tinha ainda ninguém a ouvir. Sem
+    // esta leitura o ecrã de atração ficava a pedir um toque a uma voz que já
+    // estava boa.
+    leia()
+    return voice.subscribe(leia)
+  }, [voice])
+
+  // A voz chegou tarde: o arranque saiu calado porque o navegador não deixou, e
+  // foi um toque qualquer que abriu a porta. O que está no balão ainda não foi
+  // dito — diz-se agora, em vez de esperar pelo ecrã seguinte.
+  useEffect(() => {
+    if (!voiceReady || muted) return
+    const pendente = unspokenRef.current
+    if (!pendente) return
+    unspokenRef.current = null
+    voice.speak(pendente)
+  }, [voiceReady, muted, voice])
 
   /* ── A câmara ─────────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    // Só depois do primeiro toque.
+    // Arranca com a app, e não à espera de um toque.
     //
-    // Duas razões. A do navegador: pedir a câmara sem ninguém ter tocado em
-    // nada é o padrão que o Chrome trata como abusivo e bloqueia. A da loja:
-    // assim a autorização aparece a quem abre a porta de manhã, e não a um
-    // cliente que se aproximou para ver um preço. Autorizada uma vez, o
-    // navegador não volta a perguntar.
-    if (!unlocked) return
-
+    // A câmara é o que faz a estação reparar em quem chega; se só ligasse
+    // depois de alguém tocar no ecrã, nunca chegava a servir para nada — quem
+    // toca já lá está. A autorização pede-se uma vez, a quem abre a porta de
+    // manhã, e o navegador não volta a perguntar.
     const presence = getPresence()
     let live = true
 
@@ -229,37 +270,66 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       off()
       presence.stop()
     }
-  }, [unlocked])
+  }, [])
 
   /* ── Chegou alguém ────────────────────────────────────────────────────── */
+
+  /**
+   * A saudação da casa, venha ela de onde vier.
+   *
+   * Três portas dão aqui: a app a abrir, a câmara a ver alguém parado à frente,
+   * e o regresso ao repouso quando a sessão anterior morreu de velha. Em todas
+   * é a mesma coisa que acontece — chegou gente nova, começa-se do princípio —
+   * e por isso é aqui que está, e não copiado três vezes.
+   *
+   * O silêncio entre saudações é o que impede que as três portas se atropelem:
+   * quem entra à frente da câmara no instante em que a app arranca ouve um
+   * "olá", não dois.
+   */
+  const greet = useCallback(() => {
+    const now = Date.now()
+    if (now - lastGreetRef.current < config.assistant.greetCooldownMs) return
+    lastGreetRef.current = now
+    // Cliente novo, folha limpa: o "só estou a olhar" era do anterior.
+    quietRef.current = false
+    track({ type: 'assistant_greeted' })
+    void ask(null)
+  }, [ask])
 
   useEffect(() => {
     if (present !== true) return
     // Só saudamos quem chega ao ecrã de repouso. Interromper alguém a meio de
     // um pagamento porque a câmara se entusiasmou seria assustador.
     if (contextRef.current.screen !== 'attract') return
-
-    const now = Date.now()
-    if (now - lastGreetRef.current < config.assistant.greetCooldownMs) return
-    lastGreetRef.current = now
-
-    track({ type: 'assistant_greeted' })
-    void ask(null)
-  }, [present, ask])
+    greet()
+  }, [present, greet])
 
   /* ── Mudou de ecrã ────────────────────────────────────────────────────── */
 
   const greetedScreenRef = useRef<string | null>(null)
   useEffect(() => {
-    if (screen === greetedScreenRef.current) return
-    greetedScreenRef.current = screen
+    // A ficha do produto ainda não tem produto: o ecrã monta-se e só depois é
+    // que o catálogo o pousa na sessão. Sair agora sem marcar nada é o que faz
+    // com que ela fale quando ele chegar, daqui a um instante.
+    if (screen === 'product' && !product) return
+
+    // E a chave leva o produto dentro: ir de um frasco para o outro é chegar a
+    // um sítio novo, e do sítio novo ela tem de falar.
+    const key = screen === 'product' ? `product:${product!.id}` : screen
+    if (key === greetedScreenRef.current) return
+    greetedScreenRef.current = key
 
     if (screen === 'attract') {
       // Volta ao repouso: cliente novo a caminho, conversa limpa.
       voice.stop()
       setTurn(null)
+      unspokenRef.current = null
       brain.forget()
       quietRef.current = false
+      // E é ela a dar o primeiro passo. Serve a app a abrir de manhã e a
+      // sessão que acabou de expirar: quem chega encontra alguém a falar, não
+      // um ecrã à espera de um toque.
+      greet()
       return
     }
 
@@ -268,6 +338,19 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     if (SILENT_SCREENS.has(screen)) {
       voice.stop()
       setTurn(null)
+      unspokenRef.current = null
+      return
+    }
+
+    // A ficha do produto fala sempre, e fala a ficha toda.
+    //
+    // Sempre: nem o "só estou a olhar" a cala aqui, porque quem foi ao ponto de
+    // abrir um frasco quer saber o que é aquilo — o pedido era para não ser
+    // chateado no corredor, não para ficar sem resposta à frente do produto.
+    // E a ficha toda, escrita daqui e não pedida ao modelo: ver `productPitch`.
+    if (screen === 'product') {
+      quietRef.current = false
+      perform(productPitch(product!))
       return
     }
 
@@ -276,7 +359,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     if (quietRef.current) return
 
     void ask(`__ecra__:${screen}`)
-  }, [screen, ask, brain, voice])
+  }, [screen, product, ask, brain, voice, greet, perform])
 
   /* ── O que o cliente responde ─────────────────────────────────────────── */
 
@@ -299,6 +382,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     quietRef.current = true
     voice.stop()
     setTurn(null)
+    // Fechou o balão: a frase que estava à espera de voz já não interessa a
+    // ninguém, e sair do nada mais tarde seria pior do que nunca ter saído.
+    unspokenRef.current = null
   }, [voice])
 
   // Tocar na personagem é o caminho de quem não espera pela câmara — e de quem
@@ -354,7 +440,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       thinking,
       speaking,
       muted,
-      needsUnlock: !unlocked,
+      needsUnlock: !voiceReady,
       hidden: SILENT_SCREENS.has(screen),
       present,
       presenceFailure,
@@ -369,7 +455,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       thinking,
       speaking,
       muted,
-      unlocked,
+      voiceReady,
       screen,
       present,
       presenceFailure,

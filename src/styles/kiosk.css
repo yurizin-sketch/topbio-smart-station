@@ -1381,6 +1381,14 @@ img {
   line-height: 1.45;
   font-weight: var(--tne-weight-semibold);
   max-width: 34ch;
+  /* A ficha de um produto dita por inteiro — descrição, composição, modo de uso
+     e preço — são quinze ou vinte linhas. O balão cresce para cima a partir do
+     canto, e sem este tecto saía pelo topo do ecrã e levava o princípio da
+     frase com ele. O que interessa está a ser dito em voz alta; aqui basta
+     acompanhar, e quem quiser reler tem por onde. */
+  max-height: 42vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .assistant__close {

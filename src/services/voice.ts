@@ -13,12 +13,17 @@
  * usamos quando há worker configurado. A local fica por baixo a apanhar a fala
  * sempre que a de cima falha — ver `RemoteVoice`.
  *
- * IMPORTANTE, O TOQUE DA MANHÃ: os navegadores não deixam uma página falar
- * antes de alguém lhe tocar. É uma regra contra páginas que gritam sozinhas, e
- * aplica-se a nós na mesma. Um toque em qualquer parte do ecrã destranca a voz
- * para o resto do dia — a página fica aberta, o desbloqueio fica com ela. Por
- * isso quem abre a loja toca uma vez no tablet e está feito; o ecrã de atração
- * avisa quando isso ainda não aconteceu.
+ * IMPORTANTE, O ARRANQUE: os navegadores não deixam uma página falar antes de
+ * alguém lhe tocar. É uma regra contra páginas que gritam sozinhas, e aplica-se
+ * a nós na mesma — só que aqui ela é o contrário do que a loja precisa: a
+ * Cláudia tem de falar mal a app abre, sem ninguém tocar em nada.
+ *
+ * Resolve-se de fora: o Chrome da loja arranca com
+ * `--autoplay-policy=no-user-gesture-required` e a regra deixa de existir para
+ * esta página. Onde esse arranque não for possível, o `unlock()` é tentado no
+ * arranque e outra vez a cada toque, e o primeiro toque que houver destranca a
+ * voz para o resto do dia — a página fica aberta, o desbloqueio fica com ela.
+ * Enquanto não sair som, o ecrã de atração diz porquê.
  */
 
 export interface Voice {
@@ -185,18 +190,37 @@ class RemoteVoice implements Voice {
 
   unlock(): void {
     this.fallback.unlock()
-    if (this.unlocked || typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
 
-    const audio = new Audio()
-    audio.preload = 'auto'
-    audio.addEventListener('ended', () => this.settle())
-    audio.addEventListener('error', () => this.settle())
+    // O elemento faz-se uma vez e fica: é nele que a autorização se cola, e um
+    // `<audio>` novo a cada tentativa seria começar do zero de cada vez.
+    if (!this.audio) {
+      const audio = new Audio()
+      audio.preload = 'auto'
+      audio.addEventListener('ended', () => this.settle())
+      audio.addEventListener('error', () => this.settle())
+      this.audio = audio
+    }
+
+    // Nada a destrancar, ou ela está a meio de uma frase — cortar-lhe a palavra
+    // para tocar um silêncio seria pior do que não fazer nada.
+    if (this.unlocked || this.speaking) return
+
+    const audio = this.audio
     audio.src = SILENCE
-    void audio.play().catch(() => {})
-
-    this.audio = audio
-    this.unlocked = true
-    this.emit()
+    void audio
+      .play()
+      .then(() => {
+        // Só aqui é que o navegador deixou mesmo sair som. Marcar a voz como
+        // pronta antes disto era uma mentira que escondia um ecrã calado: a
+        // estação dizia-se destrancada e o cliente não ouvia nada.
+        this.unlocked = true
+        this.emit()
+      })
+      .catch(() => {
+        // Arranque sem autorização de som. Fica o ouvinte do primeiro toque,
+        // em `state/assistant.tsx`, a tentar outra vez.
+      })
   }
 
   speak(raw: string): void {

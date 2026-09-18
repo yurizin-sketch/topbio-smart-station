@@ -64,7 +64,10 @@ export interface PresenceTuning {
 }
 
 export const defaultTuning: PresenceTuning = {
-  dwellMs: 2_000,
+  // Três segundos à frente da câmara. Quem passa a caminho da caixa atravessa o
+  // enquadramento em menos do que isso; quem para para olhar fica muito mais.
+  // É esta a fronteira entre saudar um cliente e falar para quem vai de passagem.
+  dwellMs: 3_000,
   leaveMs: 4_000,
   enterRatio: 0.18,
   leaveRatio: 0.1,
