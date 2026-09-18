@@ -1,4 +1,4 @@
-import type { GoalId, Product } from '../types'
+import type { GoalId, Product, ProductDetail } from '../types'
 import { config } from '../config'
 
 /**
@@ -30,6 +30,19 @@ export interface AssistantContext {
   visible: { id: string; name: string; priceCents: number }[]
   /** O produto aberto, se houver. */
   productId: string | null
+  /**
+   * A ficha por inteiro do produto aberto, palavra por palavra do site.
+   *
+   * Vai aqui e não no `visible` porque é muita coisa — a ficha de um produto
+   * ocupa mais do que os vinte e quatro do catálogo juntos — e porque só faz
+   * falta para um: aquele que a pessoa está a ver quando pergunta.
+   *
+   * É isto que separa uma resposta de uma desculpa. Sem ela, a "posso tomar
+   * grávida?" só podia ter como resposta um "não sei, pergunte ao balcão";
+   * com ela, a resposta é a que a casa escreveu e o legal aprovou. O modelo
+   * fica proibido, no prompt, de dizer aqui uma palavra que não esteja nela.
+   */
+  productSheet: ProductDetail | null
 }
 
 /** Uma resposta tocável. Num tablet vale mais que um teclado. */
@@ -162,31 +175,90 @@ function precoFalado(cents: number): string {
 }
 
 /**
+ * Frases inteiras até dar o limite. Nunca corta uma a meio.
+ *
+ * Um texto cortado a meio da frase percebe-se a ler — os olhos saltam para a
+ * linha seguinte. Ouvido, não: a voz simplesmente pára, e quem está à frente do
+ * ecrã fica à espera do resto de uma frase que não vem.
+ */
+function ateAoPonto(texto: string, max: number): string {
+  const limpo = clean(texto)
+  if (limpo.length <= max) return limpo
+
+  const dentro = limpo.lastIndexOf('. ', max)
+  if (dentro > 60) return limpo.slice(0, dentro + 1)
+
+  // Nenhuma frase acaba antes do limite. Então passa-se do limite e diz-se a
+  // primeira inteira: mais vale uma frase comprida do que uma a meio. Cortar
+  // por palavras e pôr um ponto no fim fazia frases como «prática tradicional
+  // das populações andinas, que.», que é pior do que não dizer nada.
+  const seguinte = limpo.indexOf('. ')
+  return seguinte > 0 ? limpo.slice(0, seguinte + 1) : limpo
+}
+
+/** Espaços a mais e pontuação encostada, que vêm de a copy ter nascido em HTML. */
+function clean(texto: string): string {
+  return String(texto ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Quanto tempo dura o frasco, se a casa já o tiver respondido.
+ *
+ * Não há em lado nenhum o número de cápsulas por embalagem — nem no site nem na
+ * tabela de preços. O que há é esta resposta das perguntas frequentes, que diz
+ * a mesma coisa pela via que interessa a quem compra: quanto tempo aquilo dura.
+ * Enquanto o número não existir, é isto que se diz; inventá-lo seria pior.
+ */
+function duracao(detail: ProductDetail): string {
+  // «quanto tempo», e não «dura»: com «dura» apanhava-se o «durante a gravidez»
+  // das outras perguntas, e ela respondia a quanto tempo dura o frasco com um
+  // aviso a grávidas. A pergunta é esta, palavra por palavra, em dezoito das
+  // dezanove fichas; a que não a tem fica sem esta frase, e está bem assim.
+  const item = detail.faq.find((f) => /quanto tempo|quantas c[áa]psulas/i.test(f.question))
+  return item ? ateAoPonto(item.answer, 220) : ''
+}
+
+/**
  * Tudo o que a casa sabe deste produto, dito de uma vez.
  *
  * Não passa pelo modelo, e é de propósito. O que há para dizer de um frasco já
- * está escrito na ficha dele — descrição, características, composição, modo de
- * uso, preço — está certo, é sempre igual e sai no instante em que a página
- * abre, sem depender de a rede estar boa àquela hora. Mandar o modelo repetir
- * uma ficha que já temos custa tempo e abre a porta a que ele acrescente uma
- * promessa de efeito que a lei não deixa fazer (ver o aviso no topo).
+ * está escrito na ficha dele — descrição, composição, modo de uso, preço —
+ * está certo, é sempre igual e sai no instante em que a página abre, sem
+ * depender de a rede estar boa àquela hora. Mandar o modelo repetir uma ficha
+ * que já temos custa tempo e abre a porta a que ele acrescente uma promessa de
+ * efeito que a lei não deixa fazer (ver o aviso no topo).
  *
  * Começa sempre pelo elogio à escolha porque é o que uma pessoa do balcão diria
  * a quem pega num frasco — e porque quem acabou de escolher quer primeiro ouvir
  * que escolheu bem, e só depois os pormenores.
+ *
+ * SOBRE O TAMANHO. A ficha do site tem para aí três mil caracteres por produto;
+ * dita por inteiro dá perto de quatro minutos, e o ecrã volta à atração aos dois
+ * (`config.idleTimeoutMs`). Ou seja: a apresentação completa não caberia — seria
+ * cortada a meio, sempre, e ninguém a ouviria até ao fim. Por isso diz-se aqui o
+ * que uma pessoa do balcão diria de pé (à volta de um minuto) e guarda-se o
+ * resto para quem perguntar: o `detail` inteiro vai no contexto do modelo, e a
+ * ficha inteira está no ecrã, a ser lida ao mesmo tempo.
  */
 export function productPitch(product: Product): AssistantTurn {
+  const d = product.detail
+  const composicao = d?.ingredients.length
+    ? enumerar(d.ingredients.map((i) => i.name))
+    : product.ingredients.replace(/\s*[·•|]\s*/g, ', ')
+
   const partes = [
     'Sua escolha foi muito boa!',
     frase(`Deixa eu te contar sobre ${product.name}`),
-    frase(product.description),
-    product.highlights.length ? frase(enumerar(product.highlights)) : '',
-    // A composição vem da ficha com pontos a separar; ditos em voz alta não são
-    // nada, e a frase sai toda colada.
-    product.ingredients ? frase(`Na composição: ${product.ingredients.replace(/\s*[·•|]\s*/g, ', ')}`) : '',
-    product.usage ? frase(`Modo de uso: ${product.usage}`) : '',
+    frase(d ? ateAoPonto(d.about, 420) : product.description),
+    composicao ? frase(`Na composição leva ${composicao}`) : '',
+    // Da posologia interessa a dose — quantas cápsulas e quando. O resto (com
+    // água, longe do café, ao fim de quantas semanas) responde-se a quem
+    // perguntar, que é quando a pessoa quer mesmo saber.
+    frase(`Modo de uso: ${d ? ateAoPonto(d.usage, 220) : product.usage}`),
+    d ? frase(duracao(d)) : '',
     frase(`Sai por ${precoFalado(product.priceCents)}`),
     'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
+    d?.notes.length ? 'E se quiser saber da composição certinha ou dos cuidados de uso, é só me perguntar.' : '',
   ]
 
   return { say: partes.filter(Boolean).join(' '), choices: [] }

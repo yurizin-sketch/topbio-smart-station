@@ -137,6 +137,49 @@ const firstSentence = (text, max) => {
 
 const ts = (s) => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'"
 
+/**
+ * Os itens de uma lista do site, um a um.
+ *
+ * O «para quem é» e os avisos vêm em `<ul><li>`. Passá-los pelo `clean` inteiro
+ * dava um parágrafo só, com as frases todas coladas umas às outras — ilegível
+ * no ecrã e impossível de dizer em voz alta. Separados, cada um é uma frase.
+ *
+ * Sem `<li>` nenhum devolve o texto todo como um único item: há campos que são
+ * um parágrafo simples e não vale a pena perdê-los por isso.
+ */
+const listItems = (html) => {
+  const raw = String(html ?? '')
+  const items = [...raw.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map((m) => clean(m[1]))
+  const úteis = items.filter(Boolean)
+  if (úteis.length) return úteis
+  const solto = clean(raw)
+  return solto ? [solto] : []
+}
+
+/** Uma lista em TypeScript, uma entrada por linha para o diff se ler. */
+const tsList = (itens, indent) =>
+  itens.length ? `[\n${itens.map((i) => `${indent}  ${i},`).join('\n')}\n${indent}]` : '[]'
+
+/** A ficha completa, já como literal TypeScript pronto a colar na linha. */
+const detailLiteral = (d) => {
+  const i = '      '
+  return `{
+${i}about: ${ts(d.about)},
+${i}forWhom: ${tsList(d.forWhom.map(ts), i)},
+${i}usage: ${ts(d.usage)},
+${i}nutrition: ${ts(d.nutrition)},
+${i}notes: ${tsList(d.notes.map(ts), i)},
+${i}ingredients: ${tsList(
+    d.ingredients.map((x) => `{ name: ${ts(x.name)}, note: ${ts(x.note)} }`),
+    i,
+  )},
+${i}faq: ${tsList(
+    d.faq.map((x) => `{ question: ${ts(x.question)}, answer: ${ts(x.answer)} }`),
+    i,
+  )},
+    }`
+}
+
 /** A copy revista que vive no tema. `null` se o produto ainda lá não estiver. */
 const templateCopy = (handle) => {
   const file = join(TEMPLATES, `product.${handle}.json`)
@@ -146,9 +189,15 @@ const templateCopy = (handle) => {
   const section = (type) => Object.values(json.sections).find((s) => s.type === type)
   const hero = section('tne-product-hero')?.settings ?? {}
 
-  const ingredientNames = Object.values(section('tne-product-ingredientes')?.blocks ?? {})
-    .map((b) => b.settings?.title)
-    .filter(Boolean)
+  const ingredientes = Object.values(section('tne-product-ingredientes')?.blocks ?? {})
+    .map((b) => ({ name: clean(b.settings?.title), note: clean(b.settings?.description) }))
+    .filter((i) => i.name)
+
+  const ingredientNames = ingredientes.map((i) => i.name)
+
+  const faq = Object.values(section('tne-product-faq')?.blocks ?? {})
+    .map((b) => ({ question: clean(b.settings?.question), answer: clean(b.settings?.answer) }))
+    .filter((f) => f.question && f.answer)
 
   return {
     description: firstSentence(hero.subtitle, 170),
@@ -157,6 +206,24 @@ const templateCopy = (handle) => {
       ? ingredientNames.join(' · ')
       : firstSentence(hero.desc_nutricional, 170),
     highlights: [hero.benefit_1, hero.benefit_2, hero.benefit_3].filter(Boolean).map(clean),
+
+    /**
+     * E agora o mesmo, mas inteiro.
+     *
+     * Em cima corta-se tudo à primeira frase, porque é o que cabe no ecrã de um
+     * tablet. Aqui não se corta nada: é o que a Cláudia diz em voz alta e é o
+     * que ela tem para responder a quem pergunta. Só não vem daqui o preço nem
+     * as imagens — o preço é da tabela da loja e as imagens já as temos.
+     */
+    detail: {
+      about: clean(hero.desc_descricao) || clean(hero.subtitle),
+      forWhom: listItems(hero.desc_para_quem),
+      usage: clean(hero.desc_como_tomar),
+      nutrition: clean(hero.desc_nutricional),
+      notes: listItems(hero.desc_observacoes),
+      ingredients: ingredientes,
+      faq,
+    },
   }
 }
 
@@ -171,7 +238,7 @@ for (const p of PRODUCTS) {
     problems.push(`template em falta: ${p.handle}`)
     continue
   }
-  const { description, usage, ingredients, highlights } = copy
+  const { description, usage, ingredients, highlights, detail } = copy
 
   if (!description) problems.push(`${p.handle}: sem descrição`)
   if (!usage) problems.push(`${p.handle}: sem modo de uso`)
@@ -188,7 +255,8 @@ for (const p of PRODUCTS) {
     ingredients: ${ts(ingredients)},
     usage: ${ts(usage)},
     goals: [${p.goals.map(ts).join(', ')}],
-    active: ${p.active !== false},
+    active: ${p.active !== false},${detail ? `
+    detail: ${detailLiteral(detail)},` : ''}
   },`)
 }
 

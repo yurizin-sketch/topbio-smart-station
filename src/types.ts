@@ -22,6 +22,39 @@ export interface Goal {
   icon: string
 }
 
+/**
+ * A ficha do produto por inteiro, tal como está no site.
+ *
+ * O que está em `Product` é o que cabe num ecrã: uma frase, três chips, uma
+ * linha de composição. Isto é o resto — o texto todo que a casa escreveu sobre
+ * cada frasco, sem cortes.
+ *
+ * Existe por causa da Cláudia. Ela apresenta o produto a quem chega e responde
+ * a quem pergunta, e para isso precisa de saber mais do que aquilo que está
+ * escrito no ecrã, que a pessoa já está a ler sozinha.
+ *
+ * Vem toda do site — `scripts/build-catalog.mjs` copia-a dos templates da loja
+ * — e é por isso que se pode dizer em voz alta sem medo: é a mesma copy que
+ * passou pela revisão legal (Regulamento CE 1924/2006), palavra por palavra.
+ * Não se escreve nada aqui à mão: à próxima geração desaparecia.
+ */
+export interface ProductDetail {
+  /** A descrição longa, a que o ecrã só mostra a primeira frase. */
+  about: string
+  /** Para quem é este produto. Uma linha por pessoa. */
+  forWhom: string[]
+  /** Como tomar, por extenso — doses, horas, com ou sem comida. */
+  usage: string
+  /** O que traz por dose, com os miligramas. */
+  nutrition: string
+  /** Avisos, contraindicações e quem não deve tomar. */
+  notes: string[]
+  /** Cada ingrediente e o que ele é. */
+  ingredients: { name: string; note: string }[]
+  /** O que os clientes perguntam, já respondido pela casa. */
+  faq: { question: string; answer: string }[]
+}
+
 export interface Product {
   id: string
   name: string
@@ -44,6 +77,13 @@ export interface Product {
   usage: string
   goals: GoalId[]
   active: boolean
+  /**
+   * A ficha completa, para a Cláudia.
+   *
+   * Opcional porque há três produtos que ainda não têm página no site e vivem
+   * da copy escrita à mão no gerador. Desses ela diz o que sabe, que é menos.
+   */
+  detail?: ProductDetail
 }
 
 /**

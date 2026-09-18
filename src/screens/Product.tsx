@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
 import { useSession } from '../state/session'
@@ -20,6 +20,15 @@ export function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const { products, product, selectProduct, createOrder } = useSession()
   const [tab, setTab] = useState<TabId>('beneficios')
+
+  // A ficha completa do site. Falta nos produtos que ainda não têm lá página,
+  // e nesses os separadores mostram a versão curta do catálogo.
+  const detail = product?.detail
+
+  // Produto novo, ficha do princípio. O ecrã não se desmonta entre produtos, e
+  // sem isto quem tinha aberto o modo de uso de um caía no modo de uso do
+  // seguinte — enquanto a Cláudia lhe estava a apresentar a descrição.
+  useEffect(() => setTab('beneficios'), [product?.id])
 
   // Permite abrir /product/xxx diretamente (útil para testes e QR internos).
   useEffect(() => {
@@ -99,23 +108,75 @@ export function ProductDetail() {
               ))}
             </div>
 
+            {/* A `key` obriga o painel a nascer de novo a cada separador. Sem
+                ela o React reaproveita a mesma caixa e com ela o scroll: quem
+                tinha descido até ao fim dos benefícios abria a composição a
+                meio dos ingredientes, sem perceber porquê. */}
             <div
+              key={tab}
               className="tabs__panel"
               role="tabpanel"
               id={`panel-${tab}`}
               aria-labelledby={`tab-${tab}`}
             >
               {tab === 'beneficios' && (
-                <ul className="chips">
-                  {product.highlights.map((h) => (
-                    <li key={h} className="chip">
-                      {h}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="chips">
+                    {product.highlights.map((h) => (
+                      <li key={h} className="chip">
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                  {detail?.about && <p className="spec__value spec__value--after">{detail.about}</p>}
+                  {detail?.forWhom.length ? (
+                    <>
+                      <p className="spec__label">Para quem é</p>
+                      <ul className="spec__list">
+                        {detail.forWhom.map((linha) => (
+                          <li key={linha}>{linha}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </>
               )}
-              {tab === 'composicao' && <p className="spec__value">{product.ingredients}</p>}
-              {tab === 'uso' && <p className="spec__value">{product.usage}</p>}
+              {tab === 'composicao' &&
+                (detail?.ingredients.length ? (
+                  <>
+                    <dl className="spec__defs">
+                      {detail.ingredients.map((i) => (
+                        <Fragment key={i.name}>
+                          <dt>{i.name}</dt>
+                          <dd>{i.note}</dd>
+                        </Fragment>
+                      ))}
+                    </dl>
+                    {detail.nutrition && (
+                      <>
+                        <p className="spec__label">Por dose</p>
+                        <p className="spec__value">{detail.nutrition}</p>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <p className="spec__value">{product.ingredients}</p>
+                ))}
+              {tab === 'uso' && (
+                <>
+                  <p className="spec__value">{detail?.usage || product.usage}</p>
+                  {detail?.notes.length ? (
+                    <>
+                      <p className="spec__label">Cuidados</p>
+                      <ul className="spec__list">
+                        {detail.notes.map((n) => (
+                          <li key={n}>{n}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
 

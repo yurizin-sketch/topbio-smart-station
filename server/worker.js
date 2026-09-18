@@ -255,11 +255,45 @@ function readTurn(text) {
   }
 }
 
+/**
+ * A ficha do produto aberto, tal como está no site, para o modelo ler.
+ *
+ * É a diferença entre responder e mandar a pessoa ao balcão. Quem está à frente
+ * do ecrã pergunta o que qualquer um pergunta — do que é feito, quantas se toma,
+ * se pode grávida, quanto tempo dura o frasco — e tudo isso já foi escrito e
+ * revisto pela casa. Aqui só se lhe entrega essa folha.
+ *
+ * O prompt manda-o cingir-se a ela. Não é uma formalidade: um suplemento não
+ * cura, não trata e não previne nada, e o modelo é perfeitamente capaz de
+ * inventar uma frase simpática que diga o contrário. Com a folha à frente, não
+ * precisa de inventar nada.
+ */
+function sheet(detail) {
+  if (!detail) return []
+
+  const out = ['', 'FICHA DO PRODUTO ABERTO (texto do site — responde só com o que está aqui):']
+  const bloco = (titulo, texto) => { if (texto) out.push(`${titulo}: ${texto}`) }
+  const lista = (titulo, itens) => {
+    if (Array.isArray(itens) && itens.length) out.push(`${titulo}:`, ...itens.map((i) => `  - ${i}`))
+  }
+
+  bloco('Sobre', detail.about)
+  lista('Para quem é', detail.forWhom)
+  bloco('Como tomar', detail.usage)
+  bloco('Informação nutricional', detail.nutrition)
+  lista('Avisos e cuidados', detail.notes)
+  lista('Ingredientes', (detail.ingredients ?? []).map((i) => `${i.name}: ${i.note}`))
+  lista('Perguntas frequentes', (detail.faq ?? []).map((f) => `${f.question} — ${f.answer}`))
+
+  return out
+}
+
 /** O estado da estação, em palavras que o modelo entende. */
 function describe(context) {
   const lines = [`Tela onde o cliente está: ${context?.screen ?? 'desconhecido'}.`]
   if (context?.goal) lines.push(`Objetivo já escolhido: ${context.goal}.`)
   if (context?.productId) lines.push(`Produto aberto: ${context.productId}.`)
+  lines.push(...sheet(context?.productSheet))
 
   const visible = Array.isArray(context?.visible) ? context.visible.slice(0, 24) : []
   if (visible.length) {

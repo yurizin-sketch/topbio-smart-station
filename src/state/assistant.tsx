@@ -162,6 +162,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         screen: s,
         goal: g,
         productId: open?.id ?? null,
+        productSheet: open?.detail ?? null,
         // O que está no ecrã, para o modelo escolher daqui e não inventar.
         visible: all.slice(0, 24).map((p) => ({
           id: p.id,

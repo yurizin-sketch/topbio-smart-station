@@ -489,9 +489,58 @@ img {
 
 /* Altura mínima para que trocar de separador não faça saltar o botão de
    comprar por baixo. */
+/*
+ * A ficha do site é longa — há produtos com mil caracteres só de descrição,
+ * mais os ingredientes um a um e os avisos todos. Sem tecto, o separador
+ * empurrava o botão de comprar para fora do ecrã, que é exactamente o que os
+ * separadores vieram resolver. Com tecto, rola-se a ficha e o botão fica onde
+ * está, sempre à vista.
+ */
 .tabs__panel {
   min-height: 96px;
+  max-height: 34vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-top: var(--tne-space-md);
+}
+
+.spec__label {
+  font-size: var(--station-small);
+  font-weight: var(--tne-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tne-text-subtle);
+  margin: var(--tne-space-md) 0 var(--tne-space-xs);
+}
+
+.spec__value--after {
+  margin-top: var(--tne-space-md);
+}
+
+.spec__list {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--tne-text-muted);
+}
+
+.spec__list li + li {
+  margin-top: var(--tne-space-xs);
+}
+
+/* Nome do ingrediente e o que ele é, um por cima do outro: em duas colunas os
+   nomes longos partiam-se todos e ficava ilegível no tablet de pé. */
+.spec__defs {
+  margin: 0;
+  color: var(--tne-text-muted);
+}
+
+.spec__defs dt {
+  font-weight: var(--tne-weight-bold);
+  color: var(--tne-text);
+}
+
+.spec__defs dd {
+  margin: 0 0 var(--tne-space-sm);
 }
 
 .chips {
