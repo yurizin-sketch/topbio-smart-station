@@ -117,8 +117,36 @@ function cors(origin, allowed) {
    browser, que o repositório é público. Por isso passa por aqui.
    ────────────────────────────────────────────────────────────────────────── */
 
-/** Limite por fala. Uma frase da Cláudia não chega perto disto; um abuso chega. */
-const SPEAK_MAX = 320
+/**
+ * Limite por fala.
+ *
+ * Era 320, à conta de «uma frase da Cláudia não chega perto disto». Chegava.
+ * A apresentação de um produto não é uma frase, é a ficha dita de uma vez —
+ * umas quinhentas letras, quase seiscentas na maior da gama — e o que passava
+ * dos 320 era cortado aqui, sem dizer nada a ninguém. No ecrã aparecia a fala
+ * inteira e ela calava-se a meio de uma palavra, como se tivesse encravado.
+ *
+ * 900 leva a maior apresentação com folga e continua a travar um abuso, que é
+ * para o que isto serve. As respostas do modelo não chegam aqui perto: o
+ * SYSTEM manda-o responder em duas frases curtas.
+ *
+ * Isto nunca foi a defesa a sério — essa é a regra de rate limiting no painel
+ * do Cloudflare e o tecto de gastos da chave (ver o topo do ficheiro).
+ */
+const SPEAK_MAX = 900
+
+/**
+ * Corta no fim da última frase que caiba, não a meio da palavra.
+ *
+ * Se algum dia voltar a bater no limite, que ela acabe uma frase e se cale com
+ * ar de quem acabou. Uma fala cortada a meio parece avaria e assusta o cliente.
+ */
+function ateAoLimite(texto) {
+  if (texto.length <= SPEAK_MAX) return texto
+  const cabe = texto.slice(0, SPEAK_MAX)
+  const fim = Math.max(cabe.lastIndexOf('. '), cabe.lastIndexOf('! '), cabe.lastIndexOf('? '))
+  return fim > 0 ? cabe.slice(0, fim + 1) : cabe
+}
 
 /**
  * Devolve a fala em MP3.
@@ -134,9 +162,7 @@ async function speak(request, env, headers) {
   }
 
   const body = await request.json().catch(() => null)
-  const text = String(body?.text ?? '')
-    .trim()
-    .slice(0, SPEAK_MAX)
+  const text = ateAoLimite(String(body?.text ?? '').trim())
   if (!text) return json({ error: 'sem_texto' }, 400, headers)
 
   // Turbo por omissão: metade do custo do multilingue e responde bem mais
