@@ -502,6 +502,16 @@ img {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-top: var(--tne-space-md);
+  /*
+   * A faixa da direita é da Cláudia. Ela está `fixed` por cima de tudo (ver
+   * `.assistant`), e o texto que lhe passava por baixo ficava simplesmente
+   * escondido: no frasco do TopBio Lip lia-se «600 mg cada» e o «· 27 g» ia
+   * parar atrás dela, com o «g» sozinho na linha seguinte.
+   *
+   * O valor cobre o caso pior, que é o ecrã em retrato (142 px tapados em
+   * 1080 de largura); ao alto sobra folga, e é melhor sobrar do que faltar.
+   */
+  padding-right: 9.5rem;
 }
 
 .spec__label {
@@ -894,6 +904,25 @@ img {
   .detail,
   .pay {
     grid-template-columns: 1fr;
+  }
+
+  /*
+   * Em coluna, a fotografia enche a largura toda — e numa largura de 1080 isso
+   * dá-lhe 900 px de altura, quase metade do ecrã. O que ficava empurrado para
+   * baixo da dobra era o botão de comprar: a pessoa via o produto, ouvia a
+   * Cláudia, e não tinha por onde comprar sem descobrir que aquilo rolava.
+   *
+   * O tecto é o mesmo do painel dos separadores, e pela mesma razão que lá está
+   * escrita: o que não pode sair da vista é o botão.
+   */
+  .detail__figure {
+    max-height: 34vh;
+  }
+
+  .detail__figure img {
+    max-height: 34vh;
+    width: auto;
+    margin-inline: auto;
   }
 }
 
