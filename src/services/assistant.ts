@@ -261,7 +261,7 @@ export function productPitch(product: Product): AssistantTurn {
   const d = product.detail
   const composicao = d?.ingredients.length
     ? enumerar(d.ingredients.map((i) => i.name))
-    : product.ingredients.replace(/\s*[·•|]\s*/g, ', ')
+    : enumerar(product.ingredients.split(/\s*[·•|]\s*/).filter(Boolean))
 
   const partes = [
     'Sua escolha foi muito boa!',

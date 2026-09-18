@@ -69,7 +69,7 @@ const LABELS = {
   'top-woman-40': { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
   'topbio-lip': { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
   'topbio-lip-mini': { capsules: 20, doses: 10, mgPerCapsule: 600, netWeight: '18 g' },
-  topcalm: { capsules: 60, doses: 50, mgPerCapsule: 655, netWeight: '33 g' },
+  topcalm: { capsules: 60, doses: 30, mgPerCapsule: 655, netWeight: '33 g' },
   topcoenzimaq10: { capsules: 60, doses: 60, mgPerCapsule: 470, netWeight: '28,2 g' },
   'vinagre-de-maca': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
   'vitamina-c': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
@@ -120,39 +120,114 @@ const PRODUCTS = [
   // não entra na estação — o ecrã está à porta da loja, à vista de qualquer
   // fiscalização.
   {
-    handle: 'top-shape', id: 'top-shape', name: 'Top Shape', goals: ['peso'],
+    handle: 'top-shape',
+    id: 'top-shape',
+    name: 'Top Shape',
+    goals: ['peso'],
     priceCents: 4500,
     copy: {
-      description: 'Fórmula com Morosil® (extrato de laranja Moro), berberina, açafrão e cromo quelado, em 2 cápsulas por dia.',
-      highlights: ['Metabolismo normal dos macronutrientes', 'Glicemia normal', '2 cápsulas por dia'],
-      ingredients: 'Morosil® (extrato de laranja Moro) 400 mg · Berberina 300 mg · Crocus sativus (açafrão) 30 mg · Cromo quelado 200 mcg',
-      usage: 'Dose diária recomendada: 2 cápsulas por dia, ou conforme indicação do seu profissional de saúde. Não exceder a dose diária recomendada.',
+      description:
+        'Morosil®, berberina, açafrão e cromo quelado, em 2 cápsulas por dia.',
+      highlights: ['Morosil® 400 mg', 'Berberina 300 mg', 'Cromo quelado 200 mcg'],
+      ingredients:
+        'Morosil® (extrato de laranja Moro) · Berberina · Crocus sativus (açafrão) · Cromo quelado',
+      usage: 'Dose diária recomendada: 2 cápsulas por dia.',
+      detail: {
+        about:
+          'O Top Shape é um suplemento alimentar desenvolvido com ingredientes cuidadosamente selecionados, pensado para integrar uma alimentação equilibrada e um estilo de vida ativo. A sua fórmula combina Morosil® (Extrato de Laranja Moro), Berberina, Crocus sativus (Açafrão) e Cromo Quelado, reunindo ingredientes amplamente utilizados em suplementos alimentares destinados ao bem-estar metabólico. Foi desenvolvido para quem procura uma fórmula moderna, com ingredientes de elevada qualidade, para complementar uma rotina de alimentação equilibrada e hábitos de vida saudáveis.',
+        forWhom: [],
+        usage:
+          'Dose diária recomendada: equivalente a 2 cápsulas por dia, ou conforme indicação do seu profissional de saúde.',
+        nutrition:
+          'Por dose diária de 2 cápsulas: Morosil® (extrato de laranja Moro) 400 mg, Berberina 300 mg, Crocus sativus (extrato de açafrão) 30 mg, Cromo quelado 200 mcg.',
+        notes: [
+          'Não exceder a dose diária recomendada.',
+          'Os suplementos alimentares não devem ser utilizados como substitutos de um regime alimentar variado e equilibrado e de um estilo de vida saudável.',
+          'Manter fora do alcance das crianças.',
+          'Não recomendado durante a gravidez e amamentação, salvo indicação de um profissional de saúde.',
+        ],
+        ingredients: [
+          {
+            name: 'Morosil® (Extrato de Laranja Moro) – 400 mg',
+            note: 'Extrato padronizado obtido da laranja vermelha Moro (Citrus sinensis), naturalmente rico em antocianinas e outros compostos bioativos característicos desta variedade.',
+          },
+          {
+            name: 'Berberina – 300 mg',
+            note: 'Composto de origem vegetal amplamente utilizado em suplementos alimentares.',
+          },
+          {
+            name: 'Crocus sativus (Extrato de Açafrão) – 30 mg',
+            note: 'Extrato obtido dos estigmas do açafrão (Crocus sativus L.), ingrediente de elevada qualidade utilizado em formulações nutricionais.',
+          },
+          {
+            name: 'Cromo Quelado – 200 mcg',
+            note: 'O cromo contribui para o metabolismo normal dos macronutrientes e para a manutenção de níveis normais de glicose no sangue.',
+          },
+        ],
+        faq: [],
+      },
     },
   },
+
   {
-    handle: 'top-max', id: 'top-max', name: 'Top Max', goals: ['peso', 'energia'],
+    handle: 'top-max',
+    id: 'top-max',
+    name: 'Top Max',
+    goals: ['peso', 'energia'],
     priceCents: 6000,
-    copy: {
-      description: 'Fórmula com clorela, espirulina, extrato de rizoma de curcuma, psyllium e crómio, em 2 cápsulas por dia.',
-      highlights: ['Metabolismo normal dos macronutrientes', 'Glicemia normal', '2 cápsulas por dia'],
-      ingredients: 'Clorela 270 mg · Espirulina 200 mg · Extrato de rizoma de Curcuma 200 mg · Psyllium 250 mg · Crómio 31 µg',
-      usage: 'Nos primeiros 5 dias, 1 cápsula após o pequeno-almoço. A partir do 6.º dia, 1 após o pequeno-almoço e 1 após o almoço. Beba água ao longo do dia.',
-    },
+    // Mesma formula do TopBio Lip, noutro tamanho de frasco: trinta capsulas em
+    // vez de quarenta e cinco. Sendo o mesmo produto, a ficha e a mesma, e vale
+    // mais ir busca-la ao tema do que manter duas copias a divergir com o tempo.
+    copyFrom: 'topnew-lip',
   },
+
   {
-    handle: 'top-shot', id: 'top-shot', name: 'Top Shot Matinal', goals: ['energia', 'imunidade'],
-    priceCents: 4500,
+    handle: 'top-shot',
+    id: 'top-shot',
+    name: 'Top Shot Matinal',
+    goals: ['energia', 'imunidade'],
+    priceCents: 4000,
+    /*
+     * O unico da gama que nao e em capsulas: e po, cinco gramas diluidos.
+     *
+     * A copy que a casa mandou traz frases que ficaram de fora, pela regra do
+     * comentario la em cima: "promovem energia, foco, digestao equilibrada e
+     * suporte imunologico", "acelerar o metabolismo, favorecer a saciedade e
+     * estimular as defesas do organismo", "start energetico e digestivo",
+     * "manter o metabolismo ativo", "potencializar o efeito termogenico e
+     * vasodilatador". Nenhuma delas tem alegacao autorizada, e esta e a unica
+     * ficha da estacao que a Claudia diz em voz alta a porta da loja.
+     *
+     * O que ficou e tudo o resto, que e o que a pessoa precisa de saber: o que
+     * leva, quanto se dilui, em quanta agua, a que horas e quem deve comecar
+     * por meia dose.
+     */
     copy: {
-      description: 'Pó solúvel com inulina, gengibre, curcuma, maca peruana, zinco, própolis e flavonoides. Uma colher de chá por dia, de manhã.',
-      // Sem os miligramas de zinco por dose não se pode afirmar as alegações
-      // autorizadas do zinco (exigem ≥ 15% do VRN). Assim que a ficha técnica
-      // der o valor, entram aqui «Sistema imunitário normal» e «Cabelo, pele e
-      // unhas normais» — até lá, só o que é verificável.
-      highlights: ['Pó solúvel', '5 g por dose', '7 ingredientes'],
-      ingredients: 'Inulina · Gengibre · Curcuma · Maca peruana · Zinco · Própolis · Flavonoides',
-      usage: 'Dilua 1 colher de chá (5 g) em 100 ml de água ou sumo. Tome de manhã, em jejum, e aguarde 15 a 30 minutos antes de comer.',
+      description: 'Suplemento em pó: 5 g diluídos em água ou sumo, uma vez por dia.',
+      highlights: ['Em pó', '5 g por toma', '30 doses'],
+      ingredients:
+        'Gengibre · Cúrcuma · Maca peruana · Própolis · Vitamina C · Zinco · Inulina · Pimenta preta',
+      usage: 'Diluir 5 g em água ou sumo.',
+      detail: {
+        about:
+          'O Top Shot é o único da gama que não vem em cápsulas: é um pó, que se dilui em água ou sumo. Pode ser tomado em jejum, antes do treino, ou diluído ao longo do dia.',
+        forWhom: [],
+        usage:
+          'Dose diária: 5 g diluídos em água ou sumo. Em dose única, com 100 a 200 ml de água: em jejum, ou a seguir ao pequeno-almoço em caso de sensibilidade gástrica. Ao longo do dia, com 1 litro de água: diluir os 5 g e beber entre a manhã e a tarde. Antes do treino, com 150 a 250 ml de água: cerca de 30 minutos antes do exercício.',
+        nutrition: '',
+        notes: [
+          'Quem tem sensibilidade gástrica pode começar com meia dose, 2,5 g, durante 3 a 5 dias, para avaliar a adaptação do organismo.',
+          'Evitar a toma à noite.',
+          'Não exceder a dose diária recomendada.',
+          'Os suplementos alimentares não devem ser utilizados como substitutos de um regime alimentar variado e equilibrado e de um estilo de vida saudável.',
+          'Manter fora do alcance das crianças.',
+        ],
+        ingredients: [],
+        faq: [],
+      },
     },
   },
+
 ]
 
 const clean = (html) =>
@@ -284,7 +359,52 @@ const problems = []
 for (const p of PRODUCTS) {
   // A copy inline ganha ao template de propósito: é ela que está mais fresca
   // enquanto o site não acompanha.
-  const copy = p.copy ?? templateCopy(p.handle)
+  const copy = p.copy ?? templateCopy(p.copyFrom ?? p.handle)
+
+  /*
+   * Ficha emprestada: tira-se-lhe o que só vale para o frasco de origem.
+   *
+   * Dois produtos podem ser a mesma fórmula em frascos de tamanhos diferentes,
+   * e aí a ficha serve-lhes aos dois — menos a pergunta de quanto tempo dura a
+   * embalagem, que depende de quantas cápsulas lá vêm. Deixá-la passar punha a
+   * Cláudia a prometer um mês num frasco que dá metade. Fica sem resposta a
+   * essa, que é menos do que ter uma errada.
+   */
+  if (p.copyFrom && copy?.detail) {
+    copy.detail = {
+      ...copy.detail,
+      faq: copy.detail.faq.filter((f) => !/quanto tempo/i.test(f.question)),
+    }
+
+    /*
+     * E troca-se-lhe o nome. O texto do site fala do produto pelo nome, e a
+     * Cláudia anunciava «Top Max» para logo a seguir dizer «o TopBio LIP é um
+     * suplemento...» — à porta da loja isso não é uma subtileza, é outra caixa.
+     */
+    const origem = PRODUCTS.find((o) => o.handle === p.copyFrom)
+    if (!origem) problems.push(`${p.handle}: copyFrom aponta a ${p.copyFrom}, que não existe`)
+    else if (/[^\w\sÀ-ÿ]/.test(origem.name)) {
+      // A troca é uma expressão regular feita do nome, e um nome com pontuação
+      // faria dela outra coisa. Nunca aconteceu; se acontecer, avisa em vez de
+      // trocar à toa.
+      problems.push(`${p.handle}: nome de origem «${origem.name}» tem pontuação, troca por fazer`)
+    } else {
+      const nome = new RegExp(origem.name, 'gi')
+      const trocar = (t) => t.replace(nome, p.name)
+      const d = copy.detail
+      copy.detail = {
+        ...d,
+        about: trocar(d.about),
+        forWhom: d.forWhom.map(trocar),
+        usage: trocar(d.usage),
+        nutrition: trocar(d.nutrition),
+        notes: d.notes.map(trocar),
+        ingredients: d.ingredients.map((i) => ({ name: trocar(i.name), note: trocar(i.note) })),
+        faq: d.faq.map((f) => ({ question: trocar(f.question), answer: trocar(f.answer) })),
+      }
+      copy.description = trocar(copy.description)
+    }
+  }
   if (!copy) {
     problems.push(`template em falta: ${p.handle}`)
     continue
