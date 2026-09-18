@@ -179,6 +179,31 @@ const PRODUCTS = [
     // vez de quarenta e cinco. Sendo o mesmo produto, a ficha e a mesma, e vale
     // mais ir busca-la ao tema do que manter duas copias a divergir com o tempo.
     copyFrom: 'topnew-lip',
+    // O que nao e o mesmo e a toma: o Lip sobe para duas capsulas ao 6.º dia, o
+    // Top Max fica em uma por dia e a embalagem dura o mes inteiro (confirmado
+    // pela casa a 2026-09-18). Como o Lip fala da toma das 16h00 em mais do que
+    // um sitio, cada um deles tem de ser emendado.
+    //
+    // A ordem conta: a primeira apanha o protocolo inteiro da ficha, e so depois
+    // a segunda apanha a frase curta do catalogo, que e o inicio dele.
+    copyEmenda: [
+      {
+        de: 'Primeiros 5 dias: 1 cápsula às 10h00, após o pequeno-almoço. A partir do 6.º dia: 1 cápsula às 10h00 e outra às 16h00, sempre após uma refeição.',
+        para: '1 cápsula por dia, às 10h00, após o pequeno-almoço.',
+      },
+      {
+        de: 'Primeiros 5 dias: 1 cápsula às 10h00, após o pequeno-almoço.',
+        para: '1 cápsula por dia, às 10h00, após o pequeno-almoço.',
+      },
+      {
+        de: 'Tome após uma refeição — pequeno-almoço para a toma das 10h00 e lanche ou almoço para a toma das 16h00.',
+        para: 'Tome após o pequeno-almoço.',
+      },
+      {
+        de: 'Com o protocolo recomendado (1 cápsula nos primeiros 5 dias, 2 cápsulas a partir do 6.º dia), cada embalagem dura aproximadamente um mês.',
+        para: 'Com 1 cápsula por dia, a embalagem de 30 cápsulas dura um mês.',
+      },
+    ],
   },
 
   {
@@ -362,18 +387,52 @@ for (const p of PRODUCTS) {
   const copy = p.copy ?? templateCopy(p.copyFrom ?? p.handle)
 
   /*
-   * Ficha emprestada: tira-se-lhe o que só vale para o frasco de origem.
+   * Ficha emprestada: emenda-se-lhe o que só vale para o frasco de origem.
    *
    * Dois produtos podem ser a mesma fórmula em frascos de tamanhos diferentes,
-   * e aí a ficha serve-lhes aos dois — menos a pergunta de quanto tempo dura a
-   * embalagem, que depende de quantas cápsulas lá vêm. Deixá-la passar punha a
-   * Cláudia a prometer um mês num frasco que dá metade. Fica sem resposta a
-   * essa, que é menos do que ter uma errada.
+   * e aí a ficha serve-lhes aos dois — menos onde o número de cápsulas manda:
+   * a toma diária e o tempo que a embalagem dura. Essas frases vêm em
+   * `copyEmenda`, cada uma um par «de → para» aplicado ao texto emprestado.
+   *
+   * Porquê emendar em vez de escrever a ficha toda de novo: o resto do texto
+   * continua a ter um só dono. E porque uma emenda que deixa de encontrar o
+   * que procura dá erro — o dia em que o site reescrever a frase, isto queixa-se
+   * em vez de a estação ficar calada com a versão antiga.
    */
   if (p.copyFrom && copy?.detail) {
-    copy.detail = {
-      ...copy.detail,
-      faq: copy.detail.faq.filter((f) => !/quanto tempo/i.test(f.question)),
+    const antes = copy.detail.faq.find((f) => /quanto tempo/i.test(f.question))?.answer
+
+    for (const { de, para } of p.copyEmenda ?? []) {
+      let achou = false
+      const emendar = (t) => {
+        if (!t.includes(de)) return t
+        achou = true
+        return t.split(de).join(para)
+      }
+      const d = copy.detail
+      copy.detail = {
+        ...d,
+        about: emendar(d.about),
+        usage: emendar(d.usage),
+        notes: d.notes.map(emendar),
+        faq: d.faq.map((f) => ({ ...f, answer: emendar(f.answer) })),
+      }
+      copy.usage = emendar(copy.usage)
+      if (!achou) problems.push(`${p.handle}: a emenda «${de.slice(0, 40)}...» já não encontra o texto`)
+    }
+
+    /*
+     * Rede de segurança: se ninguém emendou quanto tempo dura a embalagem, a
+     * resposta emprestada é a do outro frasco. Fica sem resposta a essa, que é
+     * menos mau do que a Cláudia prometer um mês num frasco que dá metade.
+     */
+    const depois = copy.detail.faq.find((f) => /quanto tempo/i.test(f.question))?.answer
+    if (antes !== undefined && depois === antes) {
+      copy.detail = {
+        ...copy.detail,
+        faq: copy.detail.faq.filter((f) => !/quanto tempo/i.test(f.question)),
+      }
+      problems.push(`${p.handle}: dura quanto tempo? ficha emprestada, resposta retirada`)
     }
 
     /*
