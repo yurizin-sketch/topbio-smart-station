@@ -55,6 +55,30 @@ export interface ProductDetail {
   faq: { question: string; answer: string }[]
 }
 
+/**
+ * O que está impresso no rótulo do frasco.
+ *
+ * Existe porque a pergunta mais comum ao balcão — «quantas cápsulas traz?» —
+ * não tem resposta em lado nenhum do site. Nem na copy dos produtos, nem na
+ * tabela de preços. Só no rótulo, que se vê na fotografia.
+ *
+ * ATENÇÃO À PROVENIÊNCIA. Ao contrário de tudo o resto, isto não vem do tema
+ * Shopify: foi lido das fotografias em `public/products/` e escrito à mão na
+ * tabela `LABELS` do gerador. Quando um frasco mudar de rótulo, a fotografia
+ * muda e esta tabela não muda sozinha — é preciso ir lá corrigir. Os campos
+ * ficam a `null` quando o rótulo não diz: melhor calar do que arredondar.
+ */
+export interface ProductPack {
+  /** Cápsulas por frasco. `null` no que não é em cápsulas, como o pó. */
+  capsules: number | null
+  /** Doses que a embalagem dá, tal como o rótulo as conta. */
+  doses: number | null
+  /** Miligramas por cápsula. */
+  mgPerCapsule: number | null
+  /** Peso líquido, com a unidade, como vem escrito ("36 g"). */
+  netWeight: string | null
+}
+
 export interface Product {
   id: string
   name: string
@@ -84,6 +108,8 @@ export interface Product {
    * da copy escrita à mão no gerador. Desses ela diz o que sabe, que é menos.
    */
   detail?: ProductDetail
+  /** O que diz o rótulo do frasco. Falta onde a fotografia não o mostra. */
+  pack?: ProductPack
 }
 
 /**

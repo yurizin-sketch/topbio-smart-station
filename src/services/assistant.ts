@@ -1,4 +1,4 @@
-import type { GoalId, Product, ProductDetail } from '../types'
+import type { GoalId, Product, ProductDetail, ProductPack } from '../types'
 import { config } from '../config'
 
 /**
@@ -209,6 +209,23 @@ function clean(texto: string): string {
  * a mesma coisa pela via que interessa a quem compra: quanto tempo aquilo dura.
  * Enquanto o número não existir, é isto que se diz; inventá-lo seria pior.
  */
+/**
+ * O que vem no frasco, dito como quem tem o frasco na mão.
+ *
+ * É a pergunta que mais se ouve ao balcão, e até aqui ela não sabia responder:
+ * o número de cápsulas não está escrito em lado nenhum do site, só no rótulo.
+ * Agora está lido (ver `ProductPack`) e diz-se logo na apresentação, sem
+ * esperar que perguntem.
+ */
+function frasco(pack: ProductPack): string {
+  const partes: string[] = []
+  if (pack.capsules) partes.push(`${pack.capsules} cápsulas`)
+  // «30 doses» com «60 cápsulas» ao lado explica-se sozinho: são duas por dia.
+  if (pack.doses) partes.push(`${pack.doses} doses`)
+  if (!partes.length) return ''
+  return `O frasco traz ${enumerar(partes)}`
+}
+
 function duracao(detail: ProductDetail): string {
   // «quanto tempo», e não «dura»: com «dura» apanhava-se o «durante a gravidez»
   // das outras perguntas, e ela respondia a quanto tempo dura o frasco com um
@@ -255,6 +272,7 @@ export function productPitch(product: Product): AssistantTurn {
     // água, longe do café, ao fim de quantas semanas) responde-se a quem
     // perguntar, que é quando a pessoa quer mesmo saber.
     frase(`Modo de uso: ${d ? ateAoPonto(d.usage, 220) : product.usage}`),
+    product.pack ? frase(frasco(product.pack)) : '',
     d ? frase(duracao(d)) : '',
     frase(`Sai por ${precoFalado(product.priceCents)}`),
     'Se quiser levar, é só tocar em comprar. Você retira no balcão.',

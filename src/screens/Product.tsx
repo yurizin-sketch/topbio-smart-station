@@ -25,6 +25,16 @@ export function ProductDetail() {
   // e nesses os separadores mostram a versão curta do catálogo.
   const detail = product?.detail
 
+  // O rótulo do frasco, em cima do modo de uso: é onde a pessoa está quando
+  // quer saber quantas leva e para quantos dias dá. Só entra o que o rótulo
+  // diz — ver `ProductPack` sobre os buracos.
+  const pack = [
+    product?.pack?.capsules ? `${product.pack.capsules} cápsulas` : '',
+    product?.pack?.doses ? `${product.pack.doses} doses por embalagem` : '',
+    product?.pack?.mgPerCapsule ? `${product.pack.mgPerCapsule} mg cada` : '',
+    product?.pack?.netWeight ?? '',
+  ].filter(Boolean)
+
   // Produto novo, ficha do princípio. O ecrã não se desmonta entre produtos, e
   // sem isto quem tinha aberto o modo de uso de um caía no modo de uso do
   // seguinte — enquanto a Cláudia lhe estava a apresentar a descrição.
@@ -164,6 +174,7 @@ export function ProductDetail() {
                 ))}
               {tab === 'uso' && (
                 <>
+                  {pack.length ? <p className="spec__pack">{pack.join(' · ')}</p> : null}
                   <p className="spec__value">{detail?.usage || product.usage}</p>
                   {detail?.notes.length ? (
                     <>

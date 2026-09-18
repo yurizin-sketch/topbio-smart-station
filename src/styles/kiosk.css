@@ -513,6 +513,14 @@ img {
   margin: var(--tne-space-md) 0 var(--tne-space-xs);
 }
 
+/* O que vem no frasco, destacado do modo de uso: é um dado, não uma instrução,
+   e quem o procura procura um número, não uma frase. */
+.spec__pack {
+  margin: 0 0 var(--tne-space-sm);
+  font-weight: var(--tne-weight-bold);
+  color: var(--tne-text);
+}
+
 .spec__value--after {
   margin-top: var(--tne-space-md);
 }

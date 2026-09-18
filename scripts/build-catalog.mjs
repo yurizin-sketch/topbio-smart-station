@@ -34,6 +34,49 @@ const TEMPLATES = resolve(
 const OUT = resolve(here, '..', 'src', 'data', 'catalog.seed.ts')
 
 /**
+ * O que está impresso no rótulo de cada frasco, lido das fotografias.
+ *
+ * É a única tabela deste ficheiro que não vem do tema nem da tabela de preços:
+ * o número de cápsulas não existe em lado nenhum escrito, só no rótulo. Foi
+ * lido de `public/products/<id>.webp` a 2026-09-18. A chave é o `id` e não o
+ * `handle` justamente por isso: é o nome da fotografia que foi lida, e nos dois
+ * `lip` o handle da Shopify não lhe corresponde.
+ *
+ * Por isso mesmo: quando um frasco mudar de rótulo, isto não se corrige
+ * sozinho. Trocada a fotografia, vem-se aqui confirmar o número.
+ *
+ * `null` é «o rótulo não diz» — e fica-se por aí. Há frascos cuja fotografia só
+ * mostra as cápsulas e esconde o resto do rótulo por trás da curva do vidro;
+ * desses regista-se o que se vê e mais nada. Arredondar ou deduzir a partir do
+ * peso seria inventar um número que a pessoa vai conferir na mão dela.
+ */
+const LABELS = {
+  'acido-hialuronico': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
+  articulacao: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
+  'colageno-verisol': { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
+  'feno-grego': { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
+  imune: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
+  'maca-peruana': { capsules: 60, doses: 30, mgPerCapsule: 500, netWeight: '36 g' },
+  magnetop: { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
+  'oleo-de-coco': { capsules: 30, doses: 15, mgPerCapsule: 600, netWeight: '40,5 g' },
+  termogenico: { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
+  'top-brain': { capsules: 60, doses: 30, mgPerCapsule: null, netWeight: '46,44 g' },
+  'top-max': { capsules: 30, doses: null, mgPerCapsule: null, netWeight: null },
+  'top-omega3': { capsules: 60, doses: 60, mgPerCapsule: 1418.75, netWeight: '85,13 g' },
+  'top-shape': { capsules: 60, doses: 30, mgPerCapsule: null, netWeight: '33,9 g' },
+  // Pó, não cápsulas: toma diária de 5 g, 150 g na embalagem.
+  'top-shot': { capsules: null, doses: 30, mgPerCapsule: null, netWeight: '150 g' },
+  'top-woman-40': { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
+  'topbio-lip': { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
+  'topbio-lip-mini': { capsules: 20, doses: 10, mgPerCapsule: 600, netWeight: '18 g' },
+  topcalm: { capsules: 60, doses: 50, mgPerCapsule: 655, netWeight: '33 g' },
+  topcoenzimaq10: { capsules: 60, doses: 60, mgPerCapsule: 470, netWeight: '28,2 g' },
+  'vinagre-de-maca': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
+  'vitamina-c': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
+  'vitamina-d3-k2': { capsules: 60, doses: null, mgPerCapsule: 600, netWeight: '36 g' },
+}
+
+/**
  * Tabela de preços oficial, recebida a 2026-08-10.
  * Top Ómega 3 e Top Coenzima Q10 ficaram em falta nessa tabela; preço
  * confirmado a 2026-08-28 (30 € cada).
@@ -42,8 +85,10 @@ const OUT = resolve(here, '..', 'src', 'data', 'catalog.seed.ts')
  * fica fora da estação em vez de aparecer com um número inventado. Nunca pôr um
  * preço de recheio aqui — é este o valor que se cobra ao balcão.
  *
- * `handle` é o nome do template (product.<handle>.json) e também o id da
- * imagem em public/products.
+ * `handle` é o nome do template (product.<handle>.json). `id` é o da estação, e
+ * também o nome da imagem em public/products — quase sempre igual ao handle,
+ * mas não nos dois `lip`, em que o handle da Shopify traz o número de cápsulas
+ * atrás. Quem for buscar uma imagem ou um rótulo usa o `id`, nunca o handle.
  */
 const PRODUCTS = [
   { handle: 'maca-peruana', id: 'maca-peruana', name: 'Maca Peruana', goals: ['energia', 'performance'], priceCents: 3000 },
@@ -160,6 +205,12 @@ const listItems = (html) => {
 const tsList = (itens, indent) =>
   itens.length ? `[\n${itens.map((i) => `${indent}  ${i},`).join('\n')}\n${indent}]` : '[]'
 
+/** O rótulo como literal TypeScript. `null` sai tal e qual, que é o que é. */
+const packLiteral = (p) =>
+  `{ capsules: ${p.capsules}, doses: ${p.doses}, mgPerCapsule: ${p.mgPerCapsule}, netWeight: ${
+    p.netWeight === null ? 'null' : ts(p.netWeight)
+  } }`
+
 /** A ficha completa, já como literal TypeScript pronto a colar na linha. */
 const detailLiteral = (d) => {
   const i = '      '
@@ -240,6 +291,11 @@ for (const p of PRODUCTS) {
   }
   const { description, usage, ingredients, highlights, detail } = copy
 
+  // Produto novo entra aqui sem rótulo lido. Avisa-se, porque «quantas cápsulas
+  // traz?» é a pergunta que mais se ouve e a Cláudia fica sem a saber.
+  const label = LABELS[p.id] ?? null
+  if (!label) problems.push(`${p.handle}: rótulo por ler (ver a foto em public/products)`)
+
   if (!description) problems.push(`${p.handle}: sem descrição`)
   if (!usage) problems.push(`${p.handle}: sem modo de uso`)
   if (!ingredients) problems.push(`${p.handle}: sem composição`)
@@ -255,7 +311,8 @@ for (const p of PRODUCTS) {
     ingredients: ${ts(ingredients)},
     usage: ${ts(usage)},
     goals: [${p.goals.map(ts).join(', ')}],
-    active: ${p.active !== false},${detail ? `
+    active: ${p.active !== false},${label ? `
+    pack: ${packLiteral(label)},` : ''}${detail ? `
     detail: ${detailLiteral(detail)},` : ''}
   },`)
 }

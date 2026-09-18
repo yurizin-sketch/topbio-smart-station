@@ -29,6 +29,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, preferencialmente com as refeições.',
     goals: ['energia', 'performance'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: 500, netWeight: '36 g' },
     detail: {
       about: 'A Maca Peruana TopBioEuropa é um suplemento alimentar obtido de Lepidium meyenii — tubérculo da família Brassicaceae, originário das elevadas planícies dos Andes peruanos, a altitudes entre 3.800 e 4.800 metros. Considerada sagrada pelas civilizações pré-colombianas e conhecida como o «ouro dos Andes», a maca era um alimento central na dieta das populações andinas, cultivado e consumido há mais de 3.000 anos. Guerreiros, agricultores e mineiros das civilizações Inca e pré-Inca incorporavam a maca na sua alimentação diária como parte de uma rotina de esforço físico intenso nas altitudes elevadas dos Andes. Rica em proteínas, aminoácidos essenciais, hidratos de carbono complexos, fibra, minerais (ferro, cálcio, zinco, magnésio) e glucosinolatos — compostos bioativos característicos da família Brassicaceae a que pertence (a mesma que inclui o brócolo e a couve). Disponível em cápsulas de extracto padronizado para complementar uma alimentação variada e equilibrada, mantendo a praticidade da rotina moderna.',
       forWhom: [
@@ -73,6 +74,7 @@ export const catalogSeed: Product[] = [
     usage: '1 a 2 cápsulas por dia, de preferência de manhã ou antes de actividades que exijam concentração.',
     goals: ['foco', 'energia'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: null, netWeight: '46,44 g' },
     detail: {
       about: 'O Top Brain é um suplemento alimentar com uma fórmula multiingrediente que combina cafeína, fosfatidilserina, aminoácidos (L-glutamina e tirosina), Vitamina C, Vitamina B3 (niacina), Vitamina B9 (ácido fólico) e magnésio. A cafeína contribui para o aumento do estado de alerta e para a melhoria da concentração (efeito a partir de 75 mg por dose). As vitaminas B3 e B9 contribuem para o normal funcionamento do sistema nervoso e para uma função psicológica normal. A Vitamina C e o magnésio contribuem igualmente para o normal funcionamento do sistema nervoso, para uma função psicológica normal e para a redução do cansaço e da fadiga. Formulado para integrar uma rotina activa e exigente, complementando uma alimentação variada e equilibrada.',
       forWhom: [
@@ -121,6 +123,7 @@ export const catalogSeed: Product[] = [
     usage: 'Fase de adaptação (dias 1 a 3): 1 cápsula à noite, cerca de 30 a 40 minutos antes de deitar, para avaliar a resposta individual.',
     goals: ['sono'],
     active: true,
+    pack: { capsules: 60, doses: 50, mgPerCapsule: 655, netWeight: '33 g' },
     detail: {
       about: 'O TopCalm é um suplemento alimentar de toma nocturna com uma fórmula que combina minerais essenciais, vitamina do complexo B, aminoácidos e plantas tradicionalmente utilizadas em infusões e preparações de fim de dia. O magnésio contribui para o funcionamento normal do sistema nervoso, para a função psicológica normal e para a redução do cansaço e da fadiga. A vitamina B5 (ácido pantoténico) contribui para o desempenho intelectual normal e para a redução do cansaço e da fadiga. O zinco contribui para a função cognitiva normal. A melatonina contribui para a redução do tempo necessário para adormecer (efeito obtido com a ingestão de 1 mg de melatonina pouco antes de deitar — fórmula com 1,9 mg por dose). Formulado para integrar uma rotina nocturna calma, como complemento de uma alimentação variada e de um estilo de vida equilibrado.',
       forWhom: [
@@ -173,6 +176,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, preferencialmente à noite, após o jantar ou cerca de 30 a 60 minutos antes de dormir — para integrar na rotina nocturna e no período natural de repouso do organismo.',
     goals: ['energia', 'sono', 'performance'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
       about: 'O Magnetop é um suplemento alimentar que combina quatro formas de magnésio de alta biodisponibilidade — Bisglicinato, Malato, Taurato e Citrato — numa fórmula multforma concebida para complementar uma alimentação variada e equilibrada. O magnésio contribui para o normal funcionamento muscular, para a redução do cansaço e da fadiga, para o normal funcionamento do sistema nervoso e para uma função psicológica normal. Também contribui para o normal metabolismo produtor de energia e para o equilíbrio electrolítico. A fórmula é especialmente indicada à noite, período em que o organismo inicia o processo natural de recuperação e repouso — tornando-a um suplemento prático de integrar na rotina de quem procura apoio ao equilíbrio diário, à vitalidade e ao bem-estar.',
       forWhom: [
@@ -217,6 +221,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, preferencialmente durante o pequeno-almoço e/ou o almoço.',
     goals: ['imunidade'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
     detail: {
       about: 'O Imune+ TopBioEuropa é um suplemento alimentar de fórmula multiingrediente que combina Vitamina C, Zinco, Vitamina D, Vitaminas B6 e B9, Coenzima Q10 e Geleia Real. A Vitamina C e o Zinco contribuem para o normal funcionamento do sistema imunitário e para a proteção das células contra as oxidações indesejáveis. A Vitamina D contribui igualmente para o normal funcionamento do sistema imunitário, bem como para a manutenção de ossos normais e para o normal funcionamento dos músculos. As vitaminas B6 e B9 contribuem para o normal funcionamento do sistema nervoso, para uma função psicológica normal e para a redução do cansaço e da fadiga. Formulado para complementar uma alimentação variada e equilibrada no contexto de uma rotina de bem-estar diário.',
       forWhom: [
@@ -262,6 +267,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, preferencialmente de manhã, com uma refeição.',
     goals: ['imunidade', 'beleza'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
     detail: {
       about: 'O Vitamina C+E TopBioEuropa combina duas vitaminas antioxidantes com um papel central no normal funcionamento do organismo. A Vitamina C contribui para o normal funcionamento do sistema imunitário, para a formação normal de colagénio para o normal funcionamento da pele, para a proteção das células contra as oxidações indesejáveis, para o aumento da absorção do ferro, para a redução do cansaço e da fadiga e para o normal funcionamento do sistema nervoso. A Vitamina E contribui para a proteção das células contra as oxidações indesejáveis. As duas vitaminas formam um duo com base científica reconhecida pela União Europeia: a Vitamina C contribui para a regeneração da forma reduzida da Vitamina E — potenciando a acção antioxidante de ambas no organismo.',
       forWhom: [
@@ -305,6 +311,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, preferencialmente com uma refeição que contenha gordura saudável.',
     goals: ['imunidade', 'mobilidade'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
       about: 'O Vitamina D3+K2+Zinco TopBioEuropa é um suplemento alimentar que combina três nutrientes com alegações de saúde autorizadas pela União Europeia, formulados para actuar de forma complementar no organismo. A Vitamina D3 contribui para a normal absorção e utilização de cálcio e fósforo, para a manutenção de ossos normais e de dentes normais, para o normal funcionamento dos músculos e para o normal funcionamento do sistema imunitário. A Vitamina K2 contribui para a manutenção de ossos normais. O Zinco contribui para o normal funcionamento do sistema imunitário, para a manutenção da saúde da pele, para a manutenção de cabelo normal, para a manutenção de unhas normais e para a proteção das células contra as oxidações indesejáveis. Formulado para complementar uma alimentação variada e equilibrada, com especial relevância para quem tem necessidade acrescida destes nutrientes.',
       forWhom: [
@@ -349,6 +356,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, que podem ser tomadas juntas ou divididas em duas doses.',
     goals: ['beleza'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
       about: 'O Colagénio Verisol® TopBioEuropa é um suplemento alimentar formulado com Verisol® — peptídeos bioativos de colagénio hidrolisado, ingrediente patenteado pela Gelita com mais de 10 anos de investigação clínica documentada. O colagénio é a proteína estrutural mais abundante do corpo humano, naturalmente presente na pele, articulações, tendões, ligamentos e tecido conjuntivo. A Vitamina C contribui para a formação normal de colagénio para o normal funcionamento da pele. Formulado para integrar uma alimentação variada e equilibrada, complementando o aporte diário de colagénio hidrolisado em formato prático de cápsula.',
       forWhom: [
@@ -392,6 +400,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia. Pode optar por uma de duas formas: Opção A: 2 cápsulas juntas em jejum, ao acordar, antes do pequeno-almoço. Opção B: 1 cápsula ao almoço + 1 cápsula ao jantar. Nota…',
     goals: ['beleza'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
     detail: {
       about: 'O Ácido Hialurónico TopBioEuropa é um suplemento alimentar de fórmula multiingrediente que combina ácido hialurónico, colagénio hidrolisado, silício, astaxantina, Vitamina C, zinco, coenzima Q10 e colina. A Vitamina C contribui para a formação normal de colagénio para o normal funcionamento da pele e para a proteção das células contra as oxidações indesejáveis. Contribui também para a redução do cansaço e da fadiga. O Zinco contribui para a manutenção da saúde da pele, para a manutenção de cabelo normal e para a manutenção de unhas normais. Também contribui para a proteção das células contra as oxidações indesejáveis. O ácido hialurónico é uma substância naturalmente presente no organismo humano, enquanto o colagénio hidrolisado é uma proteína estrutural naturalmente presente na pele, cartilagens e tecido conjuntivo. Formulado para complementar uma alimentação variada e equilibrada no contexto de uma rotina de cuidado pessoal.',
       forWhom: [
@@ -437,6 +446,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia. Pode optar por uma de duas formas: Opção A: 1 cápsula de manhã em jejum + 1 cápsula à noite ao jantar ou antes de dormir. Opção B: 2 cápsulas juntas ao almoço ou ao…',
     goals: ['mobilidade', 'performance'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
     detail: {
       about: 'O Articulação+ é um suplemento alimentar que combina colagénio tipo II com Vitamina D, Vitamina K, Histidina e MSM (metilsulfonilmetano) — fórmula de múltiplos ingredientes concebida para complementar uma alimentação variada e equilibrada no contexto de uma rotina de cuidado articular e ósseo. A Vitamina D contribui para a manutenção de ossos normais e para a normal absorção e utilização de cálcio e fósforo. Contribui também para o normal funcionamento dos músculos. A Vitamina K contribui para a manutenção de ossos normais. O Colagénio Tipo II é uma proteína estrutural naturalmente presente nas cartilagens articulares do organismo humano, sendo o tipo de colagénio predominante nestas estruturas. Formulado para integrar o dia-a-dia de quem procura um suplemento de apoio ósseo e articular, como complemento de uma alimentação equilibrada e de um estilo de vida activo.',
       forWhom: [
@@ -482,6 +492,7 @@ export const catalogSeed: Product[] = [
     usage: 'Primeiros 5 dias: tomar 1 cápsula às 10h00.',
     goals: ['peso', 'performance'],
     active: true,
+    pack: { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
     detail: {
       about: 'O Termogénico TopBioEuropa é um suplemento alimentar concebido para integrar uma rotina activa e exigente, complementando uma alimentação variada e equilibrada. A sua composição combina extracto de guaraná, fonte natural de cafeína, e crómio. A cafeína contribui para o aumento do estado de alerta e para a melhoria da concentração (efeito a partir de 75 mg por dose). O crómio contribui para o metabolismo normal dos macronutrientes e para a manutenção dos níveis normais de glicemia (com a ingestão diária recomendada de 40 μg). Indicado para quem tem rotinas exigentes ou pratica exercício físico regular e procura um apoio diário no contexto de um estilo de vida equilibrado.',
       forWhom: [
@@ -525,6 +536,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia: 1 dose 20–30 minutos antes do almoço e outra 20–30 minutos antes do jantar.',
     goals: ['peso'],
     active: true,
+    pack: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
     detail: {
       about: 'O Vinagre de Maçã TopBioEuropa é um suplemento alimentar em cápsulas que oferece a praticidade de incorporar vinagre de maçã na rotina diária — sem o sabor ácido marcante do produto líquido e sem contacto directo com o esmalte dentário. O vinagre de maçã (Apple Cider Vinegar) é um produto da fermentação do mosto de maçã, tradicionalmente utilizado na alimentação humana. Naturalmente fonte de ácido acético. Cada cápsula fornece uma dose controlada de vinagre de maçã em pó, num formato conveniente que integra qualquer rotina. Este suplemento não substitui uma alimentação variada e equilibrada nem um estilo de vida saudável.',
       forWhom: [
@@ -569,6 +581,7 @@ export const catalogSeed: Product[] = [
     usage: 'Tomar 1 cápsula por dia, ou conforme orientação de um profissional de saúde.',
     goals: ['foco', 'beleza'],
     active: true,
+    pack: { capsules: 60, doses: 60, mgPerCapsule: 1418.75, netWeight: '85,13 g' },
     detail: {
       about: 'O Top Ómega 3 é um suplemento alimentar à base de óleo de peixe concentrado, com EPA (ácido eicosapentaenóico) e DHA (ácido docosahexaenóico), enriquecido com Vitamina E. O EPA e o DHA contribuem para o funcionamento normal do coração (efeito obtido com a ingestão diária de 250 mg de EPA e DHA). O DHA contribui para a manutenção do normal funcionamento do cérebro e para a manutenção da visão normal (efeito obtido com a ingestão diária de 250 mg de DHA). A Vitamina E contribui para a protecção das células contra a oxidação. Formulado para quem procura complementar a alimentação com ácidos gordos ómega-3 de origem marinha, no contexto de uma dieta variada e equilibrada e de um estilo de vida saudável.',
       forWhom: [
@@ -616,6 +629,7 @@ export const catalogSeed: Product[] = [
     usage: '1 a 2 cápsulas por dia, tomadas durante uma refeição principal que contenha alguma gordura — esta combinação favorece a absorção da Coenzima Q10 (composto lipossolúvel).',
     goals: ['energia'],
     active: true,
+    pack: { capsules: 60, doses: 60, mgPerCapsule: 470, netWeight: '28,2 g' },
     detail: {
       about: 'O TopCoenzima Q10 é um suplemento alimentar que combina Coenzima Q10 (ubiquinona) com Selénio numa toma diária prática, formulado para integrar uma alimentação variada e equilibrada. O Selénio contribui para o funcionamento normal do sistema imunitário, para a protecção das células contra a oxidação e para o funcionamento normal da tiroide. A Coenzima Q10 (Ubiquinona) é um composto naturalmente presente nas células do organismo humano. Cada cápsula fornece 100 mg de Coenzima Q10 como parte da composição. Formulado para quem procura complementar a alimentação com um suplemento de Selénio e Coenzima Q10, no contexto de um estilo de vida saudável.',
       forWhom: [
@@ -659,6 +673,7 @@ export const catalogSeed: Product[] = [
     usage: '1 a 2 cápsulas por dia, após a refeição. O horário preferencial é à noite. Protocolo de adaptação (importante — respeitar): Primeiros 3 dias: 1 cápsula à noite, após a refeição — para…',
     goals: ['sono', 'energia'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
     detail: {
       about: 'O Top Woman 40+ é um suplemento alimentar desenvolvido para mulheres a partir dos 40 anos, no contexto da perimenopausa — fase fisiológica que pode iniciar-se até 10 anos antes da menopausa. A fórmula combina um blend botânico exclusivo — Ashwagandha, Crocus sativus, Cimicifuga racemosa e Valeriana — com Magnésio, Vitamina D3 e Vitamina K2. O Magnésio contribui para uma função psicológica normal, para o normal funcionamento do sistema nervoso e para a redução do cansaço e da fadiga. A Vitamina D3 contribui para a manutenção de ossos normais, para o normal funcionamento dos músculos e para o normal funcionamento do sistema imunitário. A Vitamina K2 contribui para a manutenção de ossos normais. Formulado para complementar uma alimentação variada e equilibrada no contexto de uma rotina de bem-estar feminino a partir dos 40 anos.',
       forWhom: [
@@ -707,6 +722,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia: 1 cápsula após o almoço e 1 cápsula após o jantar.',
     goals: ['peso', 'energia'],
     active: true,
+    pack: { capsules: 30, doses: 15, mgPerCapsule: 600, netWeight: '40,5 g' },
     detail: {
       about: 'O Óleo de Coco TopBioEuropa é um suplemento alimentar em cápsulas que oferece a praticidade de tomar óleo de coco no dia-a-dia, sem necessidade de o medir ou cozinhar. O óleo de coco (Cocos nucifera) é um óleo vegetal naturalmente rico em ácidos gordos de cadeia média, incluindo ácido láurico — tradicionalmente utilizado na alimentação humana em diversas culturas. Cada cápsula fornece uma dose controlada de óleo de coco, num formato conveniente que integra qualquer rotina. Este suplemento não substitui uma alimentação variada e equilibrada nem um estilo de vida saudável.',
       forWhom: [
@@ -750,6 +766,7 @@ export const catalogSeed: Product[] = [
     usage: '2 cápsulas por dia, junto das refeições. Pode adaptar o horário e a divisão conforme a sua rotina: Junto das refeições principais (almoço ou jantar): toma mais comum, em linha com o consumo…',
     goals: ['energia', 'performance'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
     detail: {
       about: 'O Feno-Grego TopBioEuropa é um suplemento alimentar obtido de Trigonella foenum-graecum — leguminosa mediterrânica com mais de 3.000 anos de história na alimentação e na medicina popular das culturas do Mediterrâneo, Médio Oriente e subcontinente indiano. Valorizado durante milénios tanto na culinária como na prática ayurvédica e árabe, o feno-grego é rico em fibras solúveis (nomeadamente galactomanano), proteínas vegetais, saponinas esteroídes e flavonóides — compostos naturalmente presentes na semente de Trigonella foenum-graecum. Presente nas receitas tradicionais da Índia, Etiópia, Egipto e bacia mediterrânica, é hoje disponibilizado em cápsulas de extracto padronizado para complementar uma alimentação variada e equilibrada, mantendo a conveniência da rotina moderna sem abdicar de uma das plantas mais antigas da história da alimentação humana.',
       forWhom: [
@@ -793,6 +810,7 @@ export const catalogSeed: Product[] = [
     usage: 'Primeiros 5 dias: 1 cápsula às 10h00, após o pequeno-almoço.',
     goals: ['peso'],
     active: true,
+    pack: { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
     detail: {
       about: 'O TopBio LIP é um suplemento alimentar concebido para integrar uma rotina com baixa actividade física, complementando hábitos alimentares equilibrados. A fórmula combina fibra de psyllium, crómio, complexo de algas (espirulina e clorela) e cúrcuma. A fibra de psyllium contribui para uma função intestinal normal (com a ingestão diária de 7 g). O crómio contribui para o metabolismo normal dos macronutrientes e para a manutenção dos níveis normais de glicemia (com a ingestão diária recomendada de 40 μg). Indicado para adultos que desejam integrar um suplemento de fibra e minerais numa rotina alimentar equilibrada, no contexto de um estilo de vida saudável.',
       forWhom: [
@@ -837,6 +855,7 @@ export const catalogSeed: Product[] = [
     usage: 'Primeiros 5 dias: 1 cápsula às 10h00, após o pequeno-almoço.',
     goals: ['peso'],
     active: true,
+    pack: { capsules: 20, doses: 10, mgPerCapsule: 600, netWeight: '18 g' },
     detail: {
       about: 'O TopBio LIP Mini é o formato de entrada da gama TopBio LIP — a mesma fórmula da embalagem completa, em 20 cápsulas, ideal para quem quer experimentar o produto antes de se comprometer com uma embalagem mensal. A fórmula combina fibra de psyllium, crómio, complexo de algas (espirulina e clorela) e cúrcuma, concebida para integrar uma rotina com baixa actividade física, complementando hábitos alimentares equilibrados. A fibra de psyllium contribui para uma função intestinal normal (com a ingestão diária de 7 g). O crómio contribui para o metabolismo normal dos macronutrientes e para a manutenção dos níveis normais de glicemia (com a ingestão diária recomendada de 40 μg). Indicado para adultos que desejam integrar um suplemento de fibra e minerais numa rotina alimentar equilibrada, no contexto de um estilo de vida saudável.',
       forWhom: [
@@ -882,6 +901,7 @@ export const catalogSeed: Product[] = [
     usage: 'Dose diária recomendada: 2 cápsulas por dia, ou conforme indicação do seu profissional de saúde. Não exceder a dose diária recomendada.',
     goals: ['peso'],
     active: true,
+    pack: { capsules: 60, doses: 30, mgPerCapsule: null, netWeight: '33,9 g' },
   },
   {
     id: 'top-max',
@@ -895,6 +915,7 @@ export const catalogSeed: Product[] = [
     usage: 'Nos primeiros 5 dias, 1 cápsula após o pequeno-almoço. A partir do 6.º dia, 1 após o pequeno-almoço e 1 após o almoço. Beba água ao longo do dia.',
     goals: ['peso', 'energia'],
     active: true,
+    pack: { capsules: 30, doses: null, mgPerCapsule: null, netWeight: null },
   },
   {
     id: 'top-shot',
@@ -908,5 +929,6 @@ export const catalogSeed: Product[] = [
     usage: 'Dilua 1 colher de chá (5 g) em 100 ml de água ou sumo. Tome de manhã, em jejum, e aguarde 15 a 30 minutos antes de comer.',
     goals: ['energia', 'imunidade'],
     active: true,
+    pack: { capsules: null, doses: 30, mgPerCapsule: null, netWeight: '150 g' },
   },
 ]
