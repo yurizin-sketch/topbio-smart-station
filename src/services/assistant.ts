@@ -226,17 +226,82 @@ function frasco(pack: ProductPack): string {
   return `O frasco traz ${enumerar(partes)}`
 }
 
-function duracao(detail: ProductDetail): string {
-  // «quanto tempo», e não «dura»: com «dura» apanhava-se o «durante a gravidez»
-  // das outras perguntas, e ela respondia a quanto tempo dura o frasco com um
-  // aviso a grávidas. A pergunta é esta, palavra por palavra, em dezoito das
-  // dezanove fichas; a que não a tem fica sem esta frase, e está bem assim.
-  const item = detail.faq.find((f) => /quanto tempo|quantas c[áa]psulas/i.test(f.question))
-  return item ? ateAoPonto(item.answer, 220) : ''
+/** A marca de uma alegação autorizada, tal como a copy da casa as escreve. */
+const ALEGACAO = /contribui(?:em)? para/i
+
+const emFrases = (texto: string): string[] =>
+  texto.split(/(?<=\.)\s+/).map((f) => f.trim()).filter(Boolean)
+
+/**
+ * Corta a enumeração «para isto, para aquilo, para o outro» nas duas primeiras.
+ *
+ * A vitamina C encadeia seis alegações numa frase só, que dita dá meia centena
+ * de palavras. Duas chegam para quem está de pé à frente do ecrã; as outras
+ * estão escritas ao lado, a ser lidas ao mesmo tempo.
+ *
+ * Não corta quando o que ficaria de fora leva um parêntese: é lá que vive a
+ * condição de uso da alegação («efeito a partir de 75 mg por dose»), e uma
+ * alegação sem a condição dela não se diz. Hoje não acontece em ficha nenhuma
+ * — o guarda existe para quando a copy mudar.
+ */
+function duasAlegacoes(frase: string): string {
+  const partes = frase.split(/,\s*(?=para\b)|\s+e\s+(?=para\b)/i)
+  if (partes.length <= 2) return frase
+  if (partes.slice(2).join(' ').includes('(')) return frase
+  return `${partes[0]} e ${partes[1]}`.replace(/[.,;]?$/, '.')
+}
+
+/** «Vitamina C (Ácido L-Ascórbico)» dito em voz alta é «Vitamina C». */
+const nomeLimpo = (nome: string) => nome.replace(/\s*\([^)]*\)/g, '').replace(/\s*&\s*/g, ' e ').trim()
+
+/**
+ * O que este produto faz por quem o toma, em duas frases no máximo.
+ *
+ * Daqui só sai texto que já passou pela revisão legal: as frases de alegação da
+ * ficha, palavra por palavra. Resumir, aqui, é sempre cortar — nunca
+ * reescrever. Dizer menos alegações do que a ficha tem não levanta problema
+ * nenhum; dizer uma delas por outras palavras levantava (Regulamento CE
+ * 1924/2006; as fórmulas autorizadas são as do Regulamento UE 432/2012).
+ *
+ * As alegações estão em dois sítios. Quase sempre na descrição longa, já em
+ * frases inteiras que nomeiam o nutriente — é de lá que se tiram. Quando a
+ * descrição não tem nenhuma, vai-se às notas dos ingredientes, que é o caso do
+ * Top Shape.
+ *
+ * Quatro produtos não têm alegação em lado nenhum — maca, vinagre de maçã, óleo
+ * de coco, feno-grego — porque a lei não autoriza nenhuma para o que eles
+ * levam. Desses ela diz o que o produto é, que é o que há para dizer. Calar-se
+ * à frente do cliente era pior.
+ */
+function beneficios(product: Product): string {
+  const d = product.detail
+  if (!d) return product.description
+
+  let frases = emFrases(d.about).filter((f) => ALEGACAO.test(f))
+
+  if (!frases.length) {
+    frases = d.ingredients.flatMap((i) => {
+      const alegacao = emFrases(i.note).find((f) => ALEGACAO.test(f))
+      if (!alegacao) return []
+      // Há notas que dizem o nutriente («O cromo contribui para…») e há notas
+      // onde ele está subentendido no nome («Contribui para…»). Estas últimas
+      // ficavam sem sujeito assim que saem da ficha, por isso devolve-se-lho.
+      return [
+        alegacao.replace(
+          /^(?:Ambas\s+)?([Cc]ontribui(?:em)?)\b/,
+          (_todo, verbo: string) => `${nomeLimpo(i.name)} ${verbo.toLowerCase()}`,
+        ),
+      ]
+    })
+  }
+
+  if (!frases.length) return emFrases(d.about)[0] ?? product.description
+
+  return ateAoPonto(frases.slice(0, 2).map(duasAlegacoes).join(' '), 300)
 }
 
 /**
- * Tudo o que a casa sabe deste produto, dito de uma vez.
+ * O que este produto faz por quem o toma, dito em vinte segundos.
  *
  * Não passa pelo modelo, e é de propósito. O que há para dizer de um frasco já
  * está escrito na ficha dele — descrição, composição, modo de uso, preço —
@@ -249,34 +314,27 @@ function duracao(detail: ProductDetail): string {
  * a quem pega num frasco — e porque quem acabou de escolher quer primeiro ouvir
  * que escolheu bem, e só depois os pormenores.
  *
- * SOBRE O TAMANHO. A ficha do site tem para aí três mil caracteres por produto;
- * dita por inteiro dá perto de quatro minutos, e o ecrã volta à atração aos dois
- * (`config.idleTimeoutMs`). Ou seja: a apresentação completa não caberia — seria
- * cortada a meio, sempre, e ninguém a ouviria até ao fim. Por isso diz-se aqui o
- * que uma pessoa do balcão diria de pé (à volta de um minuto) e guarda-se o
- * resto para quem perguntar: o `detail` inteiro vai no contexto do modelo, e a
- * ficha inteira está no ecrã, a ser lida ao mesmo tempo.
+ * SOBRE O TAMANHO. Isto já disse a ficha toda em voz alta — descrição,
+ * composição, modo de uso, duração da embalagem — e dava um balão de fala que
+ * ocupava meio ecrã e um minuto de conversa. Ninguém ouve um minuto de pé.
+ * Agora diz-se o que faz decidir (o que o produto faz, quanto traz, quanto
+ * custa) e manda-se o resto para onde ele se lê melhor do que se ouve: o ecrã,
+ * que está ali à frente com a composição e o modo de uso por inteiro. Daí a
+ * frase do «é só tocar na tela» — sem ela, a pessoa não sabe que há mais.
+ *
+ * O que sai daqui está sempre no ecrã também. Quem prefere ler, lê; quem
+ * prefere ouvir, ouve; e quem quiser o pormenor pergunta-lhe, que o `detail`
+ * inteiro vai no contexto do modelo.
  */
 export function productPitch(product: Product): AssistantTurn {
-  const d = product.detail
-  const composicao = d?.ingredients.length
-    ? enumerar(d.ingredients.map((i) => i.name))
-    : enumerar(product.ingredients.split(/\s*[·•|]\s*/).filter(Boolean))
-
   const partes = [
     'Sua escolha foi muito boa!',
     frase(`Deixa eu te contar sobre ${product.name}`),
-    frase(d ? ateAoPonto(d.about, 420) : product.description),
-    composicao ? frase(`Na composição leva ${composicao}`) : '',
-    // Da posologia interessa a dose — quantas cápsulas e quando. O resto (com
-    // água, longe do café, ao fim de quantas semanas) responde-se a quem
-    // perguntar, que é quando a pessoa quer mesmo saber.
-    frase(`Modo de uso: ${d ? ateAoPonto(d.usage, 220) : product.usage}`),
+    frase(beneficios(product)),
     product.pack ? frase(frasco(product.pack)) : '',
-    d ? frase(duracao(d)) : '',
     frase(`Sai por ${precoFalado(product.priceCents)}`),
+    'Se quiser saber mais sobre o suplemento, é só tocar na tela: tem lá a composição certinha e o modo de uso.',
     'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
-    d?.notes.length ? 'E se quiser saber da composição certinha ou dos cuidados de uso, é só me perguntar.' : '',
   ]
 
   return { say: partes.filter(Boolean).join(' '), choices: [] }
