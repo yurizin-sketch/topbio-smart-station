@@ -290,11 +290,23 @@ class RemoteVoice implements Voice {
     }
   }
 
+  /**
+   * Só se diz a falar depois de o som sair mesmo.
+   *
+   * Dizê-lo antes era uma mentira de meio segundo com preço: quando o
+   * navegador recusa o som, o `play` falha logo a seguir e quem está à escuta
+   * vê uma fala inteira começar e acabar sem que se ouvisse nada. O balão, que
+   * se fecha ao fim da fala, fechava-se em cima de quem estava a ler.
+   */
   private play(audio: HTMLAudioElement, url: string): void {
     audio.src = url
-    this.speaking = true
-    this.emit()
-    void audio.play().catch(() => this.settle())
+    void audio
+      .play()
+      .then(() => {
+        this.speaking = true
+        this.emit()
+      })
+      .catch(() => this.settle())
   }
 
   /**
