@@ -13,7 +13,13 @@ import {
   explain,
   type CounterSession,
 } from '../services/counter'
-import { listOpen, pickupCodeFor, subscribe, type StoredOrder } from '../services/orders'
+import {
+  listOpen,
+  pickupCodeFor,
+  presasAqui,
+  subscribe,
+  type StoredOrder,
+} from '../services/orders'
 import { track } from '../services/telemetry'
 import { PAYMENT_LABELS, type PaymentMethod, type Product } from '../types'
 import { useAssistant } from '../state/assistant'
@@ -128,6 +134,9 @@ export function Staff() {
   // entretanto, o cartão em cima tem de deixar de oferecer o botão de entregar.
   const current = selected ? (open.find((o) => o.id === selected.id) ?? selected) : null
 
+  // Vendas que este aparelho guardou sem nunca as conseguir entregar a ninguém.
+  const presas = presasAqui()
+
   if (!unlocked) {
     return (
       <Frame dark>
@@ -138,6 +147,29 @@ export function Staff() {
             ? 'Zona de funcionários. Confirme o posto e escreva o PIN do balcão.'
             : 'Zona de funcionários. Escreva o PIN do balcão para validar levantamentos.'}
         </p>
+
+        {/*
+          Este tablet já vendeu e o que vendeu não saiu daqui.
+
+          O aviso vive deste lado da porta de propósito: o ecrã do cliente é do
+          cliente, e quem compra não tem nada que ler manutenção. Aqui chega a
+          quem pode resolver, no momento exacto em que está a olhar para o
+          formulário que resolve — a primeira entrada com o PIN da loja é o que
+          regista o aparelho.
+        */}
+        {presas > 0 && (
+          <p className="staff__porRegistar" role="status">
+            <strong>
+              {presas === 1
+                ? '1 venda ficou presa neste tablet.'
+                : `${presas} vendas ficaram presas neste tablet.`}
+            </strong>{' '}
+            O aparelho ainda não está registado, por isso o que se vende aqui não
+            chega ao balcão nem ao armazém. Entre uma vez com o PIN da loja para
+            o ligar.
+          </p>
+        )}
+
         <form
           className="staff__login"
           onSubmit={(e) => {

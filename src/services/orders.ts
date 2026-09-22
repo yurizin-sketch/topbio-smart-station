@@ -91,6 +91,24 @@ export function listOrders(): StoredOrder[] {
 }
 
 /** Por entregar, do mais antigo para o mais recente: quem espera há mais tempo aparece primeiro. */
+/**
+ * Quantas vendas ficaram presas neste aparelho.
+ *
+ * Um tablet que ainda não se apresentou ao servidor continua a vender e a
+ * emitir códigos, mas o servidor recusa vendas de um posto que não conhece e a
+ * venda recusada não volta a ser tentada. Ou seja: some-se do balcão e do
+ * armazém sem ninguém dar por isso.
+ *
+ * Conta-se pelo livro, que guarda as últimas 24 horas — a pergunta é «o que é
+ * que se está a perder agora», não «o que já se perdeu para sempre». Devolve
+ * zero quando não há servidor a quem contar (a demonstração pública), senão o
+ * quiosque acusava avaria a quem só veio espreitar.
+ */
+export function presasAqui(): number {
+  if (!apiEnabled() || stationIsRegistered()) return 0
+  return read().length
+}
+
 export function listOpen(): StoredOrder[] {
   return read()
     .filter((o) => OPEN_STATUSES.includes(o.status))

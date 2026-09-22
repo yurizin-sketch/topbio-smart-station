@@ -840,6 +840,30 @@ img {
   animation: station-breathe 2.6s var(--tne-ease-soft) infinite;
 }
 
+/*
+ * Aviso de tablet por registar, no ecrã do PIN.
+ *
+ * Fala para quem monta a loja, e por isso só existe deste lado da porta. Alinha
+ * com o formulário que está logo abaixo, porque é esse formulário a resposta:
+ * âmbar sobre o escuro, sem piscar — avisa sem gritar a quem já lá está.
+ */
+.staff__porRegistar {
+  max-width: 420px;
+  margin: var(--tne-space-lg) 0 0;
+  padding: var(--tne-space-sm) var(--tne-space-md);
+  border: 1px solid rgba(240, 180, 90, 0.45);
+  border-radius: var(--tne-radius-sm, 8px);
+  background: rgba(240, 180, 90, 0.1);
+  color: rgba(255, 226, 180, 0.92);
+  font-size: var(--station-small);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.staff__porRegistar strong {
+  color: rgb(255, 214, 150);
+}
+
 @keyframes station-breathe {
   0%,
   100% {
