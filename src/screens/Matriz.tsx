@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Frame } from '../components/ui'
 import { formatPrice } from '../config'
-import { apiEnabled } from '../services/api'
+import { apiEnabled, loadSession } from '../services/api'
 import { getCatalog } from '../services/catalog'
 import {
+  asMatriz,
   explainMatriz,
   matrizLogin,
   overview,
@@ -33,7 +34,13 @@ const PERIODOS = [
 ] as const
 
 export function Matriz() {
-  const [session, setSession] = useState<MatrizSession | null>(null)
+  // Uma recarga da página não devia custar a palavra-passe outra vez. O
+  // `login` já guardava a sessão e o `loadSession` já recusa as que passaram
+  // da validade — faltava só ir lá buscá-la ao montar. Fica no
+  // `sessionStorage`, por isso fechar o separador acaba mesmo a sessão.
+  const [session, setSession] = useState<MatrizSession | null>(() =>
+    asMatriz(loadSession()),
+  )
   const [password, setPassword] = useState('')
   const [dias, setDias] = useState<number>(30)
   const [dados, setDados] = useState<Overview | null>(null)
