@@ -2043,3 +2043,103 @@ textarea {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* ── A matriz ──────────────────────────────────────────────────────────────
+ *
+ * Este ecrã não é para o tablet da loja: abre-se num portátil no armazém, e é
+ * a única parte do quiosque onde a densidade vale mais que o dedo. Daí as
+ * tabelas, os números pequenos e o texto que se pode marcar — quem confere
+ * contas copia células para outro lado.
+ */
+.matriz__periodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tne-space-xs, 8px);
+  margin: var(--tne-space-lg) 0 var(--tne-space-md);
+}
+
+.matriz__periodo {
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: var(--station-small);
+  cursor: pointer;
+}
+
+.matriz__periodo--activo {
+  border-color: var(--tne-gold);
+  background: rgba(240, 180, 90, 0.14);
+  color: var(--tne-gold);
+}
+
+.matriz__total {
+  margin: 0 0 var(--tne-space-lg);
+  font-size: var(--station-body);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.matriz__total strong {
+  color: var(--tne-gold);
+  font-size: 1.35em;
+}
+
+.matriz__seccao {
+  margin-bottom: var(--tne-space-xl);
+}
+
+.matriz__titulo {
+  margin: 0 0 var(--tne-space-sm);
+  font-size: var(--station-small);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tne-gold);
+}
+
+.matriz__vazio {
+  margin: 0;
+  font-size: var(--station-small);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.matriz__tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--station-small);
+  /* Ao contrário do resto do quiosque, aqui deixa-se marcar e copiar. */
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.matriz__tabela th {
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: left;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.matriz__tabela td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Números à direita: alinhados, lêem-se em coluna sem ter de os seguir. */
+.matriz__tabela th:not(:first-child):not(:nth-child(2)),
+.matriz__tabela td:not(:first-child):not(:nth-child(2)) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.matriz__nota {
+  margin: 0;
+  padding-top: var(--tne-space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: var(--station-small);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+}

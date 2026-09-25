@@ -7,6 +7,7 @@ import { ProductDetail } from './screens/Product'
 import { Ticket } from './screens/Ticket'
 import { Success } from './screens/Success'
 import { Staff } from './screens/Staff'
+import { Matriz } from './screens/Matriz'
 import { Assistant } from './components/Assistant'
 import { useIdleReset } from './state/useIdleReset'
 
@@ -28,6 +29,7 @@ export function App() {
         <Route path="/success" element={<Success />} />
         {/* Fora do fluxo do cliente: é o painel de quem está ao balcão. */}
         <Route path="/staff" element={<Staff />} />
+        <Route path="/matriz" element={<Matriz />} />
         {/* Qualquer rota desconhecida cai no repouso, nunca num 404. */}
           <Route path="*" element={<Navigate to="/kiosk" replace />} />
       </Routes>

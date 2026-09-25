@@ -31,7 +31,7 @@ export function Assistant() {
 
   // O balcão não tem nada a ver com isto. Uma personagem a falar por cima da
   // fila de pedidos só atrapalharia quem está a trabalhar.
-  if (pathname.startsWith('/staff')) return null
+  if (pathname.startsWith('/staff') || pathname.startsWith('/matriz')) return null
 
   // Pagamento e comprovante. O ecrã ali é todo do cliente — o valor, o QR, o
   // código do balcão — e ela não tem nada a acrescentar que não esteja já
