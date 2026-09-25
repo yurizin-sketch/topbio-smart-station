@@ -17,6 +17,17 @@ const STATION_LOCAL_KEY = 'topbio_station_local'
 const GERADO = /^station-[0-9a-f]{8}$/
 
 /**
+ * Este id foi inventado por um aparelho, não escolhido por alguém.
+ *
+ * Importa a quem trata dos pedidos já escritos: um pedido carimbado com um id
+ * destes nunca pode ter sido aceite pelo servidor, porque não há nenhuma loja
+ * com este nome. É o que torna seguro voltar a carimbá-lo.
+ */
+export function isGeneratedStationId(id: string): boolean {
+  return GERADO.test(id)
+}
+
+/**
  * O posto tal como está registado na base de dados, ou vazio se não estiver.
  *
  * Duas origens, por esta ordem: o que ficou guardado neste aparelho (posto no

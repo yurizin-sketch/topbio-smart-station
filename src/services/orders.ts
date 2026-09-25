@@ -1,5 +1,5 @@
 import type { Order, PaymentMethod } from '../types'
-import { stationIsRegistered } from '../config'
+import { isGeneratedStationId, stationIsRegistered } from '../config'
 import { ApiError, apiEnabled, loadSession, post } from './api'
 
 /**
@@ -258,6 +258,43 @@ export function applyRemote(remote: RemoteOrder[], authoritative = false): void 
 
 /* ── A fila de envio ──────────────────────────────────────────────────────── */
 
+/** O que falta contar ao servidor sobre um pedido de que ele nunca ouviu falar. */
+function porContar(o: StoredOrder): StoredOrder['sync'] {
+  if (o.status === 'cancelled') return 'cancel'
+  if (o.status === 'delivered') return 'settle'
+  return 'create'
+}
+
+/**
+ * Este aparelho passou a saber em que loja está.
+ *
+ * Até aqui vendeu com um nome que inventou a si próprio, e o servidor recusa —
+ * e bem — tudo o que venha de um posto que não conhece. O que fica aqui não
+ * está perdido: um id inventado tem a forma `station-1a2b3c4d` e não existe na
+ * tabela das lojas, portanto nenhum destes pedidos pode ter sido aceite do
+ * outro lado. Recarimbá-los com o nome verdadeiro e voltar a pô-los na fila não
+ * duplica nada, porque não há lá nada para duplicar.
+ *
+ * É isto que faz uma venda feita na entrada aparecer no computador da saída: o
+ * pedido deixa de ser deste tablet e passa a ser da loja.
+ */
+export function adoptStation(realId: string): number {
+  if (!realId || isGeneratedStationId(realId)) return 0
+  const orders = read()
+  let adotadas = 0
+  const next = orders.map((o) => {
+    // Um pedido com id de loja a sério já foi aceite, ou é de outra loja por
+    // onde este aparelho passou. Num caso nem noutro se lhe toca.
+    if (!isGeneratedStationId(o.stationId)) return o
+    adotadas++
+    return { ...o, stationId: realId, sync: o.sync ?? porContar(o) }
+  })
+  if (!adotadas) return 0
+  write(next)
+  void flush()
+  return adotadas
+}
+
 let flushing = false
 
 function clearSync(id: string): void {
@@ -321,6 +358,12 @@ export async function flush(): Promise<void> {
         // Rede em baixo: parar já. Insistir nos outros era esperar o tempo
         // todo do timeout por cada pedido em fila.
         if (e instanceof ApiError && e.offline) return
+        // O servidor não conhece este posto. Não é defeito deste pedido nem se
+        // resolve repetindo: resolve-se quando alguém entrar uma vez com o PIN
+        // da loja, e o `adoptStation` recarimbar o que cá está. Tirá-lo da fila
+        // era apagar em silêncio uma venda que ninguém chegou a receber — foi
+        // exactamente assim que se perderam. Param todos, que a porta é a mesma.
+        if (e instanceof ApiError && e.code === 'posto-desconhecido') return
         // Recusa com resposta (400, 404, 409): repetir dava sempre o mesmo.
         // Tira-se da fila para não bater na mesma porta para sempre — o pedido
         // fica em casa com o estado que tem.

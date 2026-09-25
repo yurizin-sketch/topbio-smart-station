@@ -1,6 +1,7 @@
 import { config, getStationId, rememberStationId, stationIsRegistered } from '../config'
 import { ApiError, apiEnabled, clearSession, login, post, type Session } from './api'
 import {
+  adoptStation,
   applyRemote,
   findByCode,
   flush,
@@ -38,6 +39,14 @@ export interface Unlocked {
   session: CounterSession
   /** O nome que aparece no cabeçalho: a loja em que este tablet está. */
   stationName: string
+  /**
+   * Quantas vendas estavam presas neste aparelho e acabaram de ser enviadas.
+   *
+   * Zero na esmagadora maioria das entradas. Só deixa de o ser na primeira,
+   * num aparelho que já andou a vender sem saber a que loja pertencia — e
+   * essa é justamente a vez em que é preciso dizer que correu bem.
+   */
+  recuperadas: number
 }
 
 /**
@@ -61,7 +70,7 @@ export interface Unlocked {
 export async function counterLogin(stationId: string, secret: string): Promise<Unlocked> {
   if (!apiEnabled()) {
     if (secret !== config.staffPin) throw new ApiError('credenciais', 401)
-    return { session: null, stationName: 'Estação local' }
+    return { session: null, stationName: 'Estação local', recuperadas: 0 }
   }
 
   try {
@@ -71,12 +80,18 @@ export async function counterLogin(stationId: string, secret: string): Promise<U
     // vendas do quiosque deixam de sair com um nome que ninguém registou.
     if (session.stationId) rememberStationId(session.stationId)
 
+    // As vendas que este aparelho fez antes de saber quem era estão escritas
+    // com o nome que ele inventou. Agora que há um nome a sério, passam a ser
+    // da loja — e saem daqui para o balcão e para o armazém.
+    const recuperadas = session.stationId ? adoptStation(session.stationId) : 0
+
     // Havia vendas à espera de sessão para poderem ser fechadas. Agora há.
     void flush()
 
     return {
       session,
       stationName: session.stationName ?? session.stationId ?? stationId,
+      recuperadas,
     }
   } catch (e) {
     // Servidor mudo (rede em baixo, worker em baixo) e o PIN de recurso certo:
@@ -87,6 +102,9 @@ export async function counterLogin(stationId: string, secret: string): Promise<U
         session: null,
         // Se o tablet já soube que posto era, mostra-o; senão fica só «Balcão».
         stationName: stationIsRegistered() ? getStationId() : '',
+        // Sem servidor não se recupera nada: fica tudo à espera da próxima
+        // entrada com rede, que é quando o `adoptStation` corre mesmo.
+        recuperadas: 0,
       }
     }
     throw e

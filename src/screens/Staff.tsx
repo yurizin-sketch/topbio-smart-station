@@ -183,6 +183,18 @@ export function Staff() {
                 setStationName(out.stationName)
                 setUnlocked(true)
                 setPin('')
+                // O aviso lá atrás dizia que havia vendas presas neste
+                // aparelho. Esta entrada é o que as soltou — dizê-lo fecha a
+                // conversa, senão fica a dúvida de se aquilo se resolveu.
+                if (out.recuperadas > 0) {
+                  setFeedback({
+                    tone: 'ok',
+                    text:
+                      out.recuperadas === 1
+                        ? '1 venda que estava presa neste aparelho foi enviada. Já aparece no balcão e no armazém.'
+                        : `${out.recuperadas} vendas que estavam presas neste aparelho foram enviadas. Já aparecem no balcão e no armazém.`,
+                  })
+                }
               })
               .catch((err) => setFeedback({ tone: 'warn', text: explain(err) }))
               .finally(() => {
