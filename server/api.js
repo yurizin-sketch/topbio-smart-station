@@ -528,24 +528,6 @@ function easypay(env) {
   return { call }
 }
 
-/** «2026-10-02 14:05», na hora de Lisboa, que é como a Easypay a quer. */
-function lisbonTime(ms) {
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Europe/Lisbon',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    })
-      .formatToParts(new Date(ms))
-      .map((x) => [x.type, x.value]),
-  )
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`
-}
-
 async function payStart(env, body) {
   const ep = easypay(env)
   if (!ep) return { erro: 'pagamento-desligado', status: 503 }
@@ -568,17 +550,23 @@ async function payStart(env, body) {
 
   let link
   try {
+    // Formato tirado da especificação da API (docs.easypay.pt/openapi), não
+    // dos guias: os guias mostram campos que a API recusa.
     link = await ep.call('POST', '/link', {
-      // A `key` é o id da venda: é ela que volta no aviso de pagamento.
-      key: order.id,
-      value: Number((cents / 100).toFixed(2)),
-      currency: 'EUR',
-      description: `TopBio ${order.ticketCode}`,
-      expiration_time: lisbonTime(Date.now() + PAY_LINK_MINUTES * 60_000),
-      // Só MB WAY: é o que a loja pediu e o que se confirma em segundos. Um
-      // pagamento por referência Multibanco podia entrar daqui a dois dias,
-      // com o cliente já fora da loja.
-      payment_methods: ['MBW'],
+      type: 'SINGLE',
+      expiration_time: new Date(Date.now() + PAY_LINK_MINUTES * 60_000).toISOString(),
+      // A Easypay exige um nome. O verdadeiro, se o houver, só chega depois de
+      // pagar — e vai para a fatura, não para aqui.
+      customer: { name: 'Cliente TopBio', language: 'PT' },
+      payment: {
+        // Só MB WAY: é o que a loja pediu e o que se confirma em segundos. Um
+        // pagamento por referência Multibanco podia entrar daqui a dois dias,
+        // com o cliente já fora da loja.
+        methods: ['MBW'],
+        // A `key` é o id da venda: é ela que volta no aviso de pagamento.
+        capture: { descriptive: `TopBio ${order.ticketCode}`, key: order.id },
+        single: { requested_amount: (cents / 100).toFixed(2) },
+      },
     })
   } catch {
     return { erro: 'easypay', status: 502 }
@@ -636,21 +624,16 @@ async function payStatus(env, body) {
  */
 async function linkState(ep, payId) {
   const link = await ep.call('GET', `/link/${encodeURIComponent(payId)}`)
-  const pagamentos = [link?.payment, ...(Array.isArray(link?.payments) ? link.payments : [])].filter(
-    Boolean,
-  )
-  for (const p of pagamentos) {
-    let status = String(p.status ?? p.payment_status ?? '').toLowerCase()
-    // Quando a ligação só traz o id do pagamento, vai-se buscar o pagamento.
-    if (!status && p.id) {
-      const single = await ep.call('GET', `/single/${encodeURIComponent(p.id)}`)
-      status = String(single?.payment_status ?? single?.status ?? '').toLowerCase()
-    }
-    if (status === 'paid' || status === 'success') return 'paid'
-    if (['failed', 'deleted', 'voided', 'error'].includes(status)) return 'failed'
+  // O `payment.id` só aparece quando a pessoa já começou a pagar na página.
+  const singleId = link?.payment?.id
+  if (singleId) {
+    const single = await ep.call('GET', `/single/${encodeURIComponent(singleId)}`)
+    const status = String(single?.payment_status ?? '').toLowerCase()
+    if (status === 'paid') return 'paid'
+    if (['failed', 'deleted', 'error'].includes(status)) return 'failed'
   }
   const estado = String(link?.status ?? '').toUpperCase()
-  if (estado === 'EXPIRED' || estado === 'CANCELED' || estado === 'CANCELLED') return 'failed'
+  if (estado === 'EXPIRED' || estado === 'CANCELLED') return 'failed'
   return 'pending'
 }
 
