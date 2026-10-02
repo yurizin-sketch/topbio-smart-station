@@ -53,12 +53,37 @@ export async function startPayment(order: Order): Promise<PaymentStart> {
  * meio de confirmar na app, e o pagamento entra na mesma — a pergunta
  * seguinte apanha-o.
  */
-export async function paymentStatus(orderId: string): Promise<PaymentState> {
+export interface PaymentStatus {
+  state: PaymentState
+  /** O pedido feito pelo número, quando o houve: `failed` = recusado na app. */
+  phone: 'pending' | 'failed' | null
+}
+
+export async function paymentStatus(orderId: string): Promise<PaymentStatus> {
   try {
-    const res = await post<{ state: PaymentState }>('/api/pay/status', { orderId })
-    return res?.state ?? 'pending'
+    const res = await post<Partial<PaymentStatus>>('/api/pay/status', { orderId })
+    return { state: res?.state ?? 'pending', phone: res?.phone ?? null }
   } catch {
-    return 'pending'
+    return { state: 'pending', phone: null }
+  }
+}
+
+/**
+ * Mandar o pedido de pagamento à app MB WAY do cliente, pelo número.
+ *
+ * O número segue para o servidor e daí para a Easypay; não fica guardado
+ * neste aparelho nem na nossa base.
+ */
+export async function payByPhone(
+  orderId: string,
+  phone: string,
+): Promise<'sent' | 'invalid' | 'error'> {
+  if (config.payments.demo) return 'sent'
+  try {
+    await post('/api/pay/phone', { orderId, phone })
+    return 'sent'
+  } catch (e) {
+    return e instanceof ApiError && e.code === 'telemovel' ? 'invalid' : 'error'
   }
 }
 

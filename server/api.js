@@ -583,6 +583,86 @@ async function payStart(env, body) {
 }
 
 /**
+ * Pagar pelo número de telemóvel: o pedido chega já à app MB WAY do cliente,
+ * com o valor, e ele só tem de confirmar.
+ *
+ * O número vai para a Easypay e mais nenhum sítio: não se guarda na base.
+ * Guarda-se o id do pedido ao lado do da ligação do QR (`<ligação>|mbw:<id>`):
+ * o QR continua no ecrã, e quem desistir do número e pagar pelo QR também
+ * tem de ser visto.
+ */
+async function payPhone(env, body) {
+  const ep = easypay(env)
+  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
+
+  const id = String(body?.orderId ?? '')
+  const phone = String(body?.phone ?? '').replace(/\D/g, '')
+  // Telemóvel português: nove algarismos a começar por 9.
+  if (!/^9\d{8}$/.test(phone)) return { erro: 'telemovel', status: 400 }
+
+  const order = await env.DB.prepare(
+    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status, pay_id AS payId
+     FROM orders WHERE id = ?1`,
+  )
+    .bind(id)
+    .first()
+  if (!order) return { erro: 'nao-encontrado', status: 404 }
+  if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
+
+  const cents = PRICES[order.productId]
+  if (!cents) return { erro: 'sem-preco', status: 409 }
+
+  let single
+  try {
+    single = await ep.call('POST', '/single', {
+      type: 'sale',
+      method: 'MBW',
+      value: Number((cents / 100).toFixed(2)),
+      currency: 'EUR',
+      // A `key` é o id da venda: é ela que volta no aviso de pagamento.
+      key: order.id,
+      capture: { descriptive: `TopBio ${order.ticketCode}`, transaction_key: order.id },
+      mbway: { phone: `+351${phone}` },
+    })
+  } catch (e) {
+    return { erro: 'easypay', status: 502 }
+  }
+  if (!single?.id) return { erro: 'easypay', status: 502 }
+
+  // Um segundo pedido (o primeiro foi recusado, ou o número estava errado)
+  // substitui o anterior; a ligação do QR fica sempre.
+  const linkId = splitPayId(order.payId).linkId
+  await env.DB.prepare(`UPDATE orders SET pay_id = ?2, amount_cents = ?3 WHERE id = ?1`)
+    .bind(order.id, [linkId, `mbw:${single.id}`].filter(Boolean).join('|'), cents)
+    .run()
+
+  return { ok: true }
+}
+
+/** `<ligação>|mbw:<pagamento>`, qualquer das metades podendo faltar. */
+function splitPayId(payId) {
+  let linkId = null
+  let phoneId = null
+  for (const part of String(payId ?? '').split('|')) {
+    if (part.startsWith('mbw:')) phoneId = part.slice(4)
+    else if (part) linkId = part
+  }
+  return { linkId, phoneId }
+}
+
+/** O estado de um pagamento MB WAY feito pelo número. */
+async function singleState(ep, singleId) {
+  const single = await ep.call('GET', `/single/${encodeURIComponent(singleId)}`)
+  const status = String(single?.payment_status ?? '').toLowerCase()
+  if (status === 'paid') return 'paid'
+  if (status !== 'pending') {
+    console.log('easypay estado', singleId, status, JSON.stringify({ method: single?.method }).slice(0, 600))
+  }
+  if (['failed', 'deleted', 'error'].includes(status)) return 'failed'
+  return 'pending'
+}
+
+/**
  * Já pagaram?
  *
  * Pergunta-se à Easypay e não à nossa base: a base só passa a «pago» depois
@@ -605,14 +685,24 @@ async function payStatus(env, body) {
   if (order.status === 'cancelled') return { ok: true, state: 'failed' }
   if (!order.payId) return { ok: true, state: 'pending' }
 
-  let state = 'pending'
+  // Os dois caminhos ao mesmo tempo: o QR continua no ecrã enquanto o pedido
+  // ao telemóvel corre, e qualquer um dos dois pode ser o que pagou.
+  const { linkId, phoneId } = splitPayId(order.payId)
+  let link = 'pending'
+  let phone = null
   try {
-    state = await linkState(ep, order.payId)
+    if (phoneId) phone = await singleState(ep, phoneId)
+    if (phone !== 'paid' && linkId) link = await linkState(ep, linkId)
   } catch {
-    return { ok: true, state: 'pending' }
+    return { ok: true, state: 'pending', phone: phone === 'failed' ? 'failed' : null }
   }
-  if (state === 'paid') await markPaid(env, order)
-  return { ok: true, state }
+
+  const paid = phone === 'paid' || link === 'paid'
+  if (paid) await markPaid(env, order)
+  // `phone` à parte: um MB WAY recusado no telemóvel não acaba a compra —
+  // o ecrã avisa e deixa tentar outra vez, ou ler o QR.
+  const state = paid ? 'paid' : link === 'failed' && phone !== 'pending' ? 'failed' : 'pending'
+  return { ok: true, state, phone: paid ? null : phone }
 }
 
 /**
@@ -742,6 +832,7 @@ const ABERTAS = new Set([
   '/api/login',
   '/api/orders/create',
   '/api/pay/start',
+  '/api/pay/phone',
   '/api/pay/status',
   '/api/pay/notify',
   '/api/orders/invoice',
@@ -816,6 +907,9 @@ export async function handleApi(request, env, headers, path, ip) {
       break
     case '/api/pay/start':
       out = await payStart(env, body)
+      break
+    case '/api/pay/phone':
+      out = await payPhone(env, body)
       break
     case '/api/pay/status':
       out = await payStatus(env, body)

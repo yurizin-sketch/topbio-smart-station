@@ -58,7 +58,19 @@ function screenOf(pathname: string): string {
  * chamada. Poupa-se uma ida ao modelo e uma ida à voz em cada compra, e não
  * fica ninguém a falar para um ecrã onde não está.
  */
-const SILENT_SCREENS = new Set(['checkout', 'ticket', 'success'])
+//
+// O balcão e a matriz também: não são ecrãs do cliente, são de quem trabalha
+// na loja, e ela a cumprimentar o colega a cada vez que abre a fila não
+// ajuda ninguém.
+const SILENT_SCREENS = new Set([
+  'checkout',
+  'checkout-pay',
+  'checkout-fatura',
+  'ticket',
+  'success',
+  'staff',
+  'matriz',
+])
 
 /**
  * «Só estou a olhar», dito de todas as maneiras que ela é capaz de devolver.
