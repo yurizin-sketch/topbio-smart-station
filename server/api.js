@@ -629,6 +629,16 @@ async function linkState(ep, payId) {
   if (singleId) {
     const single = await ep.call('GET', `/single/${encodeURIComponent(singleId)}`)
     const status = String(single?.payment_status ?? '').toLowerCase()
+    // Para o log do worker: quando um MB WAY é recusado na app, o porquê só
+    // aparece aqui (estado do método e mensagens), nunca no tablet.
+    if (status !== 'paid') {
+      console.log(
+        'easypay estado',
+        singleId,
+        status,
+        JSON.stringify({ method: single?.method, messages: single?.messages ?? single?.message }).slice(0, 800),
+      )
+    }
     if (status === 'paid') return 'paid'
     if (['failed', 'deleted', 'error'].includes(status)) return 'failed'
   }
