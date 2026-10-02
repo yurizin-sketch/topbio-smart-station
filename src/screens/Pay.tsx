@@ -135,7 +135,7 @@ export function Pay() {
           {fase.kind === 'qr' && (
             <>
               <ol className="subtitle" style={{ paddingLeft: '1.2em' }}>
-                <li>Aponte a câmara do telemóvel ao código.</li>
+                <li>Abra a câmara do telemóvel (não a app MB WAY) e aponte ao código.</li>
                 <li>Abra a ligação e escolha MB WAY.</li>
                 <li>Confirme o pagamento na app MB WAY.</li>
               </ol>
