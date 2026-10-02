@@ -71,8 +71,8 @@ export function Invoice() {
       {!aberto ? (
         <div className="panel invoice">
           <p className="subtitle">
-            Enviamos a fatura para o seu email. Se não precisar, siga já para o código de
-            levantamento.
+            Todas as faturas são enviadas por email. Se quiser fatura, só precisa de nos deixar o
+            seu email. Se não precisar, siga já para o código de levantamento.
           </p>
           <div className="invoice__choices">
             <Button block onClick={() => setAberto(true)}>
@@ -107,7 +107,7 @@ export function Invoice() {
           </label>
 
           <label className="field">
-            <span className="section-label">NIF (opcional)</span>
+            <span className="section-label">NIF (só se quiser)</span>
             <input
               className="field__input"
               value={nif}
@@ -124,7 +124,7 @@ export function Invoice() {
           )}
 
           <label className="field">
-            <span className="section-label">Email</span>
+            <span className="section-label">Email (obrigatório)</span>
             <input
               className="field__input"
               value={email}
@@ -139,7 +139,7 @@ export function Invoice() {
           </label>
           {tentou && !emailOk && (
             <div className="notice notice--warn" role="alert">
-              Falta o email, ou não está completo.
+              Sem email não conseguimos enviar a fatura. Confirme que está completo.
             </div>
           )}
 
@@ -150,7 +150,8 @@ export function Invoice() {
           )}
 
           <p className="invoice__privacy">
-            Usamos estes dados só para emitir e enviar a sua fatura.
+            Todas as faturas seguem por email: sem email não conseguimos enviar a sua. O NIF só
+            entra se o escrever. Usamos estes dados só para emitir e enviar a fatura.
           </p>
 
           <div className="invoice__choices">
