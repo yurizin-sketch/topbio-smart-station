@@ -681,10 +681,19 @@ img {
 
 /* ── Pagamento no tablet e NIF ──────────────────────────────────────────── */
 
-.pay__qr {
-  display: grid;
-  place-items: center;
-  min-height: 380px;
+.pay-phone {
+  max-width: 640px;
+  margin-top: var(--tne-space-lg);
+}
+
+.pay-phone .phone-display {
+  margin: var(--tne-space-md) 0;
+}
+
+.pay-phone__privacy {
+  margin-top: var(--tne-space-md);
+  font-size: 0.95rem;
+  color: var(--tne-text-muted);
 }
 
 .pay__total {

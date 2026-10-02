@@ -4,31 +4,36 @@ import { ApiError, apiEnabled, post } from './api'
 import { orderPayload } from './orders'
 
 /**
- * Pagar no próprio tablet: MB WAY por QR code, pela Easypay.
+ * Pagar no próprio tablet: MB WAY pelo número, pela Easypay.
  *
- * O tablet nunca fala com a Easypay. Pede ao servidor uma ligação de
- * pagamento, mostra-a em QR, e depois pergunta ao servidor se já entrou
- * dinheiro. Quem diz «pago» é o servidor, e só depois de a própria Easypay lho
- * confirmar (ver `server/api.js`) — o tablet não tem como saber, e um tablet
- * que se pudesse convencer de que alguém pagou entregava frascos de graça.
+ * O tablet nunca fala com a Easypay. Manda o número ao servidor, que pede o
+ * pagamento à Easypay; o pedido chega à app MB WAY do cliente com o valor, e
+ * o tablet fica a perguntar ao servidor se já entrou. Quem diz «pago» é o
+ * servidor, e só depois de a própria Easypay lho confirmar (ver
+ * `server/api.js`) — um tablet que se pudesse convencer de que alguém pagou
+ * entregava frascos de graça.
  *
  * Tudo o que falha aqui acaba no mesmo sítio: a ficha do balcão, onde se paga
  * como sempre se pagou. Um cliente de pé à frente do ecrã não fica preso por o
  * pagamento estar em baixo.
+ *
+ * Houve um QR antes disto. Abria uma página da Easypay, e quem o lia com a app
+ * MB WAY — que é o que toda a gente faz com um QR que diz MB WAY — ficava com
+ * «a operação não pode ser concluída». O número dá o mesmo pedido na app, sem
+ * câmara pelo meio.
  */
 
 export type PaymentStart =
-  /** Há ligação: mostrar o QR. */
-  | { kind: 'qr'; url: string; demo: boolean }
+  /** Pode-se pagar no tablet: mostrar o teclado do número. */
+  | { kind: 'ready'; demo: boolean }
   /** Pagamento no tablet indisponível agora. Segue-se para o balcão. */
   | { kind: 'off'; reason: string }
 
+/** `failed` = recusado ou cancelado na app; dá para tentar outra vez. */
 export type PaymentState = 'pending' | 'paid' | 'failed'
 
 export async function startPayment(order: Order): Promise<PaymentStart> {
-  if (config.payments.demo) {
-    return { kind: 'qr', url: `https://pay.easypay.pt/demonstracao-${order.id.slice(0, 8)}`, demo: true }
-  }
+  if (config.payments.demo) return { kind: 'ready', demo: true }
   if (!apiEnabled()) return { kind: 'off', reason: 'sem-servidor' }
   // Um posto que o servidor não conhece não tem venda lá dentro para pagar.
   if (!stationIsRegistered()) return { kind: 'off', reason: 'posto-por-registar' }
@@ -38,9 +43,8 @@ export async function startPayment(order: Order): Promise<PaymentStart> {
     // lá que sai o valor a cobrar, não deste pedido. Repetir a criação é
     // seguro — o servidor tem um `ON CONFLICT` à espera.
     await post('/api/orders/create', { order: orderPayload(order) })
-    const res = await post<{ url: string }>('/api/pay/start', { orderId: order.id })
-    if (!res?.url) return { kind: 'off', reason: 'sem-ligacao' }
-    return { kind: 'qr', url: res.url, demo: false }
+    await post('/api/pay/start', { orderId: order.id })
+    return { kind: 'ready', demo: false }
   } catch (e) {
     return { kind: 'off', reason: e instanceof ApiError ? e.code : 'desconhecido' }
   }
@@ -53,18 +57,12 @@ export async function startPayment(order: Order): Promise<PaymentStart> {
  * meio de confirmar na app, e o pagamento entra na mesma — a pergunta
  * seguinte apanha-o.
  */
-export interface PaymentStatus {
-  state: PaymentState
-  /** O pedido feito pelo número, quando o houve: `failed` = recusado na app. */
-  phone: 'pending' | 'failed' | null
-}
-
-export async function paymentStatus(orderId: string): Promise<PaymentStatus> {
+export async function paymentStatus(orderId: string): Promise<PaymentState> {
   try {
-    const res = await post<Partial<PaymentStatus>>('/api/pay/status', { orderId })
-    return { state: res?.state ?? 'pending', phone: res?.phone ?? null }
+    const res = await post<{ state?: PaymentState }>('/api/pay/status', { orderId })
+    return res?.state ?? 'pending'
   } catch {
-    return { state: 'pending', phone: null }
+    return 'pending'
   }
 }
 

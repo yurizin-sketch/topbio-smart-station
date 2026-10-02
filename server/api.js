@@ -482,8 +482,8 @@ async function overview(env, body) {
 
 /* ── Pagamento no tablet: MB WAY pela Easypay ────────────────────────────────
 
-   O tablet pede uma ligação de pagamento (Pay By Link), mostra-a em QR, e o
-   cliente paga no telemóvel. Três regras, todas pela mesma razão — o tablet
+   O cliente escreve o número MB WAY no tablet, o pedido chega à app dele já
+   com o valor, e ele confirma lá. Três regras, todas pela mesma razão — o tablet
    e o endereço deste servidor são públicos:
 
    1. O valor sai do `PRICES` deste lado, nunca do pedido.
@@ -498,9 +498,6 @@ async function overview(env, body) {
    `EASYPAY_ENV` escolhe o ambiente: «test» (por omissão) ou «prod». Em teste
    não sai dinheiro de lado nenhum, e o MB WAY confirma-se sem telemóvel.
    ────────────────────────────────────────────────────────────────────────── */
-
-/** A ligação vive um pouco mais do que o ecrã espera por ela (10 min). */
-const PAY_LINK_MINUTES = 15
 
 function easypay(env) {
   if (!env.EASYPAY_ACCOUNT_ID || !env.EASYPAY_API_KEY) return null
@@ -528,68 +525,31 @@ function easypay(env) {
   return { call }
 }
 
-async function payStart(env, body) {
-  const ep = easypay(env)
-  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
-
-  const id = String(body?.orderId ?? '')
-  const order = await env.DB.prepare(
-    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status, pay_url AS payUrl
-     FROM orders WHERE id = ?1`,
-  )
-    .bind(id)
+/**
+ * O pagamento no tablet está ligado, e esta venda pode ser paga?
+ *
+ * O tablet pergunta antes de mostrar o teclado do número: sem chaves, ou com
+ * a venda já fechada, o cliente vai direto para a ficha do balcão em vez de
+ * escrever um número que não ia dar em nada.
+ */
+async function payReady(env, body) {
+  if (!easypay(env)) return { erro: 'pagamento-desligado', status: 503 }
+  const order = await env.DB.prepare(`SELECT status, product_id AS productId FROM orders WHERE id = ?1`)
+    .bind(String(body?.orderId ?? ''))
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
-  // O tablet repete o pedido se a rede piscar. Devolve-se a mesma ligação em
-  // vez de abrir uma segunda para a mesma venda.
-  if (order.payUrl) return { ok: true, url: order.payUrl }
-
-  const cents = PRICES[order.productId]
-  if (!cents) return { erro: 'sem-preco', status: 409 }
-
-  let link
-  try {
-    // Formato tirado da especificação da API (docs.easypay.pt/openapi), não
-    // dos guias: os guias mostram campos que a API recusa.
-    link = await ep.call('POST', '/link', {
-      type: 'SINGLE',
-      expiration_time: new Date(Date.now() + PAY_LINK_MINUTES * 60_000).toISOString(),
-      // A Easypay exige um nome. O verdadeiro, se o houver, só chega depois de
-      // pagar — e vai para a fatura, não para aqui.
-      customer: { name: 'Cliente TopBio', language: 'PT' },
-      payment: {
-        // Só MB WAY: é o que a loja pediu e o que se confirma em segundos. Um
-        // pagamento por referência Multibanco podia entrar daqui a dois dias,
-        // com o cliente já fora da loja.
-        methods: ['MBW'],
-        // A `key` é o id da venda: é ela que volta no aviso de pagamento.
-        capture: { descriptive: `TopBio ${order.ticketCode}`, key: order.id },
-        single: { requested_amount: (cents / 100).toFixed(2) },
-      },
-    })
-  } catch {
-    return { erro: 'easypay', status: 502 }
-  }
-  if (!link?.url || !link?.id) return { erro: 'easypay', status: 502 }
-
-  await env.DB.prepare(
-    `UPDATE orders SET pay_id = ?2, pay_url = ?3, amount_cents = ?4 WHERE id = ?1`,
-  )
-    .bind(order.id, String(link.id), String(link.url), cents)
-    .run()
-
-  return { ok: true, url: link.url }
+  if (!PRICES[order.productId]) return { erro: 'sem-preco', status: 409 }
+  return { ok: true }
 }
 
 /**
  * Pagar pelo número de telemóvel: o pedido chega já à app MB WAY do cliente,
  * com o valor, e ele só tem de confirmar.
  *
- * O número vai para a Easypay e mais nenhum sítio: não se guarda na base.
- * Guarda-se o id do pedido ao lado do da ligação do QR (`<ligação>|mbw:<id>`):
- * o QR continua no ecrã, e quem desistir do número e pagar pelo QR também
- * tem de ser visto.
+ * O número vai para a Easypay e mais nenhum sítio: não se guarda na base. O
+ * que se guarda é o id do pagamento (`pay_id`), para o `payStatus` saber a
+ * quem perguntar.
  */
 async function payPhone(env, body) {
   const ep = easypay(env)
@@ -601,8 +561,7 @@ async function payPhone(env, body) {
   if (!/^9\d{8}$/.test(phone)) return { erro: 'telemovel', status: 400 }
 
   const order = await env.DB.prepare(
-    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status, pay_id AS payId
-     FROM orders WHERE id = ?1`,
+    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status FROM orders WHERE id = ?1`,
   )
     .bind(id)
     .first()
@@ -624,30 +583,18 @@ async function payPhone(env, body) {
       capture: { descriptive: `TopBio ${order.ticketCode}`, transaction_key: order.id },
       mbway: { phone: `+351${phone}` },
     })
-  } catch (e) {
+  } catch {
     return { erro: 'easypay', status: 502 }
   }
   if (!single?.id) return { erro: 'easypay', status: 502 }
 
   // Um segundo pedido (o primeiro foi recusado, ou o número estava errado)
-  // substitui o anterior; a ligação do QR fica sempre.
-  const linkId = splitPayId(order.payId).linkId
+  // substitui o anterior.
   await env.DB.prepare(`UPDATE orders SET pay_id = ?2, amount_cents = ?3 WHERE id = ?1`)
-    .bind(order.id, [linkId, `mbw:${single.id}`].filter(Boolean).join('|'), cents)
+    .bind(order.id, String(single.id), cents)
     .run()
 
   return { ok: true }
-}
-
-/** `<ligação>|mbw:<pagamento>`, qualquer das metades podendo faltar. */
-function splitPayId(payId) {
-  let linkId = null
-  let phoneId = null
-  for (const part of String(payId ?? '').split('|')) {
-    if (part.startsWith('mbw:')) phoneId = part.slice(4)
-    else if (part) linkId = part
-  }
-  return { linkId, phoneId }
 }
 
 /** O estado de um pagamento MB WAY feito pelo número. */
@@ -685,56 +632,15 @@ async function payStatus(env, body) {
   if (order.status === 'cancelled') return { ok: true, state: 'failed' }
   if (!order.payId) return { ok: true, state: 'pending' }
 
-  // Os dois caminhos ao mesmo tempo: o QR continua no ecrã enquanto o pedido
-  // ao telemóvel corre, e qualquer um dos dois pode ser o que pagou.
-  const { linkId, phoneId } = splitPayId(order.payId)
-  let link = 'pending'
-  let phone = null
+  let state = 'pending'
   try {
-    if (phoneId) phone = await singleState(ep, phoneId)
-    if (phone !== 'paid' && linkId) link = await linkState(ep, linkId)
+    state = await singleState(ep, order.payId)
   } catch {
-    return { ok: true, state: 'pending', phone: phone === 'failed' ? 'failed' : null }
+    return { ok: true, state: 'pending' }
   }
-
-  const paid = phone === 'paid' || link === 'paid'
-  if (paid) await markPaid(env, order)
-  // `phone` à parte: um MB WAY recusado no telemóvel não acaba a compra —
-  // o ecrã avisa e deixa tentar outra vez, ou ler o QR.
-  const state = paid ? 'paid' : link === 'failed' && phone !== 'pending' ? 'failed' : 'pending'
-  return { ok: true, state, phone: paid ? null : phone }
-}
-
-/**
- * O estado de uma ligação, contado pelo pagamento que lá está dentro.
- *
- * `FINALIZED` na ligação não quer dizer pago — quer dizer que a pessoa chegou
- * ao fim da página. O que conta é o pagamento: `paid`/`success` é dinheiro
- * entrado; `failed`/`deleted`/`voided`, desistência.
- */
-async function linkState(ep, payId) {
-  const link = await ep.call('GET', `/link/${encodeURIComponent(payId)}`)
-  // O `payment.id` só aparece quando a pessoa já começou a pagar na página.
-  const singleId = link?.payment?.id
-  if (singleId) {
-    const single = await ep.call('GET', `/single/${encodeURIComponent(singleId)}`)
-    const status = String(single?.payment_status ?? '').toLowerCase()
-    // Para o log do worker: quando um MB WAY é recusado na app, o porquê só
-    // aparece aqui (estado do método e mensagens), nunca no tablet.
-    if (status !== 'paid') {
-      console.log(
-        'easypay estado',
-        singleId,
-        status,
-        JSON.stringify({ method: single?.method, messages: single?.messages ?? single?.message }).slice(0, 800),
-      )
-    }
-    if (status === 'paid') return 'paid'
-    if (['failed', 'deleted', 'error'].includes(status)) return 'failed'
-  }
-  const estado = String(link?.status ?? '').toUpperCase()
-  if (estado === 'EXPIRED' || estado === 'CANCELLED') return 'failed'
-  return 'pending'
+  if (state === 'paid') await markPaid(env, order)
+  // Recusado na app não fecha a venda: o ecrã avisa e deixa tentar outra vez.
+  return { ok: true, state }
 }
 
 async function markPaid(env, order) {
@@ -906,7 +812,7 @@ export async function handleApi(request, env, headers, path, ip) {
       out = await overview(env, body)
       break
     case '/api/pay/start':
-      out = await payStart(env, body)
+      out = await payReady(env, body)
       break
     case '/api/pay/phone':
       out = await payPhone(env, body)

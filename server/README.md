@@ -284,9 +284,10 @@ repositório, e que nunca deve levar as palavras-passe verdadeiras.
 
 ## Pagamento no tablet (MB WAY pela Easypay)
 
-O cliente escolhe se quer NIF, o tablet mostra um QR, o cliente paga no
-telemóvel e o tablet passa sozinho ao comprovante «PAGO». Sem chaves, o QR
-salta para a ficha do balcão e paga-se lá como sempre — ligar é pôr as chaves.
+O cliente escreve o número MB WAY no tablet, o pedido chega à app dele com o
+valor, ele confirma, e o tablet passa sozinho à fatura (nome, NIF, email) e ao
+comprovante «PAGO». Sem chaves, o ecrã salta para a ficha do balcão e paga-se
+lá como sempre — ligar é pôr as chaves.
 
 **1. A base de dados** (uma vez, numa base que já existia):
 
@@ -308,7 +309,7 @@ as chaves de produção) só depois de uma compra de teste ir do QR ao balcão.
 **3. O aviso de pagamento.** No backoffice da Easypay, em Notificações
 (webhooks), pôr o endereço `https://<o worker>/api/pay/notify`. Sem isto
 funciona na mesma — o tablet pergunta de 3 em 3 segundos —, mas com isto um
-pagamento que entre depois de o ecrã desistir não fica por registar.
+pagamento confirmado na app depois de o ecrã desistir não fica por registar.
 
 **4. Os preços.** O servidor cobra pelo `prices.js`, não pelo tablet. Depois
 de mudar um preço no catálogo:
@@ -320,7 +321,8 @@ npx tsx scripts/build-prices.ts
 e voltar a publicar o worker.
 
 **Ver o ecrã sem Easypay:** abrir a estação com `?pagamento=demo` no endereço.
-Mostra um QR a fingir e um botão «Simular pagamento». Não cobra nada.
+Envia o pedido a fingir e mostra um botão «Simular confirmação». Não cobra
+nada.
 
 ---
 

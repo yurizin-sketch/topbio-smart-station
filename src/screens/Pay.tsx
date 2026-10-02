@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Frame, Numpad, PhoneDisplay, QrCode } from '../components/ui'
+import { Button, Frame, Numpad, PhoneDisplay } from '../components/ui'
 import { useSession } from '../state/session'
 import { issueTicket } from '../services/tickets'
 import { payByPhone, paymentStatus, startPayment } from '../services/payments'
@@ -8,44 +8,35 @@ import { config, formatPrice } from '../config'
 import { legal } from '../data/legal'
 
 /**
- * Pagar com MB WAY, lendo um QR com o telemóvel.
+ * Pagar com MB WAY pelo número de telemóvel.
  *
- * Depois de pago segue para a fatura (`Invoice`), e só depois para o código.
+ * O cliente escreve o número, o pedido chega à app MB WAY dele já com o valor,
+ * e ele confirma lá. O tablet fica só a perguntar ao servidor se já entrou — e
+ * só segue quando o servidor disser que sim. Depois de pago vem a fatura
+ * (`Invoice`), e só depois o código de levantamento.
  *
- * O QR abre a página de pagamento da Easypay no telemóvel do cliente; lá
- * escolhe MB WAY e confirma na app. O tablet fica só a perguntar ao servidor
- * se já entrou — e só segue para o código de levantamento quando o servidor
- * disser que sim.
- *
- * Ao lado do QR, o número: quem não quer apontar a câmara escreve o
- * telemóvel e o pedido chega já à app MB WAY, com o valor. Os dois caminhos
- * ficam abertos ao mesmo tempo — o servidor vê qualquer um que pague.
+ * O ecrã diz por extenso para onde vai o número: para a Easypay, e para mais
+ * lado nenhum. É a pergunta que qualquer pessoa faz antes de escrever o
+ * telemóvel num ecrã de loja, e uma pergunta sem resposta é um cliente que
+ * vai pagar ao balcão.
  *
  * Há sempre uma saída para o balcão: no botão, quando o pagamento no tablet
- * está desligado, quando falha, e quando o tempo acaba. A ficha emitida aqui é
- * a mesma que lá se mostra, por isso quem desiste do QR não fica com dois
- * códigos.
+ * está desligado, e quando o tempo acaba. A ficha emitida aqui é a mesma que
+ * lá se mostra, por isso quem desiste não fica com dois códigos.
  */
-type Fase =
-  | { kind: 'a-preparar' }
-  | { kind: 'qr'; url: string; demo: boolean }
-  | { kind: 'falhou' }
+type Fase = 'a-preparar' | 'pronto'
 
-/** O pagamento pelo número, à parte do QR. */
-type Telefone = 'fechado' | 'a-escrever' | 'a-enviar' | 'enviado' | 'recusado' | 'invalido' | 'erro'
+type Telefone = 'a-escrever' | 'a-enviar' | 'enviado' | 'recusado' | 'invalido' | 'erro'
 
 export function Pay() {
   const navigate = useNavigate()
   const { product, order, updateOrder } = useSession()
-  const [fase, setFase] = useState<Fase>({ kind: 'a-preparar' })
+  const [fase, setFase] = useState<Fase>('a-preparar')
+  const [demo, setDemo] = useState(false)
   const [restante, setRestante] = useState<number>(config.payments.waitMs)
   const pago = useRef(false)
-  const [telefone, setTelefone] = useState<Telefone>('fechado')
+  const [telefone, setTelefone] = useState<Telefone>('a-escrever')
   const [digitos, setDigitos] = useState('')
-  // O `setInterval` das perguntas lê isto, e não o estado: o estado que ele
-  // vê é o do momento em que foi criado.
-  const telefoneRef = useRef<Telefone>('fechado')
-  telefoneRef.current = telefone
 
   const balcao = () => navigate('/checkout/ticket', { replace: true })
 
@@ -56,7 +47,7 @@ export function Pay() {
     navigate('/checkout/fatura', { replace: true })
   }
 
-  // Emitir a ficha e pedir a ligação de pagamento. Uma vez por encomenda.
+  // Emitir a ficha e confirmar que se pode pagar aqui. Uma vez por encomenda.
   useEffect(() => {
     if (!product || !order) {
       navigate('/goals', { replace: true })
@@ -76,53 +67,53 @@ export function Pay() {
 
     void startPayment(comFicha).then((res) => {
       if (!vivo) return
-      if (res.kind === 'off') balcao()
-      else setFase({ kind: 'qr', url: res.url, demo: res.demo })
+      if (res.kind === 'off') return balcao()
+      setDemo(res.demo)
+      setFase('pronto')
     })
     return () => {
       vivo = false
     }
-    // Corre uma vez por encomenda: dois pedidos de pagamento seriam duas
-    // ligações abertas para a mesma venda.
+    // Corre uma vez por encomenda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id])
 
-  // Perguntar se já pagaram, e desistir quando o tempo acabar.
+  // O relógio: quem fica parado à frente do ecrã sem pagar vai para o balcão.
   useEffect(() => {
-    if (fase.kind !== 'qr' || !order) return
+    if (fase !== 'pronto') return
     const fim = Date.now() + config.payments.waitMs
-    let vivo = true
-
     const relogio = window.setInterval(() => {
       const falta = fim - Date.now()
       setRestante(Math.max(0, falta))
       if (falta <= 0) balcao()
     }, 1_000)
+    return () => window.clearInterval(relogio)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase])
 
-    // Na demonstração não há servidor a quem perguntar: paga-se no botão.
-    const pergunta = fase.demo
-      ? undefined
-      : window.setInterval(() => {
-          void paymentStatus(order.id).then((estado) => {
-            if (!vivo) return
-            if (estado.state === 'paid') concluir()
-            else if (estado.state === 'failed') setFase({ kind: 'falhou' })
-            else if (estado.phone === 'failed' && telefoneRef.current === 'enviado') setTelefone('recusado')
-          })
-        }, config.payments.pollMs)
-
+  // Perguntar se já pagaram — só depois de o pedido ter ido para a app.
+  useEffect(() => {
+    if (telefone !== 'enviado' || demo || !order) return
+    let vivo = true
+    const pergunta = window.setInterval(() => {
+      void paymentStatus(order.id).then((estado) => {
+        if (!vivo) return
+        if (estado === 'paid') concluir()
+        else if (estado === 'failed') setTelefone('recusado')
+      })
+    }, config.payments.pollMs)
     return () => {
       vivo = false
-      window.clearInterval(relogio)
-      if (pergunta) window.clearInterval(pergunta)
+      window.clearInterval(pergunta)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fase.kind, order?.id])
+  }, [telefone, demo, order?.id])
 
   if (!product || !order) return null
 
   const numeroOk = /^9\d{8}$/.test(digitos)
   const numeroBonito = digitos.replace(/(\d{3})(?=\d)/g, '$1 ')
+  const aEscrever = telefone !== 'enviado'
 
   const enviarPedido = async () => {
     if (!numeroOk || telefone === 'a-enviar') return
@@ -130,8 +121,6 @@ export function Pay() {
     const res = await payByPhone(order.id, digitos)
     setTelefone(res === 'sent' ? 'enviado' : res === 'invalid' ? 'invalido' : 'erro')
   }
-
-  const aEscrever = ['a-escrever', 'a-enviar', 'recusado', 'invalido', 'erro'].includes(telefone)
 
   const minutos = Math.floor(restante / 60_000)
   const segundos = Math.floor((restante % 60_000) / 1_000)
@@ -141,103 +130,75 @@ export function Pay() {
       <p className="eyebrow">Pagamento</p>
       <h1 className="title">Pague com MB WAY</h1>
 
-      <div className="pay">
-        <div className="pay__qr">
-          {fase.kind === 'a-preparar' && (
-            <div className="notice notice--info">A preparar o pagamento…</div>
-          )}
-          {fase.kind === 'qr' && <QrCode value={fase.url} />}
-          {fase.kind === 'falhou' && (
-            <div className="notice notice--error" role="alert">
-              O pagamento não foi concluído. Pode pagar no balcão com o nosso colega.
-            </div>
-          )}
-        </div>
+      <div className="panel pay-phone">
+        <p className="section-label">{product.name}</p>
+        <p className="pay__total">{formatPrice(order.amountCents)}</p>
 
-        <div className="panel">
-          <p className="section-label">{product.name}</p>
-          <p className="pay__total">{formatPrice(order.amountCents)}</p>
+        {fase === 'a-preparar' && <div className="notice notice--info">A preparar o pagamento…</div>}
 
-          {fase.kind === 'qr' && telefone === 'fechado' && (
-            <ol className="subtitle" style={{ paddingLeft: '1.2em' }}>
-              <li>Abra a câmara do telemóvel (não a app MB WAY) e aponte ao código.</li>
-              <li>Abra a ligação e escolha MB WAY.</li>
-              <li>Confirme o pagamento na app MB WAY.</li>
-            </ol>
-          )}
+        {fase === 'pronto' && aEscrever && (
+          <>
+            <p className="subtitle">
+              Escreva aqui o seu número MB WAY. Enviamos o pedido de pagamento para a app, e só
+              precisa de o confirmar lá.
+            </p>
+            <PhoneDisplay digits={digitos} />
+            {telefone === 'recusado' && (
+              <div className="notice notice--warn" role="alert">
+                O pagamento foi recusado ou cancelado na app. Pode tentar outra vez.
+              </div>
+            )}
+            {telefone === 'invalido' && (
+              <div className="notice notice--warn" role="alert">
+                Este número não parece certo. Confirme, por favor.
+              </div>
+            )}
+            {telefone === 'erro' && (
+              <div className="notice notice--error" role="alert">
+                Não consegui enviar o pedido. Tente outra vez, ou pague no balcão.
+              </div>
+            )}
+            <Numpad value={digitos} onChange={setDigitos} />
+            <p className="pay-phone__privacy">
+              O seu número segue apenas para a Easypay, que trata o pagamento. Nós não o guardamos.
+            </p>
+          </>
+        )}
 
-          {fase.kind === 'qr' && aEscrever && (
-            <>
-              <p className="section-label">O seu número MB WAY</p>
-              <PhoneDisplay digits={digitos} />
-              {telefone === 'recusado' && (
-                <div className="notice notice--warn" role="alert">
-                  O pagamento foi recusado ou cancelado na app. Pode tentar outra vez, ou ler o QR.
-                </div>
-              )}
-              {telefone === 'invalido' && (
-                <div className="notice notice--warn" role="alert">
-                  Este número não parece certo. Confirme, por favor.
-                </div>
-              )}
-              {telefone === 'erro' && (
-                <div className="notice notice--error" role="alert">
-                  Não consegui enviar o pedido. Tente outra vez, ou leia o QR.
-                </div>
-              )}
-              <Numpad value={digitos} onChange={setDigitos} />
-            </>
-          )}
-
-          {fase.kind === 'qr' && telefone === 'enviado' && (
+        {fase === 'pronto' && telefone === 'enviado' && (
+          <>
             <div className="notice notice--info">
-              {`Enviámos o pedido para o ${numeroBonito}. Abra a app MB WAY e confirme o pagamento.`}
+              {`Enviámos o pedido para o ${numeroBonito}. Abra a app MB WAY no telemóvel e confirme o pagamento.`}
             </div>
-          )}
-
-          {fase.kind === 'qr' && !aEscrever && (
-            <div className="notice notice--info" style={{ marginTop: 'var(--tne-space-lg)' }}>
-              {`À espera do pagamento… ${minutos}:${String(segundos).padStart(2, '0')}`}
+            <div className="notice notice--info" style={{ marginTop: 'var(--tne-space-md)' }}>
+              {`À espera da confirmação… ${minutos}:${String(segundos).padStart(2, '0')}`}
             </div>
-          )}
+          </>
+        )}
 
-          <div className="pay__actions">
-            {fase.kind === 'qr' && telefone === 'fechado' && (
-              <Button block onClick={() => setTelefone('a-escrever')}>
-                Pagar com o número MB WAY
-              </Button>
-            )}
-            {fase.kind === 'qr' && aEscrever && (
-              <>
-                <Button block disabled={!numeroOk || telefone === 'a-enviar'} onClick={() => void enviarPedido()}>
-                  {telefone === 'a-enviar' ? 'A enviar…' : 'Enviar pedido para a app'}
-                </Button>
-                <Button
-                  block
-                  variant="secondary"
-                  onClick={() => {
-                    setDigitos('')
-                    setTelefone('fechado')
-                  }}
-                >
-                  Voltar ao QR
-                </Button>
-              </>
-            )}
-            {fase.kind === 'qr' && telefone === 'enviado' && (
-              <Button block variant="secondary" onClick={() => setTelefone('a-escrever')}>
-                Usar outro número
-              </Button>
-            )}
-            {fase.kind === 'qr' && fase.demo && (
-              <Button block onClick={concluir}>
-                Simular pagamento (demonstração)
-              </Button>
-            )}
-            <Button block variant="secondary" onClick={balcao}>
-              Prefiro pagar no balcão
+        <div className="pay__actions">
+          {fase === 'pronto' && aEscrever && (
+            <Button
+              block
+              disabled={!numeroOk || telefone === 'a-enviar'}
+              onClick={() => void enviarPedido()}
+            >
+              {telefone === 'a-enviar' ? 'A enviar…' : 'Enviar pedido para a app'}
             </Button>
-          </div>
+          )}
+          {fase === 'pronto' && telefone === 'enviado' && (
+            <Button block variant="secondary" onClick={() => setTelefone('a-escrever')}>
+              Usar outro número
+            </Button>
+          )}
+          {fase === 'pronto' && demo && telefone === 'enviado' && (
+            <Button block onClick={concluir}>
+              Simular confirmação (demonstração)
+            </Button>
+          )}
+          <Button block variant="secondary" onClick={balcao}>
+            Prefiro pagar no balcão
+          </Button>
         </div>
       </div>
     </Frame>
