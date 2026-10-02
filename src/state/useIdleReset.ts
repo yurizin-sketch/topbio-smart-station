@@ -19,7 +19,11 @@ import { track } from '../services/telemetry'
  * a contar dinheiro e visse o painel fugir para o ecrã de atração ao fim de dois
  * minutos teria de repetir o login a cada atendimento.
  */
-const EXEMPT = new Set(['/kiosk', '/success', '/staff', '/matriz'])
+//
+// O `/checkout/pay` também, e com relógio próprio (`payments.waitMs`): quem
+// está a pagar está a olhar para o telemóvel, não toca no tablet, e voltar ao
+// repouso a meio deitava fora o QR de um pagamento que ia entrar.
+const EXEMPT = new Set(['/kiosk', '/success', '/staff', '/matriz', '/checkout/pay'])
 
 export function useIdleReset(): void {
   const navigate = useNavigate()

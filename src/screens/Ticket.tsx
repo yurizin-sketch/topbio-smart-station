@@ -25,7 +25,11 @@ export function Ticket() {
       navigate('/goals', { replace: true })
       return
     }
-    const ficha = issueTicket(order)
+    // Quem vem do QR já tem ficha: é a mesma, para não sair com dois códigos
+    // e o balcão procurar o que não existe.
+    const ficha = order.ticketCode
+      ? { orderId: order.id, code: order.ticketCode, expiresAt: order.expiresAt }
+      : issueTicket(order)
     setIntent(ficha)
     updateOrder({
       status: 'awaiting_counter',

@@ -454,6 +454,19 @@ function OrderCard({
 
       <p className="staff__product">{product?.name ?? order.productId}</p>
       <p className="staff__amount">{formatPrice(order.amountCents)}</p>
+      {!owes && order.method === 'mbway' && <p className="staff__where">Pago no tablet, por MB WAY</p>}
+
+      {/* A fatura sai do weoInvoice; daqui só vêm os dados, já conferidos. */}
+      {order.invoiceEmail ? (
+        <div className="staff__where">
+          <p>Fatura pedida — emitir no weoInvoice e enviar por email</p>
+          {order.invoiceName && <p>Nome: {order.invoiceName}</p>}
+          <p>NIF: {order.nif ?? 'sem NIF (consumidor final)'}</p>
+          <p>Email: {order.invoiceEmail}</p>
+        </div>
+      ) : (
+        !owes && order.method === 'mbway' && <p className="staff__where">Não pediu fatura</p>
+      )}
 
       <p className="staff__where">Entregar da prateleira</p>
 

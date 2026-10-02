@@ -22,6 +22,8 @@
 const SESSION_MS = 12 * 60 * 60 * 1000 // um dia de trabalho
 
 const REASONS = new Set(['venda', 'entrada', 'contagem', 'devolucao', 'correcao'])
+import { PRICES } from './prices.js'
+
 const METHODS = new Set(['dinheiro', 'mbway', 'cartao'])
 
 const enc = new TextEncoder()
@@ -234,7 +236,8 @@ async function createOrder(env, body) {
 const ORDER_COLS = `id, station_id AS stationId, ticket_code AS ticketCode,
                     product_id AS productId, amount_cents AS amountCents,
                     status, method, created_at AS createdAt,
-                    expires_at AS expiresAt, paid_at AS paidAt, closed_at AS closedAt`
+                    expires_at AS expiresAt, paid_at AS paidAt, closed_at AS closedAt,
+                    nif, invoice_name AS invoiceName, invoice_email AS invoiceEmail`
 
 /** Procurar pelo código que o cliente traz no ecrã. */
 async function findOrder(env, claims, body) {
@@ -477,10 +480,279 @@ async function overview(env, body) {
   }
 }
 
+/* ── Pagamento no tablet: MB WAY pela Easypay ────────────────────────────────
+
+   O tablet pede uma ligação de pagamento (Pay By Link), mostra-a em QR, e o
+   cliente paga no telemóvel. Três regras, todas pela mesma razão — o tablet
+   e o endereço deste servidor são públicos:
+
+   1. O valor sai do `PRICES` deste lado, nunca do pedido.
+   2. «Pago» só se escreve depois de a Easypay o confirmar a quem lhe pergunta
+      com a nossa chave. O aviso que ela manda (`/api/pay/notify`) não traz
+      assinatura nenhuma: qualquer pessoa o podia forjar, por isso só serve
+      para nos fazer ir perguntar.
+   3. Sem chaves postas (`EASYPAY_ACCOUNT_ID`, `EASYPAY_API_KEY`), tudo isto
+      responde «desligado» e o tablet manda ao balcão. Desligar é tirar as
+      chaves; não há nada a mudar no tablet.
+
+   `EASYPAY_ENV` escolhe o ambiente: «test» (por omissão) ou «prod». Em teste
+   não sai dinheiro de lado nenhum, e o MB WAY confirma-se sem telemóvel.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** A ligação vive um pouco mais do que o ecrã espera por ela (10 min). */
+const PAY_LINK_MINUTES = 15
+
+function easypay(env) {
+  if (!env.EASYPAY_ACCOUNT_ID || !env.EASYPAY_API_KEY) return null
+  const base =
+    env.EASYPAY_ENV === 'prod' ? 'https://api.prod.easypay.pt/2.0' : 'https://api.test.easypay.pt/2.0'
+  const call = async (method, path, body) => {
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        AccountId: env.EASYPAY_ACCOUNT_ID,
+        ApiKey: env.EASYPAY_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // O corpo da Easypay vai para o log do worker, não para o tablet: pode
+      // trazer detalhes da conta que não são para um ecrã público.
+      console.log('easypay', method, path, res.status, JSON.stringify(data).slice(0, 500))
+      throw new Error(`easypay-${res.status}`)
+    }
+    return data
+  }
+  return { call }
+}
+
+/** «2026-10-02 14:05», na hora de Lisboa, que é como a Easypay a quer. */
+function lisbonTime(ms) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Lisbon',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(ms))
+      .map((x) => [x.type, x.value]),
+  )
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`
+}
+
+async function payStart(env, body) {
+  const ep = easypay(env)
+  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
+
+  const id = String(body?.orderId ?? '')
+  const order = await env.DB.prepare(
+    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status, pay_url AS payUrl
+     FROM orders WHERE id = ?1`,
+  )
+    .bind(id)
+    .first()
+  if (!order) return { erro: 'nao-encontrado', status: 404 }
+  if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
+  // O tablet repete o pedido se a rede piscar. Devolve-se a mesma ligação em
+  // vez de abrir uma segunda para a mesma venda.
+  if (order.payUrl) return { ok: true, url: order.payUrl }
+
+  const cents = PRICES[order.productId]
+  if (!cents) return { erro: 'sem-preco', status: 409 }
+
+  let link
+  try {
+    link = await ep.call('POST', '/link', {
+      // A `key` é o id da venda: é ela que volta no aviso de pagamento.
+      key: order.id,
+      value: Number((cents / 100).toFixed(2)),
+      currency: 'EUR',
+      description: `TopBio ${order.ticketCode}`,
+      expiration_time: lisbonTime(Date.now() + PAY_LINK_MINUTES * 60_000),
+      // Só MB WAY: é o que a loja pediu e o que se confirma em segundos. Um
+      // pagamento por referência Multibanco podia entrar daqui a dois dias,
+      // com o cliente já fora da loja.
+      payment_methods: ['MBW'],
+    })
+  } catch {
+    return { erro: 'easypay', status: 502 }
+  }
+  if (!link?.url || !link?.id) return { erro: 'easypay', status: 502 }
+
+  await env.DB.prepare(
+    `UPDATE orders SET pay_id = ?2, pay_url = ?3, amount_cents = ?4 WHERE id = ?1`,
+  )
+    .bind(order.id, String(link.id), String(link.url), cents)
+    .run()
+
+  return { ok: true, url: link.url }
+}
+
+/**
+ * Já pagaram?
+ *
+ * Pergunta-se à Easypay e não à nossa base: a base só passa a «pago» depois
+ * daqui. Um pagamento confirmado escreve-se uma vez, com o stock a descer no
+ * mesmo `batch` — a mesma regra do balcão (ver `settle`).
+ */
+async function payStatus(env, body) {
+  const ep = easypay(env)
+  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
+
+  const id = String(body?.orderId ?? '')
+  const order = await env.DB.prepare(
+    `SELECT id, station_id AS stationId, product_id AS productId, status, pay_id AS payId
+     FROM orders WHERE id = ?1`,
+  )
+    .bind(id)
+    .first()
+  if (!order) return { erro: 'nao-encontrado', status: 404 }
+  if (order.status === 'paid' || order.status === 'delivered') return { ok: true, state: 'paid' }
+  if (order.status === 'cancelled') return { ok: true, state: 'failed' }
+  if (!order.payId) return { ok: true, state: 'pending' }
+
+  let state = 'pending'
+  try {
+    state = await linkState(ep, order.payId)
+  } catch {
+    return { ok: true, state: 'pending' }
+  }
+  if (state === 'paid') await markPaid(env, order)
+  return { ok: true, state }
+}
+
+/**
+ * O estado de uma ligação, contado pelo pagamento que lá está dentro.
+ *
+ * `FINALIZED` na ligação não quer dizer pago — quer dizer que a pessoa chegou
+ * ao fim da página. O que conta é o pagamento: `paid`/`success` é dinheiro
+ * entrado; `failed`/`deleted`/`voided`, desistência.
+ */
+async function linkState(ep, payId) {
+  const link = await ep.call('GET', `/link/${encodeURIComponent(payId)}`)
+  const pagamentos = [link?.payment, ...(Array.isArray(link?.payments) ? link.payments : [])].filter(
+    Boolean,
+  )
+  for (const p of pagamentos) {
+    let status = String(p.status ?? p.payment_status ?? '').toLowerCase()
+    // Quando a ligação só traz o id do pagamento, vai-se buscar o pagamento.
+    if (!status && p.id) {
+      const single = await ep.call('GET', `/single/${encodeURIComponent(p.id)}`)
+      status = String(single?.payment_status ?? single?.status ?? '').toLowerCase()
+    }
+    if (status === 'paid' || status === 'success') return 'paid'
+    if (['failed', 'deleted', 'voided', 'error'].includes(status)) return 'failed'
+  }
+  const estado = String(link?.status ?? '').toUpperCase()
+  if (estado === 'EXPIRED' || estado === 'CANCELED' || estado === 'CANCELLED') return 'failed'
+  return 'pending'
+}
+
+async function markPaid(env, order) {
+  const now = Date.now()
+  const posto = await env.DB.prepare('SELECT tracks_stock AS tracksStock FROM stations WHERE id = ?1')
+    .bind(order.stationId)
+    .first()
+  // O `WHERE status = 'awaiting_counter'` é o que impede descontar duas vezes
+  // quando o aviso da Easypay e a pergunta do tablet chegam ao mesmo tempo; o
+  // índice único em `stock_moves.order_id` apanha o resto.
+  const res = await env.DB.prepare(
+    `UPDATE orders SET status = 'paid', method = 'mbway', paid_at = ?2
+     WHERE id = ?1 AND status = 'awaiting_counter'`,
+  )
+    .bind(order.id, now)
+    .run()
+  if (!res.meta?.changes) return
+
+  const writes = [
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO stock_moves
+         (station_id, product_id, delta, reason, order_id, actor, at)
+       VALUES (?1, ?2, -1, 'venda', ?3, 'easypay', ?4)`,
+    ).bind(order.stationId, order.productId, order.id, now),
+  ]
+  if (posto?.tracksStock !== 0) {
+    writes.push(
+      env.DB.prepare(
+        `INSERT INTO stock (station_id, product_id, qty, updated_at)
+         VALUES (?1, ?2, -1, ?3)
+         ON CONFLICT(station_id, product_id)
+         DO UPDATE SET qty = qty - 1, updated_at = ?3`,
+      ).bind(order.stationId, order.productId, now),
+    )
+  }
+  await env.DB.batch(writes)
+}
+
+/**
+ * O aviso da Easypay de que algo mudou.
+ *
+ * Não se acredita nele (não vem assinado): tira-se a `key`, que é o id da
+ * venda, e pergunta-se como no `payStatus`. Responde sempre 200 — um erro
+ * aqui faria a Easypay insistir, e insistir não muda a resposta.
+ */
+async function payNotify(env, body) {
+  const key = String(body?.key ?? '')
+  if (key) {
+    try {
+      await payStatus(env, { orderId: key })
+    } catch (e) {
+      console.log('easypay notify', key, String(e))
+    }
+  }
+  return { ok: true }
+}
+
+/**
+ * Os dados da fatura, que o cliente escreve depois de pagar no tablet.
+ *
+ * Aberto, porque quem chama é o quiosque. Por isso só aceita numa venda já
+ * paga no tablet e na primeira meia hora depois disso: fora disso é alguém a
+ * escrever por cima dos dados de outra pessoa. E nunca por cima de dados que
+ * já lá estejam — quem se enganou pede a correção ao balcão.
+ */
+const INVOICE_WINDOW_MS = 30 * 60_000
+
+async function orderInvoice(env, body) {
+  const id = String(body?.orderId ?? '')
+  const email = String(body?.invoiceEmail ?? '').trim().slice(0, 160)
+  const nome = String(body?.invoiceName ?? '').trim().slice(0, 120) || null
+  const nif = String(body?.nif ?? '').replace(/\D/g, '') || null
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { erro: 'email', status: 400 }
+  if (nif && !/^\d{9}$/.test(nif)) return { erro: 'nif', status: 400 }
+
+  const res = await env.DB.prepare(
+    `UPDATE orders SET invoice_name = ?2, nif = ?3, invoice_email = ?4
+     WHERE id = ?1 AND method = 'mbway' AND pay_id IS NOT NULL
+       AND status IN ('paid', 'delivered') AND paid_at > ?5
+       AND invoice_email IS NULL`,
+  )
+    .bind(id, nome, nif, email, Date.now() - INVOICE_WINDOW_MS)
+    .run()
+  return res.meta?.changes ? { ok: true } : { erro: 'nao-encontrado', status: 404 }
+}
+
 /* ── O distribuidor ───────────────────────────────────────────────────────── */
 
 /** Caminhos que não pedem sessão. Tudo o resto pede. */
-const ABERTAS = new Set(['/api/login', '/api/orders/create'])
+//
+// Os do pagamento são abertos porque quem os chama é o quiosque, que não tem
+// sessão nenhuma, e a Easypay. Nenhum deles escreve «pago» por palavra de quem
+// chama: ver o bloco do pagamento.
+const ABERTAS = new Set([
+  '/api/login',
+  '/api/orders/create',
+  '/api/pay/start',
+  '/api/pay/status',
+  '/api/pay/notify',
+  '/api/orders/invoice',
+])
 
 /** Quem pode chegar a cada caminho. */
 const PERMISSAO = {
@@ -548,6 +820,18 @@ export async function handleApi(request, env, headers, path, ip) {
       break
     case '/api/matriz/overview':
       out = await overview(env, body)
+      break
+    case '/api/pay/start':
+      out = await payStart(env, body)
+      break
+    case '/api/pay/status':
+      out = await payStatus(env, body)
+      break
+    case '/api/orders/invoice':
+      out = await orderInvoice(env, body)
+      break
+    case '/api/pay/notify':
+      out = await payNotify(env, body)
       break
     default:
       out = { erro: 'caminho', status: 404 }

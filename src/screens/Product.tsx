@@ -49,16 +49,15 @@ export function ProductDetail() {
   }, [id, product, products, selectProduct, navigate])
 
   /**
-   * Comprar já não pergunta nada.
+   * Comprar vai direto ao QR do MB WAY. A fatura pergunta-se depois de pago.
    *
-   * Havia aqui um ecrã pelo meio a perguntar «MB WAY ou balcão?». Com o
-   * pagamento a ser sempre ao balcão, esse ecrã era um toque a mais para
-   * chegar exactamente ao mesmo sítio.
+   * Não se pergunta «MB WAY ou balcão?»: o QR já tem a saída para o balcão,
+   * e quando o pagamento no tablet está desligado é para lá que vai sozinho.
    */
   const comprar = () => {
     createOrder()
     track({ type: 'checkout_started', productId: product!.id })
-    navigate('/checkout/ticket')
+    navigate('/checkout/pay')
   }
 
   if (!product) return null

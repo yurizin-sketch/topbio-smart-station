@@ -59,7 +59,9 @@ export function Success() {
 
   if (!order || !product) return null
 
-  const pickupCode = order.id.slice(0, 6).toUpperCase()
+  // O código da ficha, que é o que o balcão procura. O de recurso só para uma
+  // encomenda que tenha chegado aqui sem ficha, o que hoje não acontece.
+  const pickupCode = order.ticketCode ?? order.id.slice(0, 6).toUpperCase()
   const warning = remainingMs <= config.successWarnMs
   const seconds = Math.ceil(remainingMs / 1_000)
 

@@ -35,26 +35,28 @@ COMO VOCÊ FALA
 - Uma ou duas frases curtas. O que você diz é lido em voz alta: nada de listas, parênteses, emojis ou abreviações.
 - Trate o cliente por "você", com simpatia e sem formalidade demais.
 - Seja simpática, não insistente. Se a pessoa disser que só quer olhar, deixe.
-- Os preços são em euros, porque a loja fica em Portugal. Nunca fale em reais.
+- Nunca diga preços nem valores, nem se o cliente perguntar. O preço está escrito na tela, ao lado de cada produto: se perguntarem, diga que está ali na tela.
 
 O QUE VOCÊ NUNCA PODE DIZER
 Nunca diga, sugira nem dê a entender que um produto trata, cura, previne, alivia, reduz, melhora ou ajuda em qualquer coisa. É proibido por lei (Regulamento (CE) 1924/2006) e não tem exceção: nem quando o cliente pergunta direto, nem quando ele insiste.
 
 Exemplos de frases proibidas: "ajuda a dormir", "reforça as defesas", "bom para as dores", "melhora a energia", "combate o cansaço", "ideal para quem tem estresse".
 
-O que você pode dizer no lugar: o nome do produto, o preço, a seção em que a loja guarda ele, e que é um suplemento alimentar. Assim: "Na seção de sono a gente tem o Magnésio Bisglicinato, por 24 euros. Quer ver?"
+O que você pode dizer no lugar: o nome do produto, a seção em que a loja guarda ele, e que é um suplemento alimentar. Assim: "Na seção de sono a gente tem o Top Calm, o Magnetop e o Top Woman 40 mais. Quer ver algum?"
+
+Quando falar de uma seção, diga o nome de todos os produtos que a lista marca com essa seção, sem deixar nenhum de fora, mesmo que sejam muitos.
 
 Se perguntarem sobre doenças, sintomas, remédios, gravidez, amamentação ou crianças, responda que essas perguntas são para um médico ou farmacêutico e que o colega no balcão pode ajudar. Você não dá conselho de saúde em circunstância nenhuma.
 
 REGRAS DA CASA
-- Você só fala dos produtos da lista que recebe. Não invente produtos, preços nem estoque.
+- Você só fala dos produtos da lista que recebe. Não invente produtos nem estoque.
 - Nunca peça nome, telefone, endereço, e-mail nem dados de pagamento.
 - Nada sai da estação na hora: tudo o que se compra aqui se retira no balcão da loja.
 - Se você não souber, diga que não sabe e mande a pessoa ao balcão.
 
 FORMATO
 Responda só com um objeto JSON, sem texto em volta e sem bloco de código:
-{"say": "a frase para dizer em voz alta", "choices": [{"label": "texto curto do botão", "value": "o que isso quer dizer"}], "goal": "sono|energia|performance|beleza|imunidade|peso|foco|mobilidade ou null", "highlight": ["ids dos produtos a destacar"]}
+{"say": "a frase para dizer em voz alta", "choices": [{"label": "texto curto do botão", "value": "o que isso quer dizer"}], "goal": "sono|energia|performance|beleza|longevidade|imunidade|peso|foco|mobilidade ou null", "highlight": ["ids dos produtos a destacar"]}
 
 Sobre "choices": no máximo três, com rótulos de duas ou três palavras. São botões num tablet, não respostas escritas. Devolva lista vazia quando a conversa não pede resposta.
 Sobre "goal": preencha só quando ficar claro o que a pessoa procura; caso contrário, null.`
@@ -321,12 +323,14 @@ function describe(context) {
   if (context?.productId) lines.push(`Produto aberto: ${context.productId}.`)
   lines.push(...sheet(context?.productSheet))
 
-  const visible = Array.isArray(context?.visible) ? context.visible.slice(0, 24) : []
+  // Sem preço: a loja não quer valores ditos em voz alta, e o que não chega
+  // ao modelo não sai da boca dele. O preço está escrito na tela.
+  const visible = Array.isArray(context?.visible) ? context.visible.slice(0, 40) : []
   if (visible.length) {
-    lines.push('Produtos disponíveis na loja (id, nome, preço):')
+    lines.push('Produtos disponíveis na loja (id, nome, seções):')
     for (const p of visible) {
-      const euros = (Number(p.priceCents) / 100).toFixed(2).replace('.', ',')
-      lines.push(`- ${p.id} | ${p.name} | ${euros} euros`)
+      const secoes = Array.isArray(p.goals) ? p.goals.join(', ') : ''
+      lines.push(`- ${p.id} | ${p.name} | ${secoes}`)
     }
   }
   return lines.join('\n')
@@ -344,12 +348,18 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
     if (request.method !== 'POST') return json({ error: 'method' }, 405, headers)
 
-    if (allowed.length && !allowed.includes(origin)) {
+    const path = new URL(request.url).pathname
+
+    // O aviso da Easypay vem de um servidor, não de um browser: não traz
+    // `Origin`, e o travão de cima recusava-o. Pode passar sem ele porque não
+    // escreve nada por palavra de quem o manda — ver `payNotify` no `api.js`.
+    const fromEasypay = path === '/api/pay/notify'
+
+    if (allowed.length && !allowed.includes(origin) && !fromEasypay) {
       return json({ error: 'origin' }, 403, headers)
     }
 
     const ip = request.headers.get('cf-connecting-ip') ?? 'sem-ip'
-    const path = new URL(request.url).pathname
 
     // A contabilidade — pedidos, stock, matriz — vive no `api.js`. É o mesmo
     // worker porque é a mesma origem e a mesma conta; é outro ficheiro porque

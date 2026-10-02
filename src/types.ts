@@ -9,6 +9,7 @@ export type GoalId =
   | 'energia'
   | 'performance'
   | 'beleza'
+  | 'longevidade'
   | 'imunidade'
   | 'peso'
   | 'foco'
@@ -160,6 +161,17 @@ export interface Order {
   status: OrderStatus
   /** Código curto legível para o balcão, ex.: `TB-4821`. */
   ticketCode?: string
+  /**
+   * Dados da fatura, quando o cliente a pede depois de pagar no tablet.
+   *
+   * A estação não fatura: a fatura sai do weoInvoice, ao balcão, que é o
+   * programa certificado pela AT, e é de lá que segue para o email. Isto só
+   * leva os dados até lá, para o colega não ter de os perguntar outra vez.
+   * Sem NIF, é fatura de consumidor final.
+   */
+  invoiceName?: string
+  nif?: string
+  invoiceEmail?: string
   createdAt: number
   expiresAt: number
   failureReason?: string

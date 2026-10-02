@@ -58,8 +58,16 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at    INTEGER NOT NULL,
   expires_at    INTEGER NOT NULL,
   paid_at       INTEGER,
-  closed_at     INTEGER
+  closed_at     INTEGER,
+  nif           TEXT,                       -- para a fatura no weoInvoice; null = consumidor final
+  invoice_name  TEXT,                       -- nome na fatura, se o cliente o deu
+  invoice_email TEXT,                       -- para onde se envia a fatura; null = não pediu
+  pay_id        TEXT,                       -- a ligação de pagamento na Easypay, quando se pagou no tablet
+  pay_url       TEXT
 );
+-- Numa base criada antes do pagamento no tablet, estas cinco colunas não
+-- existem e o `CREATE TABLE IF NOT EXISTS` não as acrescenta: corre-se uma vez
+-- o `server/migrations/0002_pagamento.sql`.
 
 -- Procurar pelo código é o que o balcão faz o dia todo.
 CREATE INDEX IF NOT EXISTS orders_by_code ON orders (ticket_code);

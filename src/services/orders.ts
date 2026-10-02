@@ -39,8 +39,11 @@ export type StoredOrder = Order & {
 }
 
 /** Como um pedido chega do servidor: as colunas nulas do SQL vêm a `null`. */
-type RemoteOrder = Omit<Order, 'method'> & {
+type RemoteOrder = Omit<Order, 'method' | 'nif' | 'invoiceName' | 'invoiceEmail'> & {
   method: PaymentMethod | null
+  nif?: string | null
+  invoiceName?: string | null
+  invoiceEmail?: string | null
   paidAt: number | null
   closedAt: number | null
 }
@@ -206,6 +209,9 @@ function fromRemote(r: RemoteOrder): Partial<StoredOrder> {
   return {
     ...r,
     method: r.method ?? null,
+    nif: r.nif ?? undefined,
+    invoiceName: r.invoiceName ?? undefined,
+    invoiceEmail: r.invoiceEmail ?? undefined,
     paidAt: r.paidAt ?? undefined,
     closedAt: r.closedAt ?? undefined,
   }
@@ -307,7 +313,8 @@ function clearSync(id: string): void {
   write(orders)
 }
 
-function payload(o: StoredOrder) {
+/** O pedido como o servidor o recebe. Também serve o pagamento no tablet. */
+export function orderPayload(o: Order) {
   return {
     id: o.id,
     stationId: o.stationId,
@@ -339,7 +346,7 @@ export async function flush(): Promise<void> {
         // fecho: se a venda foi feita com a rede em baixo, o servidor nunca
         // ouviu falar dela e um `settle` sozinho não encontrava nada. Repetir a
         // criação é seguro — do outro lado há um `ON CONFLICT` à espera.
-        await post('/api/orders/create', { order: payload(order) })
+        await post('/api/orders/create', { order: orderPayload(order) })
 
         if (order.sync !== 'create') {
           const session = loadSession()

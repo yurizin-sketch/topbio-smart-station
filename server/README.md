@@ -282,6 +282,48 @@ repositório, e que nunca deve levar as palavras-passe verdadeiras.
 
 ---
 
+## Pagamento no tablet (MB WAY pela Easypay)
+
+O cliente escolhe se quer NIF, o tablet mostra um QR, o cliente paga no
+telemóvel e o tablet passa sozinho ao comprovante «PAGO». Sem chaves, o QR
+salta para a ficha do balcão e paga-se lá como sempre — ligar é pôr as chaves.
+
+**1. A base de dados** (uma vez, numa base que já existia):
+
+```sh
+npx wrangler d1 execute topbio --remote --file=migrations/0002_pagamento.sql
+```
+
+**2. As chaves**, num terminal seu (a mesma regra das outras chaves):
+
+```sh
+npx wrangler secret put EASYPAY_ACCOUNT_ID
+npx wrangler secret put EASYPAY_API_KEY
+npx wrangler secret put EASYPAY_ENV      # escrever: test   (depois: prod)
+```
+
+Começar em `test`: não sai dinheiro de lado nenhum. Trocar para `prod` (e pôr
+as chaves de produção) só depois de uma compra de teste ir do QR ao balcão.
+
+**3. O aviso de pagamento.** No backoffice da Easypay, em Notificações
+(webhooks), pôr o endereço `https://<o worker>/api/pay/notify`. Sem isto
+funciona na mesma — o tablet pergunta de 3 em 3 segundos —, mas com isto um
+pagamento que entre depois de o ecrã desistir não fica por registar.
+
+**4. Os preços.** O servidor cobra pelo `prices.js`, não pelo tablet. Depois
+de mudar um preço no catálogo:
+
+```sh
+npx tsx scripts/build-prices.ts
+```
+
+e voltar a publicar o worker.
+
+**Ver o ecrã sem Easypay:** abrir a estação com `?pagamento=demo` no endereço.
+Mostra um QR a fingir e um botão «Simular pagamento». Não cobra nada.
+
+---
+
 ## Depois de publicado
 
 ### Confirmar que está de pé

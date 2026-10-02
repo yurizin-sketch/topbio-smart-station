@@ -29,9 +29,15 @@ export const goals: Goal[] = [
   },
   {
     id: 'beleza',
-    label: 'Beleza e longevidade',
+    label: 'Beleza',
     hint: 'Pele, cabelo e unhas',
     icon: '✨',
+  },
+  {
+    id: 'longevidade',
+    label: 'Longevidade',
+    hint: 'Para cuidar de si com os anos',
+    icon: '🌿',
   },
   {
     id: 'imunidade',

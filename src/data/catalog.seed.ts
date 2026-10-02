@@ -72,7 +72,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Estado de alerta', 'Concentração', 'Redução da fadiga'],
     ingredients: 'Cafeína · Vitamina B3 (Niacina) & Vitamina B9 (Ácido Fólico) · Vitamina C & Magnésio · Fosfatidilserina · L-Glutamina & Tirosina',
     usage: '1 a 2 cápsulas por dia, de preferência de manhã ou antes de actividades que exijam concentração.',
-    goals: ['foco', 'energia'],
+    goals: ['foco', 'energia', 'performance'],
     active: true,
     pack: { capsules: 60, doses: 30, mgPerCapsule: null, netWeight: '46,44 g' },
     detail: {
@@ -174,7 +174,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Redução da fadiga', 'Sistema nervoso', 'Fórmula de 4 formas'],
     ingredients: 'Bisglicinato de Magnésio · Malato de Magnésio · Taurato de Magnésio · Citrato de Magnésio',
     usage: '2 cápsulas por dia, preferencialmente à noite, após o jantar ou cerca de 30 a 60 minutos antes de dormir — para integrar na rotina nocturna e no período natural de repouso do organismo.',
-    goals: ['energia', 'sono', 'performance'],
+    goals: ['sono', 'longevidade'],
     active: true,
     pack: { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
@@ -309,7 +309,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Ossos normais', 'Sistema imunitário', 'Pele, cabelo e unhas'],
     ingredients: 'Vitamina D3 (Colecalciferol) · Vitamina K2 (Menaquinona MK-7) · Zinco',
     usage: '2 cápsulas por dia, preferencialmente com uma refeição que contenha gordura saudável.',
-    goals: ['imunidade', 'mobilidade'],
+    goals: ['imunidade', 'mobilidade', 'longevidade'],
     active: true,
     pack: { capsules: 60, doses: null, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
@@ -354,7 +354,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Verisol® patenteado', 'Com Vitamina C', '2 cápsulas por dia'],
     ingredients: 'Verisol® (Peptídeos Bioativos de Colagénio) · Vitamina C · Colagénio Hidrolisado',
     usage: '2 cápsulas por dia, que podem ser tomadas juntas ou divididas em duas doses.',
-    goals: ['beleza'],
+    goals: ['beleza', 'mobilidade'],
     active: true,
     pack: { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
     detail: {
@@ -579,7 +579,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Coração', 'Cérebro', 'Visão'],
     ingredients: 'EPA (Ácido Eicosapentaenóico) · DHA (Ácido Docosahexaenóico) · Óleo de Peixe Concentrado · Vitamina E (D-alfa-tocoferol)',
     usage: 'Tomar 1 cápsula por dia, ou conforme orientação de um profissional de saúde.',
-    goals: ['foco', 'beleza'],
+    goals: ['foco', 'beleza', 'longevidade'],
     active: true,
     pack: { capsules: 60, doses: 60, mgPerCapsule: 1418.75, netWeight: '85,13 g' },
     detail: {
@@ -627,7 +627,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Sistema imunitário', 'Protecção celular', 'Função da tiroide'],
     ingredients: 'Selénio (55 µg) · Coenzima Q10 / Ubiquinona (100 mg)',
     usage: '1 a 2 cápsulas por dia, tomadas durante uma refeição principal que contenha alguma gordura — esta combinação favorece a absorção da Coenzima Q10 (composto lipossolúvel).',
-    goals: ['energia'],
+    goals: ['energia', 'performance', 'longevidade'],
     active: true,
     pack: { capsules: 60, doses: 60, mgPerCapsule: 470, netWeight: '28,2 g' },
     detail: {
@@ -671,7 +671,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Função psicológica', 'Ossos normais', '7 ingredientes'],
     ingredients: 'Ashwagandha (Withania somnifera) · Crocus sativus & Cimicifuga racemosa · Valeriana (Valeriana officinalis) · Magnésio · Vitamina D3 (Colecalciferol) & Vitamina K2 (MK-7)',
     usage: '1 a 2 cápsulas por dia, após a refeição. O horário preferencial é à noite. Protocolo de adaptação (importante — respeitar): Primeiros 3 dias: 1 cápsula à noite, após a refeição — para…',
-    goals: ['sono', 'energia'],
+    goals: ['sono'],
     active: true,
     pack: { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
     detail: {
@@ -720,7 +720,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Origem 100% vegetal', 'Cápsula vegetariana', 'Toma diária prática'],
     ingredients: 'Óleo de coco (Cocos nucifera) · Cápsula vegetal · Ácido láurico',
     usage: '2 cápsulas por dia: 1 cápsula após o almoço e 1 cápsula após o jantar.',
-    goals: ['peso', 'energia'],
+    goals: ['energia'],
     active: true,
     pack: { capsules: 30, doses: 15, mgPerCapsule: 600, netWeight: '40,5 g' },
     detail: {
@@ -977,7 +977,7 @@ export const catalogSeed: Product[] = [
     highlights: ['Em pó', '5 g por toma', '30 doses'],
     ingredients: 'Gengibre · Cúrcuma · Maca peruana · Própolis · Vitamina C · Zinco · Inulina · Pimenta preta',
     usage: 'Diluir 5 g em água ou sumo.',
-    goals: ['energia', 'imunidade'],
+    goals: ['energia', 'performance', 'imunidade', 'peso'],
     active: true,
     pack: { capsules: null, doses: 30, mgPerCapsule: null, netWeight: '150 g' },
     detail: {

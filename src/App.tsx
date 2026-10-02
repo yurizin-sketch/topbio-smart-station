@@ -5,6 +5,8 @@ import { Recommendations } from './screens/Recommendations'
 import { Catalog } from './screens/Catalog'
 import { ProductDetail } from './screens/Product'
 import { Ticket } from './screens/Ticket'
+import { Invoice } from './screens/Invoice'
+import { Pay } from './screens/Pay'
 import { Success } from './screens/Success'
 import { Staff } from './screens/Staff'
 import { Matriz } from './screens/Matriz'
@@ -22,9 +24,12 @@ export function App() {
         <Route path="/recommendations" element={<Recommendations />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/product/:id" element={<ProductDetail />} />
-        {/* O ecrã que perguntava «MB WAY ou balcão?» deixou de existir: paga-se
-            sempre ao balcão. Quem tiver o endereço antigo aberto cai na ficha. */}
-        <Route path="/checkout" element={<Navigate to="/checkout/ticket" replace />} />
+        {/* Comprar: o QR do MB WAY e, depois de pago, a fatura. Sem pagamento no
+            tablet (sem as chaves da Easypay no servidor), o QR segue sozinho
+            para a ficha do balcão, e paga-se lá como sempre. */}
+        <Route path="/checkout" element={<Navigate to="/checkout/pay" replace />} />
+        <Route path="/checkout/pay" element={<Pay />} />
+        <Route path="/checkout/fatura" element={<Invoice />} />
         <Route path="/checkout/ticket" element={<Ticket />} />
         <Route path="/success" element={<Success />} />
         {/* Fora do fluxo do cliente: é o painel de quem está ao balcão. */}

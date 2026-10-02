@@ -1,6 +1,5 @@
 import type { GoalId, Product } from '../types'
 import { catalogSeed } from '../data/catalog.seed'
-import { config } from '../config'
 
 /**
  * Acesso ao catálogo.
@@ -54,13 +53,16 @@ export function purchasable(products: Product[]): Product[] {
 }
 
 /**
- * Sugestões para um objetivo.
+ * Tudo o que a loja tem numa secção.
  *
  * Sem ordenação por via de entrega: tudo se levanta no mesmo balcão, por isso
  * a ordem do catálogo é a ordem que a loja escolheu mostrar.
+ *
+ * Sem tecto: houve um de três, e a secção da energia mostrava a Maca, o Top
+ * Brain e o Magnetop e escondia o Top Shot e a Coenzima, que eram os que a
+ * loja queria lá. Quem decide o que entra numa secção são os `goals` do
+ * catálogo, não um corte pela ordem.
  */
 export function recommendFor(products: Product[], goal: GoalId): Product[] {
-  return purchasable(products)
-    .filter((p) => p.goals.includes(goal))
-    .slice(0, config.maxRecommendations)
+  return purchasable(products).filter((p) => p.goals.includes(goal))
 }

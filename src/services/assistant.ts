@@ -27,7 +27,7 @@ export interface AssistantContext {
   screen: string
   goal: GoalId | null
   /** O que está no ecrã. O modelo escolhe daqui e não inventa catálogo. */
-  visible: { id: string; name: string; priceCents: number }[]
+  visible: { id: string; name: string; goals: GoalId[] }[]
   /** O produto aberto, se houver. */
   productId: string | null
   /**
@@ -159,19 +159,6 @@ function enumerar(itens: string[]): string {
   if (limpos.length === 0) return ''
   if (limpos.length === 1) return limpos[0]!
   return `${limpos.slice(0, -1).join(', ')} e ${limpos[limpos.length - 1]}`
-}
-
-/**
- * O preço por extenso, que é como se diz um preço a alguém.
- *
- * O `formatPrice` serve o ecrã — "30,00 €" lê-se bem com os olhos. Dito em voz
- * alta sai "trinta vírgula zero zero euros", e ninguém fala assim ao balcão.
- */
-function precoFalado(cents: number): string {
-  const euros = Math.floor(cents / 100)
-  const restantes = cents % 100
-  const parte = `${euros} ${euros === 1 ? 'euro' : 'euros'}`
-  return restantes === 0 ? parte : `${parte} e ${restantes} cêntimos`
 }
 
 /**
@@ -317,10 +304,13 @@ function beneficios(product: Product): string {
  * SOBRE O TAMANHO. Isto já disse a ficha toda em voz alta — descrição,
  * composição, modo de uso, duração da embalagem — e dava um balão de fala que
  * ocupava meio ecrã e um minuto de conversa. Ninguém ouve um minuto de pé.
- * Agora diz-se o que faz decidir (o que o produto faz, quanto traz, quanto
- * custa) e manda-se o resto para onde ele se lê melhor do que se ouve: o ecrã,
+ * Agora diz-se o que faz decidir (o que o produto faz e quanto traz) e
+ * manda-se o resto para onde ele se lê melhor do que se ouve: o ecrã,
  * que está ali à frente com a composição e o modo de uso por inteiro. Daí a
  * frase do «é só tocar na tela» — sem ela, a pessoa não sabe que há mais.
+ *
+ * O preço não se diz: foi pedido da loja. Está escrito no ecrã, por baixo do
+ * nome, e é lá que se lê.
  *
  * O que sai daqui está sempre no ecrã também. Quem prefere ler, lê; quem
  * prefere ouvir, ouve; e quem quiser o pormenor pergunta-lhe, que o `detail`
@@ -332,12 +322,32 @@ export function productPitch(product: Product): AssistantTurn {
     frase(`Deixa eu te contar sobre ${product.name}`),
     frase(beneficios(product)),
     product.pack ? frase(frasco(product.pack)) : '',
-    frase(`Sai por ${precoFalado(product.priceCents)}`),
     'Se quiser saber mais sobre o suplemento, é só tocar na tela: tem lá a composição certinha e o modo de uso.',
     'Se quiser levar, é só tocar em comprar. Você retira no balcão.',
   ]
 
   return { say: partes.filter(Boolean).join(' '), choices: [] }
+}
+
+/**
+ * O que a loja tem numa secção, dito pelo nome, todos.
+ *
+ * Isto era o modelo, e o modelo tem ordem para falar em duas frases curtas:
+ * numa secção de três frascos dizia dois e calava o terceiro, e quem estava a
+ * ouvir ficava a pensar que não havia. Uma lista de nomes não precisa de
+ * inteligência nenhuma — precisa de estar completa. Por isso é escrita daqui,
+ * pela mesma ordem do ecrã, e sem preços (ver `productPitch`).
+ */
+export function goalPitch(label: string, products: Product[]): AssistantTurn {
+  const nomes = products.map((p) => nomeLimpo(p.name))
+  if (!nomes.length) {
+    return { say: 'Essa seção está sem produtos agora. Me diz se procura outra coisa.', choices: [] }
+  }
+  const say =
+    nomes.length === 1
+      ? `Em ${label.toLowerCase()} a gente tem o ${nomes[0]}. Toque nele para saber mais.`
+      : `Em ${label.toLowerCase()} a gente tem ${nomes.length} opções: ${enumerar(nomes)}. Toque em um para saber mais.`
+  return { say, choices: [], highlight: products.map((p) => p.id) }
 }
 
 /**

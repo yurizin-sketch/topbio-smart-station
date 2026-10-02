@@ -12,12 +12,15 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { config } from '../config'
 import {
   getAssistant,
+  goalPitch,
   productPitch,
   WELCOME,
   OPENING_STEPS,
   type AssistantChoice,
   type AssistantTurn,
 } from '../services/assistant'
+import { recommendFor } from '../services/catalog'
+import { goalById } from '../data/goals'
 import { getPresence } from '../services/presence'
 import { getVoice } from '../services/voice'
 import { track } from '../services/telemetry'
@@ -164,10 +167,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         productId: open?.id ?? null,
         productSheet: open?.detail ?? null,
         // O que está no ecrã, para o modelo escolher daqui e não inventar.
-        visible: all.slice(0, 24).map((p) => ({
+        // Sem preço, de propósito: a loja não quer valores ditos em voz alta, e
+        // um número que o modelo não recebe é um número que ele não diz. O
+        // preço está escrito no ecrã, ao lado de cada frasco.
+        visible: all.slice(0, 40).map((p) => ({
           id: p.id,
           name: p.name,
-          priceCents: p.priceCents,
+          goals: p.goals,
         })),
       }
 
@@ -359,6 +365,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     // reabria no ecrã seguinte e a recusa não valia nada.
     if (quietRef.current) return
 
+    // A secção diz-se escrita daqui, com todos os nomes: ver `goalPitch`.
+    // Lê-se do `contextRef` para o catálogo a chegar não pôr a secção a falar
+    // outra vez — só a mudança de ecrã é que fala.
+    const { goal: g, products: all } = contextRef.current
+    const section = screen === 'recommendations' && g ? goalById(g) : undefined
+    if (section) {
+      perform(goalPitch(section.label, recommendFor(all, section.id)))
+      return
+    }
+
     void ask(`__ecra__:${screen}`)
   }, [screen, product, ask, brain, voice, greet, perform])
 
@@ -537,6 +553,7 @@ const GOAL_IDS: GoalId[] = [
   'energia',
   'performance',
   'beleza',
+  'longevidade',
   'imunidade',
   'peso',
   'foco',

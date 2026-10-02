@@ -161,11 +161,36 @@ export const config = {
    */
   ticketValidityMs: 10 * 60_000,
 
+  /**
+   * Pagamento no próprio tablet: MB WAY por QR code, pela Easypay.
+   *
+   * Quem decide se está ligado é o servidor, não este ficheiro: sem as chaves
+   * da Easypay lá postas, o `/api/pay/start` responde «desligado» e o cliente
+   * segue para a ficha do balcão como sempre. Ligar é pôr as chaves; não há
+   * build nenhum a fazer.
+   */
+  payments: {
+    /** De quanto em quanto tempo o ecrã pergunta se já pagaram. */
+    pollMs: 3_000,
+    /**
+     * Quanto tempo o QR fica à espera antes de o ecrã desistir e mandar ao
+     * balcão. A ligação da Easypay vive um pouco mais (ver `server/api.js`),
+     * para um pagamento começado no último segundo ainda poder acabar.
+     */
+    waitMs: 10 * 60_000,
+    /**
+     * Ver o ecrã do QR sem Easypay: abrir a estação com `?pagamento=demo`.
+     * Mostra um QR a fingir e um botão para simular o pagamento. Não cobra
+     * nada e não fala com servidor nenhum — é para se ver o ecrã, não para
+     * vender.
+     */
+    demo:
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('pagamento') === 'demo',
+  },
+
   /** Abaixo deste valor mostramos "últimas unidades". */
   lowStockThreshold: 3,
-
-  /** Máximo de produtos sugeridos por objetivo. */
-  maxRecommendations: 3,
 
   /** Prefixo telefónico. Portugal. */
   phoneCountryCode: '+351',
