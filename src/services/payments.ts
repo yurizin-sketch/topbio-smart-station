@@ -4,12 +4,12 @@ import { ApiError, apiEnabled, post } from './api'
 import { orderPayload } from './orders'
 
 /**
- * Pagar no próprio tablet: MB WAY pelo número, pela Easypay.
+ * Pagar no próprio tablet: MB WAY pelo número, pela Stripe.
  *
- * O tablet nunca fala com a Easypay. Manda o número ao servidor, que pede o
- * pagamento à Easypay; o pedido chega à app MB WAY do cliente com o valor, e
+ * O tablet nunca fala com a Stripe. Manda o número ao servidor, que pede o
+ * pagamento à Stripe; o pedido chega à app MB WAY do cliente com o valor, e
  * o tablet fica a perguntar ao servidor se já entrou. Quem diz «pago» é o
- * servidor, e só depois de a própria Easypay lho confirmar (ver
+ * servidor, e só depois de a própria Stripe lho confirmar (ver
  * `server/api.js`) — um tablet que se pudesse convencer de que alguém pagou
  * entregava frascos de graça.
  *
@@ -17,7 +17,7 @@ import { orderPayload } from './orders'
  * como sempre se pagou. Um cliente de pé à frente do ecrã não fica preso por o
  * pagamento estar em baixo.
  *
- * Houve um QR antes disto. Abria uma página da Easypay, e quem o lia com a app
+ * Houve um QR antes disto. Abria uma página da Stripe, e quem o lia com a app
  * MB WAY — que é o que toda a gente faz com um QR que diz MB WAY — ficava com
  * «a operação não pode ser concluída». O número dá o mesmo pedido na app, sem
  * câmara pelo meio.
@@ -69,7 +69,7 @@ export async function paymentStatus(orderId: string): Promise<PaymentState> {
 /**
  * Mandar o pedido de pagamento à app MB WAY do cliente, pelo número.
  *
- * O número segue para o servidor e daí para a Easypay; não fica guardado
+ * O número segue para o servidor e daí para a Stripe; não fica guardado
  * neste aparelho nem na nossa base.
  */
 export async function payByPhone(

@@ -480,45 +480,59 @@ async function overview(env, body) {
   }
 }
 
-/* ── Pagamento no tablet: MB WAY pela Easypay ────────────────────────────────
+/* ── Pagamento no tablet: MB WAY pela Stripe ─────────────────────────────────
 
    O cliente escreve o número MB WAY no tablet, o pedido chega à app dele já
-   com o valor, e ele confirma lá. Três regras, todas pela mesma razão — o tablet
-   e o endereço deste servidor são públicos:
+   com o valor, e ele confirma lá. Por baixo é um PaymentIntent da Stripe com
+   o método `mb_way`, criado e confirmado daqui — o tablet nunca fala com a
+   Stripe, e a chave secreta nunca sai deste servidor.
+
+   Três regras, todas pela mesma razão — o tablet e o endereço deste servidor
+   são públicos:
 
    1. O valor sai do `PRICES` deste lado, nunca do pedido.
-   2. «Pago» só se escreve depois de a Easypay o confirmar a quem lhe pergunta
-      com a nossa chave. O aviso que ela manda (`/api/pay/notify`) não traz
-      assinatura nenhuma: qualquer pessoa o podia forjar, por isso só serve
-      para nos fazer ir perguntar.
-   3. Sem chaves postas (`EASYPAY_ACCOUNT_ID`, `EASYPAY_API_KEY`), tudo isto
-      responde «desligado» e o tablet manda ao balcão. Desligar é tirar as
-      chaves; não há nada a mudar no tablet.
+   2. «Pago» só se escreve depois de a Stripe o confirmar a quem lhe pergunta
+      com a nossa chave. O aviso que ela manda (`/api/pay/notify`) só serve
+      para nos fazer ir perguntar: não se acredita no que traz dentro.
+   3. Sem chave posta (`STRIPE_SECRET_KEY`), tudo isto responde «desligado» e
+      o tablet manda ao balcão. Desligar é tirar a chave; não há nada a mudar
+      no tablet.
 
-   `EASYPAY_ENV` escolhe o ambiente: «test» (por omissão) ou «prod». Em teste
-   não sai dinheiro de lado nenhum, e o MB WAY confirma-se sem telemóvel.
+   Teste ou a sério decide-o a própria chave: `sk_test_…` é a sandbox da
+   Stripe (não sai dinheiro de lado nenhum), `sk_live_…` cobra.
    ────────────────────────────────────────────────────────────────────────── */
 
-function easypay(env) {
-  if (!env.EASYPAY_ACCOUNT_ID || !env.EASYPAY_API_KEY) return null
-  const base =
-    env.EASYPAY_ENV === 'prod' ? 'https://api.prod.easypay.pt/2.0' : 'https://api.test.easypay.pt/2.0'
+/** `a[b][c]=…`, que é como a API da Stripe recebe o corpo. */
+function stripeForm(obj, prefix = '', out = new URLSearchParams()) {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null) continue
+    const key = prefix ? `${prefix}[${k}]` : k
+    if (Array.isArray(v)) v.forEach((item, i) => out.append(`${key}[${i}]`, String(item)))
+    else if (typeof v === 'object') stripeForm(v, key, out)
+    else out.append(key, String(v))
+  }
+  return out
+}
+
+function stripe(env) {
+  if (!env.STRIPE_SECRET_KEY) return null
   const call = async (method, path, body) => {
-    const res = await fetch(`${base}${path}`, {
+    const res = await fetch(`https://api.stripe.com/v1${path}`, {
       method,
       headers: {
-        AccountId: env.EASYPAY_ACCOUNT_ID,
-        ApiKey: env.EASYPAY_API_KEY,
-        'content-type': 'application/json',
+        authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+        ...(body ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? stripeForm(body).toString() : undefined,
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      // O corpo da Easypay vai para o log do worker, não para o tablet: pode
+      // O erro da Stripe vai para o log do worker, não para o tablet: pode
       // trazer detalhes da conta que não são para um ecrã público.
-      console.log('easypay', method, path, res.status, JSON.stringify(data).slice(0, 500))
-      throw new Error(`easypay-${res.status}`)
+      console.log('stripe', method, path, res.status, JSON.stringify(data?.error ?? data).slice(0, 500))
+      const err = new Error(`stripe-${res.status}`)
+      err.code = data?.error?.code
+      throw err
     }
     return data
   }
@@ -528,12 +542,12 @@ function easypay(env) {
 /**
  * O pagamento no tablet está ligado, e esta venda pode ser paga?
  *
- * O tablet pergunta antes de mostrar o teclado do número: sem chaves, ou com
- * a venda já fechada, o cliente vai direto para a ficha do balcão em vez de
+ * O tablet pergunta antes de mostrar o teclado do número: sem chave, ou com a
+ * venda já fechada, o cliente vai direto para a ficha do balcão em vez de
  * escrever um número que não ia dar em nada.
  */
 async function payReady(env, body) {
-  if (!easypay(env)) return { erro: 'pagamento-desligado', status: 503 }
+  if (!stripe(env)) return { erro: 'pagamento-desligado', status: 503 }
   const order = await env.DB.prepare(`SELECT status, product_id AS productId FROM orders WHERE id = ?1`)
     .bind(String(body?.orderId ?? ''))
     .first()
@@ -547,13 +561,13 @@ async function payReady(env, body) {
  * Pagar pelo número de telemóvel: o pedido chega já à app MB WAY do cliente,
  * com o valor, e ele só tem de confirmar.
  *
- * O número vai para a Easypay e mais nenhum sítio: não se guarda na base. O
- * que se guarda é o id do pagamento (`pay_id`), para o `payStatus` saber a
+ * O número vai para a Stripe e mais nenhum sítio: não se guarda na base. O
+ * que se guarda é o id do PaymentIntent (`pay_id`), para o `payStatus` saber a
  * quem perguntar.
  */
 async function payPhone(env, body) {
-  const ep = easypay(env)
-  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
+  const st = stripe(env)
+  if (!st) return { erro: 'pagamento-desligado', status: 503 }
 
   const id = String(body?.orderId ?? '')
   const phone = String(body?.phone ?? '').replace(/\D/g, '')
@@ -561,7 +575,8 @@ async function payPhone(env, body) {
   if (!/^9\d{8}$/.test(phone)) return { erro: 'telemovel', status: 400 }
 
   const order = await env.DB.prepare(
-    `SELECT id, product_id AS productId, ticket_code AS ticketCode, status FROM orders WHERE id = ?1`,
+    `SELECT id, station_id AS stationId, product_id AS productId, ticket_code AS ticketCode, status
+     FROM orders WHERE id = ?1`,
   )
     .bind(id)
     .first()
@@ -571,54 +586,66 @@ async function payPhone(env, body) {
   const cents = PRICES[order.productId]
   if (!cents) return { erro: 'sem-preco', status: 409 }
 
-  let single
+  let intent
   try {
-    single = await ep.call('POST', '/single', {
-      type: 'sale',
-      method: 'MBW',
-      value: Number((cents / 100).toFixed(2)),
-      currency: 'EUR',
-      // A `key` é o id da venda: é ela que volta no aviso de pagamento.
-      key: order.id,
-      capture: { descriptive: `TopBio ${order.ticketCode}`, transaction_key: order.id },
-      mbway: { phone: `+351${phone}` },
+    // Criar e confirmar de uma vez: é a confirmação que manda o pedido para a
+    // app. O MB WAY não tem redirecionamento, por isso não há página nenhuma
+    // pelo meio.
+    intent = await st.call('POST', '/payment_intents', {
+      amount: cents,
+      currency: 'eur',
+      payment_method_types: ['mb_way'],
+      payment_method_data: { type: 'mb_way', billing_details: { phone: `+351${phone}` } },
+      confirm: 'true',
+      description: `TopBio ${order.ticketCode}`,
+      // É por aqui que o aviso da Stripe chega à venda (ver `payNotify`).
+      metadata: { order_id: order.id, ticket: order.ticketCode, station: order.stationId },
     })
   } catch {
-    return { erro: 'easypay', status: 502 }
+    return { erro: 'pagamento', status: 502 }
   }
-  if (!single?.id) return { erro: 'easypay', status: 502 }
+  if (!intent?.id) return { erro: 'pagamento', status: 502 }
 
   // Um segundo pedido (o primeiro foi recusado, ou o número estava errado)
   // substitui o anterior.
   await env.DB.prepare(`UPDATE orders SET pay_id = ?2, amount_cents = ?3 WHERE id = ?1`)
-    .bind(order.id, String(single.id), cents)
+    .bind(order.id, String(intent.id), cents)
     .run()
 
-  return { ok: true }
+  // Há recusas que vêm logo na resposta (número sem MB WAY, por exemplo).
+  if (intent.status === 'requires_payment_method') return { ok: true, state: 'failed' }
+  return { ok: true, state: 'pending' }
 }
 
-/** O estado de um pagamento MB WAY feito pelo número. */
-async function singleState(ep, singleId) {
-  const single = await ep.call('GET', `/single/${encodeURIComponent(singleId)}`)
-  const status = String(single?.payment_status ?? '').toLowerCase()
-  if (status === 'paid') return 'paid'
-  if (status !== 'pending') {
-    console.log('easypay estado', singleId, status, JSON.stringify({ method: single?.method }).slice(0, 600))
+/**
+ * O estado de um PaymentIntent, em três palavras.
+ *
+ * `succeeded` é dinheiro entrado. `requires_payment_method` é o MB WAY
+ * recusado, cancelado na app ou deixado expirar — dá para pedir outra vez.
+ * Tudo o resto (`requires_action`, `processing`) é o cliente ainda a decidir.
+ */
+async function intentState(st, intentId) {
+  const intent = await st.call('GET', `/payment_intents/${encodeURIComponent(intentId)}`)
+  if (intent?.status === 'succeeded') return 'paid'
+  if (intent?.status === 'requires_payment_method' || intent?.status === 'canceled') {
+    // Para o log do worker: o porquê de uma recusa só aparece aqui.
+    const e = intent?.last_payment_error
+    console.log('stripe recusado', intentId, intent?.status, e?.code ?? '', e?.decline_code ?? '')
+    return 'failed'
   }
-  if (['failed', 'deleted', 'error'].includes(status)) return 'failed'
   return 'pending'
 }
 
 /**
  * Já pagaram?
  *
- * Pergunta-se à Easypay e não à nossa base: a base só passa a «pago» depois
+ * Pergunta-se à Stripe e não à nossa base: a base só passa a «pago» depois
  * daqui. Um pagamento confirmado escreve-se uma vez, com o stock a descer no
  * mesmo `batch` — a mesma regra do balcão (ver `settle`).
  */
 async function payStatus(env, body) {
-  const ep = easypay(env)
-  if (!ep) return { erro: 'pagamento-desligado', status: 503 }
+  const st = stripe(env)
+  if (!st) return { erro: 'pagamento-desligado', status: 503 }
 
   const id = String(body?.orderId ?? '')
   const order = await env.DB.prepare(
@@ -634,7 +661,7 @@ async function payStatus(env, body) {
 
   let state = 'pending'
   try {
-    state = await singleState(ep, order.payId)
+    state = await intentState(st, order.payId)
   } catch {
     return { ok: true, state: 'pending' }
   }
@@ -649,7 +676,7 @@ async function markPaid(env, order) {
     .bind(order.stationId)
     .first()
   // O `WHERE status = 'awaiting_counter'` é o que impede descontar duas vezes
-  // quando o aviso da Easypay e a pergunta do tablet chegam ao mesmo tempo; o
+  // quando o aviso da Stripe e a pergunta do tablet chegam ao mesmo tempo; o
   // índice único em `stock_moves.order_id` apanha o resto.
   const res = await env.DB.prepare(
     `UPDATE orders SET status = 'paid', method = 'mbway', paid_at = ?2
@@ -663,7 +690,7 @@ async function markPaid(env, order) {
     env.DB.prepare(
       `INSERT OR IGNORE INTO stock_moves
          (station_id, product_id, delta, reason, order_id, actor, at)
-       VALUES (?1, ?2, -1, 'venda', ?3, 'easypay', ?4)`,
+       VALUES (?1, ?2, -1, 'venda', ?3, 'stripe', ?4)`,
     ).bind(order.stationId, order.productId, order.id, now),
   ]
   if (posto?.tracksStock !== 0) {
@@ -680,19 +707,21 @@ async function markPaid(env, order) {
 }
 
 /**
- * O aviso da Easypay de que algo mudou.
+ * O aviso da Stripe de que um pagamento mudou (webhook).
  *
- * Não se acredita nele (não vem assinado): tira-se a `key`, que é o id da
- * venda, e pergunta-se como no `payStatus`. Responde sempre 200 — um erro
- * aqui faria a Easypay insistir, e insistir não muda a resposta.
+ * Não se acredita no que traz: tira-se o id da venda dos `metadata` e
+ * pergunta-se à Stripe como no `payStatus`. Assim não é preciso verificar a
+ * assinatura — um aviso forjado só faz o servidor ir perguntar, e a resposta
+ * vem da Stripe. Responde sempre 200: um erro aqui faria a Stripe insistir, e
+ * insistir não muda a resposta.
  */
 async function payNotify(env, body) {
-  const key = String(body?.key ?? '')
-  if (key) {
+  const orderId = String(body?.data?.object?.metadata?.order_id ?? '')
+  if (orderId) {
     try {
-      await payStatus(env, { orderId: key })
+      await payStatus(env, { orderId })
     } catch (e) {
-      console.log('easypay notify', key, String(e))
+      console.log('stripe notify', orderId, String(e))
     }
   }
   return { ok: true }
@@ -732,7 +761,7 @@ async function orderInvoice(env, body) {
 /** Caminhos que não pedem sessão. Tudo o resto pede. */
 //
 // Os do pagamento são abertos porque quem os chama é o quiosque, que não tem
-// sessão nenhuma, e a Easypay. Nenhum deles escreve «pago» por palavra de quem
+// sessão nenhuma, e a Stripe. Nenhum deles escreve «pago» por palavra de quem
 // chama: ver o bloco do pagamento.
 const ABERTAS = new Set([
   '/api/login',

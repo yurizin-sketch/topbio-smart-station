@@ -25,7 +25,7 @@ export function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         {/* Comprar: o QR do MB WAY e, depois de pago, a fatura. Sem pagamento no
-            tablet (sem as chaves da Easypay no servidor), o QR segue sozinho
+            tablet (sem a chave da Stripe no servidor), o QR segue sozinho
             para a ficha do balcão, e paga-se lá como sempre. */}
         <Route path="/checkout" element={<Navigate to="/checkout/pay" replace />} />
         <Route path="/checkout/pay" element={<Pay />} />

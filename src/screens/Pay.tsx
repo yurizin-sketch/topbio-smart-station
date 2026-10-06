@@ -15,7 +15,7 @@ import { legal } from '../data/legal'
  * só segue quando o servidor disser que sim. Depois de pago vem a fatura
  * (`Invoice`), e só depois o código de levantamento.
  *
- * O ecrã diz por extenso para onde vai o número: para a Easypay, e para mais
+ * O ecrã diz por extenso para onde vai o número: para a Stripe, e para mais
  * lado nenhum. É a pergunta que qualquer pessoa faz antes de escrever o
  * telemóvel num ecrã de loja, e uma pergunta sem resposta é um cliente que
  * vai pagar ao balcão.
@@ -160,7 +160,7 @@ export function Pay() {
             )}
             <Numpad value={digitos} onChange={setDigitos} />
             <p className="pay-phone__privacy">
-              O seu número segue apenas para a Easypay, que trata o pagamento. Nós não o guardamos.
+              O seu número segue apenas para a Stripe, que trata o pagamento. Nós não o guardamos.
             </p>
           </>
         )}

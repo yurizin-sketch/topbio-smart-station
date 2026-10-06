@@ -350,12 +350,12 @@ export default {
 
     const path = new URL(request.url).pathname
 
-    // O aviso da Easypay vem de um servidor, não de um browser: não traz
+    // O aviso da Stripe vem de um servidor, não de um browser: não traz
     // `Origin`, e o travão de cima recusava-o. Pode passar sem ele porque não
     // escreve nada por palavra de quem o manda — ver `payNotify` no `api.js`.
-    const fromEasypay = path === '/api/pay/notify'
+    const fromPayments = path === '/api/pay/notify'
 
-    if (allowed.length && !allowed.includes(origin) && !fromEasypay) {
+    if (allowed.length && !allowed.includes(origin) && !fromPayments) {
       return json({ error: 'origin' }, 403, headers)
     }
 

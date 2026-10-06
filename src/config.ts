@@ -162,10 +162,10 @@ export const config = {
   ticketValidityMs: 10 * 60_000,
 
   /**
-   * Pagamento no próprio tablet: MB WAY por QR code, pela Easypay.
+   * Pagamento no próprio tablet: MB WAY por QR code, pela Stripe.
    *
    * Quem decide se está ligado é o servidor, não este ficheiro: sem as chaves
-   * da Easypay lá postas, o `/api/pay/start` responde «desligado» e o cliente
+   * da Stripe lá postas, o `/api/pay/start` responde «desligado» e o cliente
    * segue para a ficha do balcão como sempre. Ligar é pôr as chaves; não há
    * build nenhum a fazer.
    */
@@ -174,12 +174,12 @@ export const config = {
     pollMs: 3_000,
     /**
      * Quanto tempo o QR fica à espera antes de o ecrã desistir e mandar ao
-     * balcão. A ligação da Easypay vive um pouco mais (ver `server/api.js`),
+     * balcão. A ligação da Stripe vive um pouco mais (ver `server/api.js`),
      * para um pagamento começado no último segundo ainda poder acabar.
      */
     waitMs: 10 * 60_000,
     /**
-     * Ver o ecrã do QR sem Easypay: abrir a estação com `?pagamento=demo`.
+     * Ver o ecrã do QR sem Stripe: abrir a estação com `?pagamento=demo`.
      * Mostra um QR a fingir e um botão para simular o pagamento. Não cobra
      * nada e não fala com servidor nenhum — é para se ver o ecrã, não para
      * vender.
