@@ -89,10 +89,23 @@ const OPENINGS: [string, ...string[]] = [
   'Oi! Se quiser, eu te ajudo a achar o que você procura.',
 ]
 
+/**
+ * Os botões da primeira pergunta.
+ *
+ * O `label` é a palavra do cliente — o que ele diria que quer. O `value` é a
+ * secção do catálogo onde isso se encontra, e tem de ser um `GoalId`: é por
+ * ele que o `selectGoal` abre a lista. Os dois não têm de coincidir, e no
+ * emagrecimento de propósito não coincidem — quem chega diz «emagrecer», a
+ * secção chama-se «Controlo de peso».
+ *
+ * `browse` não é objetivo nenhum: é a saída para quem não quer ser ajudado.
+ * Fica sempre em último, porque é a resposta a uma pergunta que não se fez.
+ */
 const GOAL_CHOICES: AssistantChoice[] = [
   { label: 'Dormir melhor', value: 'sono' },
   { label: 'Mais energia', value: 'energia' },
   { label: 'Treino', value: 'performance' },
+  { label: 'Emagrecimento', value: 'peso' },
   { label: 'Só quero ver', value: 'browse' },
 ]
 
