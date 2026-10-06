@@ -24,7 +24,7 @@ export const PRICES = {
   'vinagre-de-maca': 3000,
   'top-omega3': 3000,
   'topcoenzimaq10': 3000,
-  'top-woman-40': 4000,
+  'top-woman-40': 3500,
   'oleo-de-coco': 2500,
   'feno-grego': 3000,
   'topbio-lip': 8000,

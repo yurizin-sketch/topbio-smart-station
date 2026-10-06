@@ -664,7 +664,7 @@ export const catalogSeed: Product[] = [
   {
     id: 'top-woman-40',
     name: 'Top Woman 40+',
-    priceCents: 4000,
+    priceCents: 3500,
     inStore: true,
     image: '/products/top-woman-40.webp',
     description: 'Fórmula botânica com Magnésio, Vitamina D3 e K2 para a mulher a partir dos 40 anos.',

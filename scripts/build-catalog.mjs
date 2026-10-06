@@ -105,7 +105,7 @@ const PRODUCTS = [
   { handle: 'vinagre-de-maca', id: 'vinagre-de-maca', name: 'Vinagre de Maçã', goals: ['peso'], priceCents: 3000 },
   { handle: 'top-omega3', id: 'top-omega3', name: 'Top Ómega 3', goals: ['foco', 'beleza', 'longevidade'], priceCents: 3000 },
   { handle: 'topcoenzimaq10', id: 'topcoenzimaq10', name: 'Top Coenzima Q10', goals: ['energia', 'performance', 'longevidade'], priceCents: 3000 },
-  { handle: 'top-woman-40', id: 'top-woman-40', name: 'Top Woman 40+', goals: ['sono'], priceCents: 4000 },
+  { handle: 'top-woman-40', id: 'top-woman-40', name: 'Top Woman 40+', goals: ['sono'], priceCents: 3500 },
   { handle: 'oleo-de-coco', id: 'oleo-de-coco', name: 'Óleo de Coco', goals: ['energia'], priceCents: 2500 },
   { handle: 'feno-grego', id: 'feno-grego', name: 'Feno-Grego', goals: ['energia', 'performance'], priceCents: 3000 },
   { handle: 'topnew-lip', id: 'topbio-lip', name: 'TopBio Lip', goals: ['peso'], priceCents: 8000 },
