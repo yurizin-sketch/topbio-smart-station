@@ -28,7 +28,6 @@ export const PRICES = {
   'oleo-de-coco': 2500,
   'feno-grego': 3000,
   'topbio-lip': 8000,
-  'topbio-lip-mini': 4000,
   'top-shape': 4500,
   'top-max': 6000,
   'top-shot': 4000,

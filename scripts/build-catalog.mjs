@@ -85,6 +85,11 @@ const LABELS = {
  * fica fora da estação em vez de aparecer com um número inventado. Nunca pôr um
  * preço de recheio aqui — é este o valor que se cobra ao balcão.
  *
+ * `active: false` com preço é outra coisa: deixou de se vender. A linha fica
+ * para o nome continuar a existir — o balcão e a matriz lêem esta lista toda,
+ * sem filtro, para dar nome ao que já foi vendido. Apagar a linha não tira
+ * mais nada da estação do que isto tira, e leva o nome com ela.
+ *
  * `handle` é o nome do template (product.<handle>.json). `id` é o da estação, e
  * também o nome da imagem em public/products — quase sempre igual ao handle,
  * mas não nos dois `lip`, em que o handle da Shopify traz o número de cápsulas
@@ -109,7 +114,11 @@ const PRODUCTS = [
   { handle: 'oleo-de-coco', id: 'oleo-de-coco', name: 'Óleo de Coco', goals: ['energia'], priceCents: 2500 },
   { handle: 'feno-grego', id: 'feno-grego', name: 'Feno-Grego', goals: ['energia', 'performance'], priceCents: 3000 },
   { handle: 'topnew-lip', id: 'topbio-lip', name: 'TopBio Lip', goals: ['peso'], priceCents: 8000 },
-  { handle: 'topnew-lip-mini-20-capsulas', id: 'topbio-lip-mini', name: 'TopBio Lip Mini', goals: ['peso'], priceCents: 4000 },
+  // Saiu do catálogo a 2026-10-06. Fica aqui com `active: false` em vez de
+  // ser apagado: o balcão e a matriz vão buscar o nome do produto a esta
+  // lista inteira, sem filtro, e sem a linha uma ficha ainda por levantar ou
+  // uma venda dos últimos 90 dias apareceriam escritas «topbio-lip-mini».
+  { handle: 'topnew-lip-mini-20-capsulas', id: 'topbio-lip-mini', name: 'TopBio Lip Mini', goals: ['peso'], priceCents: 4000, active: false },
 
   // Ainda sem página no site: a copy vem daqui até o template existir.
   //

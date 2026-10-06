@@ -854,7 +854,7 @@ export const catalogSeed: Product[] = [
     ingredients: 'Psyllium (Plantago ovata) · Crómio · Cúrcuma e complexo de algas',
     usage: 'Primeiros 5 dias: 1 cápsula às 10h00, após o pequeno-almoço.',
     goals: ['peso'],
-    active: true,
+    active: false,
     pack: { capsules: 20, doses: 10, mgPerCapsule: 600, netWeight: '18 g' },
     detail: {
       about: 'O TopBio LIP Mini é o formato de entrada da gama TopBio LIP — a mesma fórmula da embalagem completa, em 20 cápsulas, ideal para quem quer experimentar o produto antes de se comprometer com uma embalagem mensal. A fórmula combina fibra de psyllium, crómio, complexo de algas (espirulina e clorela) e cúrcuma, concebida para integrar uma rotina com baixa actividade física, complementando hábitos alimentares equilibrados. A fibra de psyllium contribui para uma função intestinal normal (com a ingestão diária de 7 g). O crómio contribui para o metabolismo normal dos macronutrientes e para a manutenção dos níveis normais de glicemia (com a ingestão diária recomendada de 40 μg). Indicado para adultos que desejam integrar um suplemento de fibra e minerais numa rotina alimentar equilibrada, no contexto de um estilo de vida saudável.',
