@@ -594,7 +594,9 @@ async function payPhone(env, body) {
     intent = await st.call('POST', '/payment_intents', {
       amount: cents,
       currency: 'eur',
-      payment_method_types: ['mb_way'],
+      // A Stripe já não aceita `payment_method_types`: os métodos ligam-se no
+      // Dashboard. O MB WAY tem de estar ligado lá, senão isto é recusado.
+      automatic_payment_methods: { enabled: 'true', allow_redirects: 'never' },
       payment_method_data: { type: 'mb_way', billing_details: { phone: `+351${phone}` } },
       confirm: 'true',
       description: `TopBio ${order.ticketCode}`,
