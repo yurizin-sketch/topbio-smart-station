@@ -44,7 +44,9 @@ function locate(rel) {
 
 /** id do produto → ficheiro dentro de «Produtos Mockups». */
 const SOURCES = {
-  'acido-hialuronico': 'Ácido Hialurônico/Ácido-Hialurônico-Mockup.png',
+  // Mockup da fórmula «Plus» (2026-10-21). A tabela desenhada nele não é a do
+  // rótulo de impressão; serve até chegar um mockup refeito.
+  'acido-hialuronico': 'Ácido Hialurônico/Ácido-Hialurônico-Plus-Mockup.png',
   articulacao: 'Articulação+/Articulação+.png',
   'colageno-verisol': 'TopVerisol/topverisol-mockup.png',
   'feno-grego': 'Feno Grego/Feno-Grego-Mockup.png',
@@ -60,12 +62,14 @@ const SOURCES = {
   'top-shot': 'Top-Shot-Mockup.png',
   'top-woman-40': 'TopWoman/TopWoman-Mockup.png',
   topcalm: 'TopCalm/TOPCALM.png',
+  // Como o do Ácido Hialurónico: a tabela do mockup não é a do rótulo.
+  'top-hair': 'Top Hair/TopHair Supplement Bottle Mockup.png',
   topcoenzimaq10: 'TopCoenzimaQ10/TOP-COENZIMA-MOCKUP.png',
   'topbio-lip': 'TopLIP/TOPbiolip-mockup.png',
   'topbio-lip-mini': 'Top Minilip/TopbioLip-mockup.png',
   'vinagre-de-maca': 'Top Vinagre de Maça (GOMA)/Vinagre-de-Maça-(Goma)-mockup.png',
   'vitamina-c': 'Vita C/Vita-C.png',
-  'vitamina-d3-k2': 'Vita D/Vita D.png',
+  'vitamina-d3-k2': 'Vita D/Vita D mockup.png',
 }
 
 mkdirSync(outDir, { recursive: true })

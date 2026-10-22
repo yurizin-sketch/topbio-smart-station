@@ -51,7 +51,8 @@ const OUT = resolve(here, '..', 'src', 'data', 'catalog.seed.ts')
  * peso seria inventar um número que a pessoa vai conferir na mão dela.
  */
 const LABELS = {
-  'acido-hialuronico': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
+  // Rótulo novo (fórmula «Plus»), lido do rótulo de impressão a 2026-10-21.
+  'acido-hialuronico': { capsules: 60, doses: 30, mgPerCapsule: 530, netWeight: '31,8 g' },
   articulacao: { capsules: 60, doses: null, mgPerCapsule: null, netWeight: null },
   'colageno-verisol': { capsules: 60, doses: 30, mgPerCapsule: 600, netWeight: '36 g' },
   'feno-grego': { capsules: 60, doses: 30, mgPerCapsule: 550, netWeight: '33 g' },
@@ -70,10 +71,13 @@ const LABELS = {
   'topbio-lip': { capsules: 45, doses: 22, mgPerCapsule: 600, netWeight: '27 g' },
   'topbio-lip-mini': { capsules: 20, doses: 10, mgPerCapsule: 600, netWeight: '18 g' },
   topcalm: { capsules: 60, doses: 30, mgPerCapsule: 655, netWeight: '33 g' },
+  // Lido do rótulo de impressão a 2026-10-21.
+  'top-hair': { capsules: 60, doses: 30, mgPerCapsule: 500, netWeight: '30 g' },
   topcoenzimaq10: { capsules: 60, doses: 60, mgPerCapsule: 470, netWeight: '28,2 g' },
   'vinagre-de-maca': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
   'vitamina-c': { capsules: 60, doses: null, mgPerCapsule: null, netWeight: '36 g' },
-  'vitamina-d3-k2': { capsules: 60, doses: null, mgPerCapsule: 600, netWeight: '36 g' },
+  // Rótulo novo, lido do PDF de impressão a 2026-10-21.
+  'vitamina-d3-k2': { capsules: 60, doses: 30, mgPerCapsule: 500, netWeight: '30 g' },
 }
 
 /**
@@ -102,9 +106,71 @@ const PRODUCTS = [
   { handle: 'magnetop', id: 'magnetop', name: 'Magnetop', goals: ['sono', 'longevidade'], priceCents: 3000 },
   { handle: 'imune', id: 'imune', name: 'Imune+', goals: ['imunidade'], priceCents: 3000 },
   { handle: 'vitamina-c', id: 'vitamina-c', name: 'Vitamina C', goals: ['imunidade', 'beleza'], priceCents: 3000 },
-  { handle: 'vitamina-d3-k2', id: 'vitamina-d3-k2', name: 'Vitamina D3 + K2', goals: ['imunidade', 'mobilidade', 'longevidade'], priceCents: 3000 },
+  { handle: 'vitamina-d3-k2', id: 'vitamina-d3-k2', name: 'Vitamina D3+Z+K2', goals: ['imunidade', 'mobilidade', 'longevidade'], priceCents: 3000 },
   { handle: 'colageno-verisol', id: 'colageno-verisol', name: 'Colagénio Verisol®', goals: ['beleza', 'mobilidade'], priceCents: 3000 },
-  { handle: 'acido-hialuronico', id: 'acido-hialuronico', name: 'Ácido Hialurónico', goals: ['beleza'], priceCents: 3000 },
+  /*
+   * Mudou de fórmula a 2026-10-21 (rótulo «Plus»): sai o colagénio, a colina e
+   * o silício simples, entram astaxantina, coenzima Q10, bambu, biotina e
+   * selénio. O template do site ainda descreve a fórmula antiga, por isso a
+   * copy vem daqui até o site ser atualizado — e aí apaga-se este `copy`.
+   *
+   * Alegações só das que o Reg. (UE) 432/2012 autoriza, e só para os
+   * nutrientes que o rótulo traz acima de 15% do VRN: vitamina C, zinco,
+   * biotina e selénio. Ácido hialurónico, astaxantina, Q10 e bambu não têm
+   * alegação autorizada; descrevem-se, não se promete nada por eles.
+   */
+  {
+    handle: 'acido-hialuronico',
+    id: 'acido-hialuronico',
+    name: 'Ácido Hialurónico',
+    goals: ['beleza'],
+    priceCents: 3000,
+    copy: {
+      description:
+        'Fórmula com 8 ingredientes, incluindo Vitamina C, Zinco, Biotina e Selénio para a manutenção de pele e cabelo normais.',
+      highlights: ['Vitamina C, Zinco e Selénio', 'Biotina para pele e cabelo', 'Proteção celular'],
+      ingredients:
+        'Ácido Hialurónico · Vitamina C · Astaxantina · Coenzima Q10 · Bambu (sílica) · Zinco · Biotina · Selénio',
+      usage: 'Tomar 2 cápsulas por dia, ou de acordo com o seu profissional de saúde.',
+      detail: {
+        about:
+          'O Ácido Hialurónico Plus TopBioEuropa é um suplemento alimentar que combina ácido hialurónico com Vitamina C, Zinco, Biotina e Selénio, a que se juntam astaxantina, coenzima Q10 e extrato de bambu. A Vitamina C contribui para a formação normal de colagénio para o normal funcionamento da pele e para a proteção das células contra as oxidações indesejáveis. O Zinco contribui para a manutenção de pele, cabelo e unhas normais. A Biotina contribui para a manutenção de pele e cabelo normais. O Selénio contribui para a manutenção de cabelo e unhas normais e para a proteção das células contra as oxidações indesejáveis. Formulado para complementar uma alimentação variada e equilibrada.',
+        forWhom: [
+          'Adultos a partir dos 18 anos.',
+          'Quem pretende complementar a alimentação com Vitamina C, Zinco, Biotina e Selénio, nutrientes que contribuem para a manutenção de pele e cabelo normais.',
+          'Quem procura um suplemento multiingrediente com ácido hialurónico e antioxidantes naturais, como a astaxantina e a coenzima Q10.',
+        ],
+        usage:
+          'Tomar 2 cápsulas por dia, ou de acordo com o seu profissional de saúde. Tomar com um copo de água.',
+        nutrition:
+          'Por toma diária de 2 cápsulas: Ácido hialurónico 240 mg, Vitamina C 160 mg (200% VRN), Extrato seco de Haematococcus pluvialis 160 mg (8 mg de astaxantina), Coenzima Q10 100 mg, Extrato seco de bambu 40 mg (30 mg de sílica), Zinco 20 mg (200% VRN), Biotina 200 µg (400% VRN), Selénio 110 µg (200% VRN).',
+        notes: [
+          'Suplemento alimentar destinado a adultos. Não deve ser consumido por grávidas, lactantes e crianças.',
+          'Não utilizar se estiver a tomar medicação.',
+          'Não exceder a toma diária recomendada.',
+          'Os suplementos alimentares não substituem um regime alimentar variado e equilibrado nem um modo de vida saudável.',
+          'Manter fora do alcance e da vista das crianças.',
+          'Não utilizar em caso de hipersensibilidade ou alergia a qualquer um dos componentes.',
+          'Conservar o produto bem fechado, na embalagem original, em local fresco, ao abrigo da luz, da humidade e do calor, a menos de 25 ºC.',
+        ],
+        ingredients: [
+          { name: 'Ácido Hialurónico – 240 mg', note: 'Na forma de hialuronato de sódio. Substância naturalmente presente no organismo humano, em especial nos tecidos conjuntivos, olhos e fluido sinovial das articulações.' },
+          { name: 'Vitamina C – 160 mg', note: 'A Vitamina C contribui para a formação normal de colagénio para o normal funcionamento da pele, para a proteção das células contra as oxidações indesejáveis e para a redução do cansaço e da fadiga.' },
+          { name: 'Zinco – 20 mg', note: 'O Zinco contribui para a manutenção de pele, cabelo e unhas normais e para a proteção das células contra as oxidações indesejáveis.' },
+          { name: 'Biotina – 200 µg', note: 'A Biotina contribui para a manutenção de pele normal e de cabelo normal.' },
+          { name: 'Selénio – 110 µg', note: 'O Selénio contribui para a manutenção de cabelo normal e de unhas normais e para a proteção das células contra as oxidações indesejáveis.' },
+          { name: 'Astaxantina & Coenzima Q10', note: 'Astaxantina — carotenoide de origem natural, obtido da microalga Haematococcus pluvialis. Coenzima Q10 (ubiquinona) — substância naturalmente presente nas células do organismo humano.' },
+          { name: 'Bambu (Sílica)', note: 'Extrato seco de Bambusa arundinacea, naturalmente rico em ácido silícico.' },
+        ],
+        faq: [
+          { question: 'Como devo tomar?', answer: 'Tome 2 cápsulas por dia com um copo de água, ou de acordo com a indicação do seu profissional de saúde.' },
+          { question: 'Posso tomar durante a gravidez ou amamentação?', answer: 'Não. Este suplemento destina-se a adultos e não deve ser consumido por grávidas, lactantes nem crianças.' },
+          { question: 'Posso tomar se estiver a fazer medicação?', answer: 'O rótulo indica que não deve ser utilizado por quem está a tomar medicação. Em caso de dúvida, fale com o seu médico.' },
+          { question: 'Quanto tempo dura uma embalagem?', answer: 'Com a toma recomendada de 2 cápsulas por dia, as 60 cápsulas dão para 30 dias.' },
+        ],
+      },
+    },
+  },
   { handle: 'articulacao', id: 'articulacao', name: 'Articulação+', goals: ['mobilidade', 'performance'], priceCents: 3000 },
   { handle: 'termogenico', id: 'termogenico', name: 'Top Termo', goals: ['peso', 'performance'], priceCents: 8000 },
   { handle: 'vinagre-de-maca', id: 'vinagre-de-maca', name: 'Vinagre de Maçã', goals: ['peso'], priceCents: 3000 },
@@ -258,6 +324,66 @@ const PRODUCTS = [
         ],
         ingredients: [],
         faq: [],
+      },
+    },
+  },
+
+  {
+    handle: 'top-hair',
+    id: 'top-hair',
+    name: 'Top Hair',
+    goals: ['beleza'],
+    priceCents: 3500,
+    /*
+     * Novo a 2026-10-21, ainda sem página no site. A copy sai do rótulo de
+     * impressão, não do mockup: o mockup traz outra tabela (colagénio, urtiga,
+     * L-cisteína) e promete «fortalecimento» e «crescimento» do cabelo, que
+     * não são alegações autorizadas. As que ficam são as do Reg. (UE)
+     * 432/2012 para os nutrientes que o rótulo traz acima de 15% do VRN.
+     */
+    copy: {
+      description:
+        'Biotina, Zinco, Selénio e Cobre para a manutenção de cabelo normal, com L-Cistina, MSM e vitaminas B e D3.',
+      highlights: ['Biotina · Zinco · Selénio', 'L-Cistina + MSM', 'Vitaminas B + D3'],
+      ingredients:
+        'L-Cistina · MSM · Zinco · Vitamina B6 · Cobre · Folato · Biotina · Selénio · Vitamina D3 · Vitamina B12',
+      usage: 'Tomar 2 cápsulas por dia, ou de acordo com o seu profissional de saúde.',
+      detail: {
+        about:
+          'O Top Hair TopBioEuropa é um suplemento alimentar pensado para o cabelo, que junta L-Cistina e MSM a sete vitaminas e minerais. A Biotina, o Zinco e o Selénio contribuem para a manutenção de cabelo normal, e o Cobre contribui para a pigmentação normal do cabelo. O Zinco e o Selénio contribuem também para a manutenção de unhas normais. As vitaminas B6, B12 e o Folato contribuem para a redução do cansaço e da fadiga, e a Vitamina D3 para o normal funcionamento do sistema imunitário. Formulado para complementar uma alimentação variada e equilibrada.',
+        forWhom: [
+          'Adultos a partir dos 18 anos.',
+          'Quem pretende complementar a alimentação com Biotina, Zinco e Selénio, nutrientes que contribuem para a manutenção de cabelo normal.',
+          'Quem procura uma fórmula que junte, numa só toma, minerais, vitaminas do complexo B e Vitamina D3.',
+        ],
+        usage:
+          'Tomar 2 cápsulas por dia, ou de acordo com o seu profissional de saúde. Tomar com um copo de água.',
+        nutrition:
+          'Por toma diária de 2 cápsulas: L-Cistina 300 mg, Metilsulfonilmetano (MSM) 300 mg, Zinco 10 mg (100% VRN), Vitamina B6 2 mg (143% VRN), Cobre 500 µg (50% VRN), Folato 200 µg (100% VRN), Biotina 150 µg (300% VRN), Selénio 55 µg (100% VRN), Vitamina D3 25 µg / 1000 UI (500% VRN), Vitamina B12 25 µg (1000% VRN).',
+        notes: [
+          'Suplemento alimentar destinado a adultos. Não deve ser consumido por grávidas, lactantes e crianças.',
+          'Não utilizar se estiver a tomar medicação.',
+          'Não exceder a toma diária recomendada.',
+          'Os suplementos alimentares não substituem um regime alimentar variado e equilibrado nem um modo de vida saudável.',
+          'Manter fora do alcance e da vista das crianças.',
+          'Não utilizar em caso de hipersensibilidade ou alergia a qualquer um dos componentes.',
+          'Conservar o produto bem fechado, na embalagem original, em local fresco, ao abrigo da luz, da humidade e do calor, a menos de 25 ºC.',
+        ],
+        ingredients: [
+          { name: 'Biotina – 150 µg', note: 'A Biotina contribui para a manutenção de cabelo normal e de pele normal.' },
+          { name: 'Zinco – 10 mg', note: 'O Zinco contribui para a manutenção de cabelo, pele e unhas normais e para o normal funcionamento do sistema imunitário.' },
+          { name: 'Selénio – 55 µg', note: 'O Selénio contribui para a manutenção de cabelo normal e de unhas normais e para a proteção das células contra as oxidações indesejáveis.' },
+          { name: 'Cobre – 500 µg', note: 'O Cobre contribui para a pigmentação normal do cabelo e para a manutenção de tecidos conjuntivos normais.' },
+          { name: 'Vitaminas B6, B12 e Folato', note: 'Contribuem para a redução do cansaço e da fadiga e para o normal funcionamento do sistema imunitário.' },
+          { name: 'Vitamina D3 – 25 µg (1000 UI)', note: 'A Vitamina D contribui para o normal funcionamento do sistema imunitário e para a manutenção de ossos normais.' },
+          { name: 'L-Cistina & MSM – 300 mg cada', note: 'L-Cistina — aminoácido que contém enxofre. MSM (metilsulfonilmetano) — composto de enxofre de origem natural.' },
+        ],
+        faq: [
+          { question: 'Como devo tomar?', answer: 'Tome 2 cápsulas por dia com um copo de água, ou de acordo com a indicação do seu profissional de saúde.' },
+          { question: 'Posso tomar durante a gravidez ou amamentação?', answer: 'Não. Este suplemento destina-se a adultos e não deve ser consumido por grávidas, lactantes nem crianças.' },
+          { question: 'Posso tomar se estiver a fazer medicação?', answer: 'O rótulo indica que não deve ser utilizado por quem está a tomar medicação. Em caso de dúvida, fale com o seu médico.' },
+          { question: 'Quanto tempo dura uma embalagem?', answer: 'Com a toma recomendada de 2 cápsulas por dia, as 60 cápsulas dão para 30 dias.' },
+        ],
       },
     },
   },

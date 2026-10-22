@@ -31,4 +31,5 @@ export const PRICES = {
   'top-shape': 4500,
   'top-max': 6000,
   'top-shot': 4000,
+  'top-hair': 3500,
 }
