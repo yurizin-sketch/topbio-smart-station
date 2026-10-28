@@ -240,6 +240,42 @@ const ORDER_COLS = `id, station_id AS stationId, ticket_code AS ticketCode,
                     nif, invoice_name AS invoiceName, invoice_email AS invoiceEmail`
 
 /** Procurar pelo código que o cliente traz no ecrã. */
+/**
+ * Antes de o balcão ver ou cobrar uma venda, pergunta-se se ela já foi paga
+ * no tablet.
+ *
+ * Quem pediu o MB WAY no tablet e depois carregou em «pagar no balcão» ainda
+ * tem o pedido vivo na app durante uns minutos, e pode confirmá-lo a caminho
+ * do balcão. O tablet já deixou de perguntar, e o aviso de quem cobrou pode
+ * não ter chegado. Sem isto, o balcão cobrava outra vez.
+ *
+ * Só para vendas por pagar com um pedido feito, e só na primeira meia hora:
+ * depois disso nenhum pedido está vivo. Um erro de rede não impede o balcão
+ * de trabalhar.
+ */
+async function refreshPayment(env, ids) {
+  if (!ids.length) return
+  const marks = ids.map((_, i) => `?${i + 2}`).join(', ')
+  const { results } = await env.DB.prepare(
+    `SELECT id, station_id AS stationId, product_id AS productId, status, pay_id AS payId
+     FROM orders
+     WHERE status = 'awaiting_counter' AND pay_id IS NOT NULL AND created_at > ?1
+       AND id IN (${marks})`,
+  )
+    .bind(Date.now() - 30 * 60_000, ...ids)
+    .all()
+  await Promise.all(
+    (results ?? []).map(async (order) => {
+      try {
+        const found = await lookupPayment(env, order.payId)
+        if (found.state === 'paid') await markPaid(env, order, found.method)
+      } catch {
+        // Fica como estava; a próxima pergunta tenta outra vez.
+      }
+    }),
+  )
+}
+
 async function findOrder(env, claims, body) {
   const code = String(body?.code ?? '')
     .trim()
@@ -247,19 +283,33 @@ async function findOrder(env, claims, body) {
     .replace(/\s+/g, '')
   if (code.length < 4) return { erro: 'codigo', status: 400 }
 
-  const order = await env.DB.prepare(
-    `SELECT ${ORDER_COLS} FROM orders
-     WHERE ticket_code = ?1 AND station_id = ?2
-     ORDER BY created_at DESC LIMIT 1`,
-  )
-    .bind(code, claims.stationId)
-    .first()
+  const find = () =>
+    env.DB.prepare(
+      `SELECT ${ORDER_COLS} FROM orders
+       WHERE ticket_code = ?1 AND station_id = ?2
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+      .bind(code, claims.stationId)
+      .first()
+
+  let order = await find()
+  if (order?.status === 'awaiting_counter') {
+    await refreshPayment(env, [order.id])
+    order = await find()
+  }
 
   return order ? { ok: true, order } : { erro: 'nao-encontrado', status: 404 }
 }
 
 /** A fila do balcão: o que está por entregar neste posto. */
 async function pending(env, claims) {
+  const { results: porPagar } = await env.DB.prepare(
+    `SELECT id FROM orders WHERE station_id = ?1 AND status = 'awaiting_counter' LIMIT 60`,
+  )
+    .bind(claims.stationId)
+    .all()
+  await refreshPayment(env, (porPagar ?? []).map((o) => o.id))
+
   const { results } = await env.DB.prepare(
     `SELECT ${ORDER_COLS} FROM orders
      WHERE station_id = ?1 AND status IN ('awaiting_counter', 'paid')
@@ -284,6 +334,10 @@ async function settle(env, claims, body) {
   const id = String(body?.id ?? '')
   const method = String(body?.method ?? '')
   if (!id) return { erro: 'pedido', status: 400 }
+
+  // Se entretanto pagou no telemóvel, a venda já vem como paga e não se
+  // cobra outra vez.
+  await refreshPayment(env, [id])
 
   // O posto vem junto por causa do `tracks_stock`: no armazém a venda
   // regista-se, mas não desce nenhum número — ver o `schema.sql`.
