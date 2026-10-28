@@ -54,7 +54,9 @@ export async function startPayment(order: Order): Promise<PaymentStart> {
     const res = await post<{ mbway?: MbwayVia | null; card?: boolean }>('/api/pay/start', {
       orderId: order.id,
     })
-    return { kind: 'ready', demo: false, mbway: res?.mbway ?? null, card: Boolean(res?.card) }
+    // Um servidor de antes do cartão responde só `ok`: aí é MB WAY pela Stripe.
+    if (res?.mbway === undefined) return { kind: 'ready', demo: false, mbway: 'stripe', card: false }
+    return { kind: 'ready', demo: false, mbway: res.mbway, card: Boolean(res.card) }
   } catch (e) {
     return { kind: 'off', reason: e instanceof ApiError ? e.code : 'desconhecido' }
   }
