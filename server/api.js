@@ -480,27 +480,41 @@ async function overview(env, body) {
   }
 }
 
-/* ── Pagamento no tablet: MB WAY pela Stripe ─────────────────────────────────
+/* ── Pagamento no tablet: MB WAY e cartão ────────────────────────────────────
 
-   O cliente escreve o número MB WAY no tablet, o pedido chega à app dele já
-   com o valor, e ele confirma lá. Por baixo é um PaymentIntent da Stripe com
-   o método `mb_way`, criado e confirmado daqui — o tablet nunca fala com a
-   Stripe, e a chave secreta nunca sai deste servidor.
+   Duas maneiras de pagar no ecrã:
+
+   - MB WAY pelo número. O cliente escreve o número no tablet, o pedido chega
+     à app dele já com o valor, e ele confirma lá. Vai pela ifthenpay quando a
+     chave dela está posta (`IFTHENPAY_MBWAY_KEY`), que cobra menos de metade
+     da Stripe por pagamento; sem ela, pela Stripe, como sempre foi.
+   - Cartão, Apple Pay e Google Pay, pela Stripe. O tablet mostra um QR que se
+     lê com a câmara do telemóvel e abre a página de pagamento da Stripe. Não
+     é o QR do MB WAY: a app MB WAY não o lê, e o ecrã diz isso por extenso.
+
+   O tablet nunca fala com a Stripe nem com a ifthenpay, e as chaves nunca
+   saem deste servidor.
 
    Três regras, todas pela mesma razão — o tablet e o endereço deste servidor
    são públicos:
 
    1. O valor sai do `PRICES` deste lado, nunca do pedido.
-   2. «Pago» só se escreve depois de a Stripe o confirmar a quem lhe pergunta
-      com a nossa chave. O aviso que ela manda (`/api/pay/notify`) só serve
-      para nos fazer ir perguntar: não se acredita no que traz dentro.
-   3. Sem chave posta (`STRIPE_SECRET_KEY`), tudo isto responde «desligado» e
-      o tablet manda ao balcão. Desligar é tirar a chave; não há nada a mudar
-      no tablet.
+   2. «Pago» só se escreve depois de quem cobrou o confirmar a quem lhe
+      pergunta com a nossa chave. Os avisos que mandam (`/api/pay/notify` da
+      Stripe, `/api/pay/ifthenpay` da ifthenpay) só servem para nos fazer ir
+      perguntar: não se acredita no que trazem dentro.
+   3. Sem chaves postas, tudo isto responde «desligado» e o tablet manda ao
+      balcão. Desligar é tirar a chave; não há nada a mudar no tablet.
 
-   Teste ou a sério decide-o a própria chave: `sk_test_…` é a sandbox da
-   Stripe (não sai dinheiro de lado nenhum), `sk_live_…` cobra.
+   Teste ou a sério, na Stripe, decide-o a própria chave: `sk_test_…` é a
+   sandbox (não sai dinheiro de lado nenhum), `sk_live_…` cobra.
+
+   O `pay_id` de cada venda diz a quem perguntar: `pi_…` é um pedido MB WAY
+   da Stripe, `cs_…` uma página de cartão da Stripe, e `ifthenpay:…` um pedido
+   MB WAY da ifthenpay.
    ────────────────────────────────────────────────────────────────────────── */
+
+const IFTHENPAY = 'ifthenpay:'
 
 /** `a[b][c]=…`, que é como a API da Stripe recebe o corpo. */
 function stripeForm(obj, prefix = '', out = new URLSearchParams()) {
@@ -532,6 +546,7 @@ function stripe(env) {
       console.log('stripe', method, path, res.status, JSON.stringify(data?.error ?? data).slice(0, 500))
       const err = new Error(`stripe-${res.status}`)
       err.code = data?.error?.code
+      err.status = res.status
       throw err
     }
     return data
@@ -540,40 +555,86 @@ function stripe(env) {
 }
 
 /**
+ * A ifthenpay, só para o MB WAY.
+ *
+ * A chave (`XXX-000000`) é a «MB WAY Key» do backoffice da ifthenpay. Não é
+ * uma palavra-passe como a da Stripe — também vai no endereço da pergunta do
+ * estado —, mas é com ela que se cobra em nome da loja, por isso entra como
+ * segredo e não no `wrangler.toml`.
+ */
+function ifthenpay(env) {
+  const key = env.IFTHENPAY_MBWAY_KEY
+  if (!key) return null
+  const base = 'https://api.ifthenpay.com/spg/payment/mbway'
+  const read = async (res, what) => {
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      console.log('ifthenpay', what, res.status, JSON.stringify(data).slice(0, 500))
+      throw new Error(`ifthenpay-${res.status}`)
+    }
+    return data
+  }
+  return {
+    async request({ orderId, cents, phone, description }) {
+      const res = await fetch(base, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          mbWayKey: key,
+          orderId,
+          amount: (cents / 100).toFixed(2),
+          mobileNumber: `351#${phone}`,
+          description,
+        }),
+      })
+      return read(res, 'pedido')
+    },
+    async status(requestId) {
+      const url = `${base}/status?mbWayKey=${encodeURIComponent(key)}&requestId=${encodeURIComponent(requestId)}`
+      const res = await fetch(url, { headers: { accept: 'application/json' } })
+      return read(res, 'estado')
+    },
+  }
+}
+
+/**
+ * Os códigos de estado da ifthenpay, em três palavras.
+ *
+ * `000` é dinheiro entrado. `020` recusado, `101` expirou (o pedido vive
+ * quatro minutos na app), `122` cancelado pelo cliente — dá para pedir outra
+ * vez. Qualquer outro código é o cliente ainda a decidir: na pior das
+ * hipóteses o relógio do ecrã acaba e manda ao balcão.
+ */
+function ifthenpayState(code) {
+  if (code === '000') return 'paid'
+  if (code === '020' || code === '101' || code === '122') return 'failed'
+  return 'pending'
+}
+
+/**
  * O pagamento no tablet está ligado, e esta venda pode ser paga?
  *
- * O tablet pergunta antes de mostrar o teclado do número: sem chave, ou com a
+ * O tablet pergunta antes de mostrar o ecrã de pagar: sem chave, ou com a
  * venda já fechada, o cliente vai direto para a ficha do balcão em vez de
- * escrever um número que não ia dar em nada.
+ * escrever um número que não ia dar em nada. A resposta diz também que
+ * maneiras de pagar há, e quem trata o MB WAY — o ecrã diz ao cliente para
+ * onde vai o número dele.
  */
 async function payReady(env, body) {
-  if (!stripe(env)) return { erro: 'pagamento-desligado', status: 503 }
+  const mbway = ifthenpay(env) ? 'ifthenpay' : stripe(env) ? 'stripe' : null
+  const card = Boolean(stripe(env))
+  if (!mbway && !card) return { erro: 'pagamento-desligado', status: 503 }
   const order = await env.DB.prepare(`SELECT status, product_id AS productId FROM orders WHERE id = ?1`)
     .bind(String(body?.orderId ?? ''))
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
   if (!PRICES[order.productId]) return { erro: 'sem-preco', status: 409 }
-  return { ok: true }
+  return { ok: true, mbway, card }
 }
 
-/**
- * Pagar pelo número de telemóvel: o pedido chega já à app MB WAY do cliente,
- * com o valor, e ele só tem de confirmar.
- *
- * O número vai para a Stripe e mais nenhum sítio: não se guarda na base. O
- * que se guarda é o id do PaymentIntent (`pay_id`), para o `payStatus` saber a
- * quem perguntar.
- */
-async function payPhone(env, body) {
-  const st = stripe(env)
-  if (!st) return { erro: 'pagamento-desligado', status: 503 }
-
-  const id = String(body?.orderId ?? '')
-  const phone = String(body?.phone ?? '').replace(/\D/g, '')
-  // Telemóvel português: nove algarismos a começar por 9.
-  if (!/^9\d{8}$/.test(phone)) return { erro: 'telemovel', status: 400 }
-
+/** A venda que se vai pagar, se ainda estiver por pagar e tiver preço. */
+async function payableOrder(env, id) {
   const order = await env.DB.prepare(
     `SELECT id, station_id AS stationId, product_id AS productId, ticket_code AS ticketCode, status
      FROM orders WHERE id = ?1`,
@@ -582,9 +643,64 @@ async function payPhone(env, body) {
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
-
   const cents = PRICES[order.productId]
   if (!cents) return { erro: 'sem-preco', status: 409 }
+  return { order, cents }
+}
+
+/**
+ * Um pedido novo (o primeiro foi recusado, o número estava errado, ou o
+ * cliente trocou de MB WAY para cartão) substitui o anterior.
+ */
+async function savePayId(env, orderId, payId, cents) {
+  await env.DB.prepare(`UPDATE orders SET pay_id = ?2, amount_cents = ?3 WHERE id = ?1`)
+    .bind(orderId, String(payId), cents)
+    .run()
+}
+
+/**
+ * Pagar pelo número de telemóvel: o pedido chega já à app MB WAY do cliente,
+ * com o valor, e ele só tem de confirmar.
+ *
+ * O número vai para quem cobra e mais nenhum sítio: não se guarda na base. O
+ * que se guarda é o id do pedido (`pay_id`), para o `payStatus` saber a quem
+ * perguntar.
+ */
+async function payPhone(env, body) {
+  const ifp = ifthenpay(env)
+  const st = stripe(env)
+  if (!ifp && !st) return { erro: 'pagamento-desligado', status: 503 }
+
+  const phone = String(body?.phone ?? '').replace(/\D/g, '')
+  // Telemóvel português: nove algarismos a começar por 9.
+  if (!/^9\d{8}$/.test(phone)) return { erro: 'telemovel', status: 400 }
+
+  const found = await payableOrder(env, String(body?.orderId ?? ''))
+  if (found.erro) return found
+  const { order, cents } = found
+
+  if (ifp) {
+    let res
+    try {
+      res = await ifp.request({
+        // A ifthenpay aceita até 15 caracteres aqui. O código da ficha cabe, e
+        // é o que a loja reconhece no backoffice dela.
+        orderId: order.ticketCode,
+        cents,
+        phone,
+        description: `TopBio ${order.ticketCode}`,
+      })
+    } catch {
+      return { erro: 'pagamento', status: 502 }
+    }
+    if (res?.Status !== '000' || !res?.RequestId) {
+      // Recusado logo à partida (número sem MB WAY, por exemplo).
+      console.log('ifthenpay recusado', order.id, res?.Status ?? '', res?.Message ?? '')
+      return { ok: true, state: 'failed' }
+    }
+    await savePayId(env, order.id, IFTHENPAY + res.RequestId, cents)
+    return { ok: true, state: 'pending' }
+  }
 
   let intent
   try {
@@ -608,15 +724,84 @@ async function payPhone(env, body) {
   }
   if (!intent?.id) return { erro: 'pagamento', status: 502 }
 
-  // Um segundo pedido (o primeiro foi recusado, ou o número estava errado)
-  // substitui o anterior.
-  await env.DB.prepare(`UPDATE orders SET pay_id = ?2, amount_cents = ?3 WHERE id = ?1`)
-    .bind(order.id, String(intent.id), cents)
-    .run()
+  await savePayId(env, order.id, intent.id, cents)
 
   // Há recusas que vêm logo na resposta (número sem MB WAY, por exemplo).
   if (intent.status === 'requires_payment_method') return { ok: true, state: 'failed' }
   return { ok: true, state: 'pending' }
+}
+
+/**
+ * Pagar com cartão, Apple Pay ou Google Pay: uma página da Stripe, aberta no
+ * telemóvel do cliente pelo QR que o tablet mostra.
+ *
+ * O cliente escreve o cartão no telemóvel dele, nunca no ecrã da loja. Quando
+ * paga, a Stripe manda-o para o `/api/pay/feito`, que só diz «pode voltar ao
+ * ecrã» — quem marca a venda é o `payStatus`, como no MB WAY.
+ */
+async function payCard(env, body, origin) {
+  const st = stripe(env)
+  if (!st) return { erro: 'pagamento-desligado', status: 503 }
+
+  const found = await payableOrder(env, String(body?.orderId ?? ''))
+  if (found.erro) return found
+  const { order, cents } = found
+
+  const session = {
+    mode: 'payment',
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: 'eur',
+          unit_amount: cents,
+          product_data: { name: `TopBio ${order.ticketCode}` },
+        },
+      },
+    ],
+    // Só cartão: o Apple Pay e o Google Pay vêm com ele, no telemóvel que os
+    // tiver. Os métodos com pagamento diferido (referência Multibanco, por
+    // exemplo) não servem a quem está de pé à frente do balcão.
+    payment_method_types: ['card'],
+    locale: 'pt',
+    // O mínimo que a Stripe deixa. O ecrã desiste antes disto (`waitMs`).
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+    success_url: `${origin}/api/pay/feito`,
+    cancel_url: `${origin}/api/pay/feito?cancelado=1`,
+    // O mesmo `order_id` do MB WAY, para o aviso da Stripe chegar à venda.
+    payment_intent_data: {
+      description: `TopBio ${order.ticketCode}`,
+      metadata: { order_id: order.id, ticket: order.ticketCode, station: order.stationId },
+    },
+  }
+
+  let res
+  try {
+    res = await st.call('POST', '/checkout/sessions', session)
+  } catch (e) {
+    // A conta pode recusar a lista de métodos, como recusou no MB WAY. Aí
+    // vai sem ela, e a página mostra os que estão ligados no Dashboard.
+    if (e?.status !== 400) return { erro: 'pagamento', status: 502 }
+    try {
+      const { payment_method_types: _, ...semLista } = session
+      res = await st.call('POST', '/checkout/sessions', semLista)
+    } catch {
+      return { erro: 'pagamento', status: 502 }
+    }
+  }
+  if (!res?.id || !res?.url) return { erro: 'pagamento', status: 502 }
+
+  await savePayId(env, order.id, res.id, cents)
+  return { ok: true, url: res.url }
+}
+
+/**
+ * Como se pagou um PaymentIntent da Stripe: `cartao` (Apple Pay e Google Pay
+ * incluídos, que por baixo são cartão) ou `mbway`.
+ */
+function intentMethod(intent) {
+  const type = intent?.payment_method?.type ?? intent?.payment_method_types?.[0]
+  return type === 'mb_way' ? 'mbway' : 'cartao'
 }
 
 /**
@@ -626,28 +811,62 @@ async function payPhone(env, body) {
  * recusado, cancelado na app ou deixado expirar — dá para pedir outra vez.
  * Tudo o resto (`requires_action`, `processing`) é o cliente ainda a decidir.
  */
-async function intentState(st, intentId) {
-  const intent = await st.call('GET', `/payment_intents/${encodeURIComponent(intentId)}`)
+function intentState(intent) {
   if (intent?.status === 'succeeded') return 'paid'
   if (intent?.status === 'requires_payment_method' || intent?.status === 'canceled') {
     // Para o log do worker: o porquê de uma recusa só aparece aqui.
     const e = intent?.last_payment_error
-    console.log('stripe recusado', intentId, intent?.status, e?.code ?? '', e?.decline_code ?? '')
+    console.log('stripe recusado', intent?.id, intent?.status, e?.code ?? '', e?.decline_code ?? '')
     return 'failed'
   }
   return 'pending'
 }
 
 /**
+ * Perguntar a quem cobrou como está um pagamento: `{ state, method }`.
+ *
+ * Um erro de rede sobe daqui; quem chama decide o que fazer com ele.
+ */
+async function lookupPayment(env, payId) {
+  if (payId.startsWith(IFTHENPAY)) {
+    const ifp = ifthenpay(env)
+    if (!ifp) return { state: 'pending' }
+    const res = await ifp.status(payId.slice(IFTHENPAY.length))
+    const state = ifthenpayState(String(res?.Status ?? ''))
+    if (state === 'failed') console.log('ifthenpay recusado', payId, res?.Status, res?.Message ?? '')
+    return { state, method: 'mbway' }
+  }
+
+  const st = stripe(env)
+  if (!st) return { state: 'pending' }
+
+  if (payId.startsWith('cs_')) {
+    const s = await st.call(
+      'GET',
+      `/checkout/sessions/${encodeURIComponent(payId)}?expand[]=payment_intent.payment_method`,
+    )
+    if (s?.payment_status === 'paid') return { state: 'paid', method: intentMethod(s.payment_intent) }
+    // Uma página expirada já não cobra; a da Stripe dura mais do que o ecrã.
+    if (s?.status === 'expired') return { state: 'failed' }
+    return { state: 'pending' }
+  }
+
+  const intent = await st.call(
+    'GET',
+    `/payment_intents/${encodeURIComponent(payId)}?expand[]=payment_method`,
+  )
+  return { state: intentState(intent), method: intentMethod(intent) }
+}
+
+/**
  * Já pagaram?
  *
- * Pergunta-se à Stripe e não à nossa base: a base só passa a «pago» depois
- * daqui. Um pagamento confirmado escreve-se uma vez, com o stock a descer no
- * mesmo `batch` — a mesma regra do balcão (ver `settle`).
+ * Pergunta-se a quem cobrou e não à nossa base: a base só passa a «pago»
+ * depois daqui. Um pagamento confirmado escreve-se uma vez, com o stock a
+ * descer no mesmo `batch` — a mesma regra do balcão (ver `settle`).
  */
 async function payStatus(env, body) {
-  const st = stripe(env)
-  if (!st) return { erro: 'pagamento-desligado', status: 503 }
+  if (!ifthenpay(env) && !stripe(env)) return { erro: 'pagamento-desligado', status: 503 }
 
   const id = String(body?.orderId ?? '')
   const order = await env.DB.prepare(
@@ -661,39 +880,40 @@ async function payStatus(env, body) {
   if (order.status === 'cancelled') return { ok: true, state: 'failed' }
   if (!order.payId) return { ok: true, state: 'pending' }
 
-  let state = 'pending'
+  let found
   try {
-    state = await intentState(st, order.payId)
+    found = await lookupPayment(env, order.payId)
   } catch {
     return { ok: true, state: 'pending' }
   }
-  if (state === 'paid') await markPaid(env, order)
+  if (found.state === 'paid') await markPaid(env, order, found.method)
   // Recusado na app não fecha a venda: o ecrã avisa e deixa tentar outra vez.
-  return { ok: true, state }
+  return { ok: true, state: found.state }
 }
 
-async function markPaid(env, order) {
+async function markPaid(env, order, method = 'mbway') {
   const now = Date.now()
   const posto = await env.DB.prepare('SELECT tracks_stock AS tracksStock FROM stations WHERE id = ?1')
     .bind(order.stationId)
     .first()
   // O `WHERE status = 'awaiting_counter'` é o que impede descontar duas vezes
-  // quando o aviso da Stripe e a pergunta do tablet chegam ao mesmo tempo; o
-  // índice único em `stock_moves.order_id` apanha o resto.
+  // quando o aviso e a pergunta do tablet chegam ao mesmo tempo; o índice
+  // único em `stock_moves.order_id` apanha o resto.
   const res = await env.DB.prepare(
-    `UPDATE orders SET status = 'paid', method = 'mbway', paid_at = ?2
+    `UPDATE orders SET status = 'paid', method = ?3, paid_at = ?2
      WHERE id = ?1 AND status = 'awaiting_counter'`,
   )
-    .bind(order.id, now)
+    .bind(order.id, now, method)
     .run()
   if (!res.meta?.changes) return
 
+  const actor = String(order.payId ?? '').startsWith(IFTHENPAY) ? 'ifthenpay' : 'stripe'
   const writes = [
     env.DB.prepare(
       `INSERT OR IGNORE INTO stock_moves
          (station_id, product_id, delta, reason, order_id, actor, at)
-       VALUES (?1, ?2, -1, 'venda', ?3, 'stripe', ?4)`,
-    ).bind(order.stationId, order.productId, order.id, now),
+       VALUES (?1, ?2, -1, 'venda', ?3, ?4, ?5)`,
+    ).bind(order.stationId, order.productId, order.id, actor, now),
   ]
   if (posto?.tracksStock !== 0) {
     writes.push(
@@ -711,22 +931,124 @@ async function markPaid(env, order) {
 /**
  * O aviso da Stripe de que um pagamento mudou (webhook).
  *
- * Não se acredita no que traz: tira-se o id da venda dos `metadata` e
- * pergunta-se à Stripe como no `payStatus`. Assim não é preciso verificar a
- * assinatura — um aviso forjado só faz o servidor ir perguntar, e a resposta
- * vem da Stripe. Responde sempre 200: um erro aqui faria a Stripe insistir, e
- * insistir não muda a resposta.
+ * Não se acredita no que traz: tira-se dele só o id do PaymentIntent e
+ * pergunta-se à Stripe por esse, com a nossa chave. A venda sai dos
+ * `metadata` que a Stripe devolve, não dos do aviso. Assim não é preciso
+ * verificar a assinatura — um aviso forjado só faz o servidor ir perguntar, e
+ * a resposta vem da Stripe.
+ *
+ * Pergunta-se pelo pagamento do aviso, e não pelo último que a venda guardou:
+ * quem pediu o MB WAY e depois passou para o cartão pode acabar por confirmar
+ * o primeiro, e esse dinheiro também conta.
+ *
+ * Responde sempre 200: um erro aqui faria a Stripe insistir, e insistir não
+ * muda a resposta.
  */
 async function payNotify(env, body) {
-  const orderId = String(body?.data?.object?.metadata?.order_id ?? '')
-  if (orderId) {
-    try {
-      await payStatus(env, { orderId })
-    } catch (e) {
-      console.log('stripe notify', orderId, String(e))
+  const intentId = String(body?.data?.object?.id ?? '')
+  const st = stripe(env)
+  if (!st || !intentId.startsWith('pi_')) return { ok: true }
+  try {
+    const intent = await st.call(
+      'GET',
+      `/payment_intents/${encodeURIComponent(intentId)}?expand[]=payment_method`,
+    )
+    const orderId = String(intent?.metadata?.order_id ?? '')
+    if (orderId && intentState(intent) === 'paid') {
+      const order = await env.DB.prepare(
+        `SELECT id, station_id AS stationId, product_id AS productId, status, pay_id AS payId
+         FROM orders WHERE id = ?1`,
+      )
+        .bind(orderId)
+        .first()
+      if (order && order.status === 'awaiting_counter') {
+        await markPaid(env, { ...order, payId: intentId }, intentMethod(intent))
+      }
     }
+  } catch (e) {
+    console.log('stripe notify', intentId, String(e))
   }
   return { ok: true }
+}
+
+/**
+ * O aviso da ifthenpay de que um MB WAY foi pago (callback).
+ *
+ * Chega por GET, com o `requestId` no endereço. Como o da Stripe, não se
+ * acredita nele: procura-se a venda que guardou esse pedido e pergunta-se à
+ * ifthenpay pelo estado.
+ *
+ * Quem pediu o MB WAY e depois passou para o cartão já guardou outro
+ * `pay_id`, e o pedido MB WAY continua vivo na app. Aí a venda procura-se
+ * pelo código da ficha, que foi o `orderId` mandado à ifthenpay — mas só
+ * se o valor do aviso for o da venda, e só depois de a ifthenpay confirmar
+ * que esse pedido está pago.
+ *
+ * É opcional: sem ele, o tablet pergunta sozinho enquanto o ecrã de pagar
+ * está aberto. Com ele, um pagamento confirmado depois de o ecrã desistir
+ * ainda chega à venda. Liga-se pedindo à ifthenpay que chame
+ * `…/api/pay/ifthenpay?requestId=[REQUEST_ID]` (ver o README do servidor).
+ */
+async function payIfthenpayNotify(env, url) {
+  const q = url.searchParams
+  const requestId = String(q.get('requestId') ?? q.get('tid') ?? '')
+  if (!requestId || !ifthenpay(env)) return
+  const cols = `id, station_id AS stationId, product_id AS productId, status, amount_cents AS amountCents`
+  try {
+    let order = await env.DB.prepare(`SELECT ${cols} FROM orders WHERE pay_id = ?1`)
+      .bind(IFTHENPAY + requestId)
+      .first()
+    if (!order) {
+      const ticket = String(q.get('orderId') ?? q.get('oid') ?? '')
+      const cents = Math.round(Number(q.get('amount') ?? q.get('val') ?? NaN) * 100)
+      if (!ticket || !Number.isFinite(cents)) return
+      order = await env.DB.prepare(
+        `SELECT ${cols} FROM orders
+         WHERE ticket_code = ?1 AND status = 'awaiting_counter' AND amount_cents = ?2
+         ORDER BY created_at DESC LIMIT 1`,
+      )
+        .bind(ticket, cents)
+        .first()
+    }
+    if (!order || order.status !== 'awaiting_counter') return
+    const payId = IFTHENPAY + requestId
+    const found = await lookupPayment(env, payId)
+    if (found.state === 'paid') await markPaid(env, { ...order, payId }, found.method)
+  } catch (e) {
+    console.log('ifthenpay notify', requestId, String(e))
+  }
+}
+
+/** A página para onde a Stripe manda o telemóvel do cliente no fim. */
+function payDonePage(url) {
+  const cancelado = url.searchParams.has('cancelado')
+  const titulo = cancelado ? 'Pagamento cancelado' : 'Pagamento recebido'
+  const texto = cancelado
+    ? 'Não foi cobrado nada. Pode voltar ao ecrã da loja e escolher outra forma de pagar.'
+    : 'Obrigado! Pode voltar ao ecrã da loja: o seu código de levantamento aparece lá.'
+  const html = `<!doctype html><html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>TopBio — ${titulo}</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F4F1EA;color:#002E26;
+font:18px/1.5 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+h1{font-size:1.6rem;margin:0 0 .5rem}p{max-width:30ch;margin:0 auto}</style></head>
+<body><main><h1>${titulo}</h1><p>${texto}</p></main></body></html>`
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } })
+}
+
+/**
+ * Os dois caminhos do pagamento que chegam por GET: o aviso da ifthenpay e a
+ * página do fim da Stripe. Nenhum vem de um browser da loja, por isso não
+ * passam pelo travão da origem nem pela sessão (ver o `worker.js`).
+ */
+export const GET_PATHS = new Set(['/api/pay/ifthenpay', '/api/pay/feito'])
+
+export async function handleGet(request, env, path, ip) {
+  if (overApiLimit(ip)) return new Response('limite', { status: 429 })
+  const url = new URL(request.url)
+  if (path === '/api/pay/feito') return payDonePage(url)
+  if (env.DB) await payIfthenpayNotify(env, url)
+  // Sempre 200, pela mesma razão do aviso da Stripe.
+  return new Response('ok')
 }
 
 /**
@@ -770,6 +1092,7 @@ const ABERTAS = new Set([
   '/api/orders/create',
   '/api/pay/start',
   '/api/pay/phone',
+  '/api/pay/card',
   '/api/pay/status',
   '/api/pay/notify',
   '/api/orders/invoice',
@@ -847,6 +1170,9 @@ export async function handleApi(request, env, headers, path, ip) {
       break
     case '/api/pay/phone':
       out = await payPhone(env, body)
+      break
+    case '/api/pay/card':
+      out = await payCard(env, body, new URL(request.url).origin)
       break
     case '/api/pay/status':
       out = await payStatus(env, body)

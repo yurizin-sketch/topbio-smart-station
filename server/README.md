@@ -282,12 +282,26 @@ repositório, e que nunca deve levar as palavras-passe verdadeiras.
 
 ---
 
-## Pagamento no tablet (MB WAY pela Stripe)
+## Pagamento no tablet (MB WAY e cartão)
 
-O cliente escreve o número MB WAY no tablet, o pedido chega à app dele com o
-valor, ele confirma, e o tablet passa sozinho à fatura (nome, NIF, email) e ao
-comprovante «PAGO». Sem chave, o ecrã salta para a ficha do balcão e paga-se
-lá como sempre — ligar é pôr a chave.
+Duas maneiras de pagar no ecrã, à escolha do cliente:
+
+- **MB WAY pelo número.** O cliente escreve o número no tablet, o pedido chega
+  à app dele com o valor, ele confirma. Vai pela **ifthenpay** quando a chave
+  dela está posta, e pela **Stripe** quando não está.
+- **Cartão, Apple Pay e Google Pay**, pela Stripe. O tablet mostra um QR que se
+  lê com a câmara do telemóvel e abre a página de pagamento da Stripe. Não é
+  um QR do MB WAY, e o ecrã diz isso.
+
+Depois de pago, o tablet passa sozinho à fatura (nome, NIF, email) e ao
+comprovante «PAGO». Sem chave nenhuma, o ecrã salta para a ficha do balcão e
+paga-se lá como sempre — ligar é pôr a chave.
+
+| Chaves postas | MB WAY | Cartão |
+| --- | --- | --- |
+| Só `STRIPE_SECRET_KEY` | Stripe | Sim |
+| Só `IFTHENPAY_MBWAY_KEY` | ifthenpay | Não |
+| As duas | ifthenpay | Sim |
 
 **1. A base de dados** (uma vez, numa base que já existia):
 
@@ -295,10 +309,10 @@ lá como sempre — ligar é pôr a chave.
 npx wrangler d1 execute topbio --remote --file=migrations/0002_pagamento.sql
 ```
 
-**2. O MB WAY ativo na Stripe.** No Dashboard da Stripe, em Definições →
-Métodos de pagamento, ligar o **MB WAY**. Sem isto a Stripe recusa o pedido.
-
-**3. A chave**, num terminal seu (a mesma regra das outras chaves):
+**2. A Stripe.** No Dashboard da Stripe, em Definições → Métodos de
+pagamento, ligar o **MB WAY** (só faz falta enquanto o MB WAY for por lá), o
+**Apple Pay** e o **Google Pay**. A chave, num terminal seu (a mesma regra das
+outras chaves):
 
 ```sh
 npx wrangler secret put STRIPE_SECRET_KEY
@@ -306,14 +320,36 @@ npx wrangler secret put STRIPE_SECRET_KEY
 
 A chave decide o modo: `sk_test_…` é a sandbox (não sai dinheiro de lado
 nenhum; os números de teste estão abaixo), `sk_live_…` cobra a sério. Também
-serve uma chave restrita (`rk_…`) com escrita em PaymentIntents.
+serve uma chave restrita (`rk_…`) com escrita em PaymentIntents e Checkout
+Sessions.
 
-**4. O aviso de pagamento (webhook).** No Dashboard, em Programadores →
+**3. O aviso da Stripe (webhook).** No Dashboard, em Programadores →
 Webhooks → Adicionar destino, pôr o endereço
 `https://<o worker>/api/pay/notify` e escolher os eventos
-`payment_intent.succeeded` e `payment_intent.payment_failed`. Sem isto
-funciona na mesma — o tablet pergunta de 3 em 3 segundos —, mas com isto um
-pagamento confirmado na app depois de o ecrã desistir não fica por registar.
+`payment_intent.succeeded` e `payment_intent.payment_failed`. Serve ao MB WAY
+e ao cartão. Sem isto funciona na mesma — o tablet pergunta de 3 em 3
+segundos —, mas com isto um pagamento confirmado depois de o ecrã desistir não
+fica por registar.
+
+**4. A ifthenpay (opcional, mais barata no MB WAY).** A chave é a «MB WAY Key»
+do backoffice da ifthenpay (formato `XXX-000000`):
+
+```sh
+npx wrangler secret put IFTHENPAY_MBWAY_KEY
+```
+
+Não precisa de novo deploy. Tirá-la (`npx wrangler secret delete
+IFTHENPAY_MBWAY_KEY`) põe o MB WAY outra vez na Stripe.
+
+O aviso da ifthenpay (callback) pede-se a eles, por email ou no backoffice,
+com este endereço:
+
+```
+https://<o worker>/api/pay/ifthenpay?key=[ANTI_PHISHING_KEY]&orderId=[ORDER_ID]&amount=[AMOUNT]&requestId=[REQUEST_ID]&payment_datetime=[PAYMENT_DATETIME]
+```
+
+Tal como o da Stripe, é opcional e o servidor não acredita no que traz:
+pergunta sempre à ifthenpay pelo estado do pedido.
 
 **5. Os preços.** O servidor cobra pelo `prices.js`, não pelo tablet. Depois
 de mudar um preço no catálogo:
@@ -324,7 +360,8 @@ npx tsx scripts/build-prices.ts
 
 e voltar a publicar o worker.
 
-**Números de teste** (só com `sk_test_…`), a escrever no tablet sem o +351:
+**Números de teste** (só com `sk_test_…` e sem a chave da ifthenpay), a
+escrever no tablet sem o +351:
 
 | Número | O que acontece |
 | --- | --- |
@@ -333,9 +370,12 @@ e voltar a publicar o worker.
 | 911 111 114 | Recusado pelo banco |
 | 911 111 115 | Expira sem resposta |
 
+No cartão, com `sk_test_…`, o cartão de teste é o `4242 4242 4242 4242`, com
+qualquer data futura e qualquer código.
+
 **Ver o ecrã sem servidor nenhum:** abrir a estação com `?pagamento=demo`.
-Envia o pedido a fingir e mostra um botão «Simular confirmação». Não cobra
-nada.
+Mostra o MB WAY e o QR do cartão a fingir, e um botão «Simular confirmação».
+Não cobra nada.
 
 ---
 

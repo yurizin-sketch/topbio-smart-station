@@ -162,25 +162,27 @@ export const config = {
   ticketValidityMs: 10 * 60_000,
 
   /**
-   * Pagamento no próprio tablet: MB WAY por QR code, pela Stripe.
+   * Pagamento no próprio tablet: MB WAY pelo número (ifthenpay ou Stripe), e
+   * cartão, Apple Pay e Google Pay por um QR que abre a página da Stripe.
    *
-   * Quem decide se está ligado é o servidor, não este ficheiro: sem as chaves
-   * da Stripe lá postas, o `/api/pay/start` responde «desligado» e o cliente
-   * segue para a ficha do balcão como sempre. Ligar é pôr as chaves; não há
-   * build nenhum a fazer.
+   * Quem decide se está ligado é o servidor, não este ficheiro: sem chaves lá
+   * postas, o `/api/pay/start` responde «desligado» e o cliente segue para a
+   * ficha do balcão como sempre. Ligar é pôr as chaves; não há build nenhum a
+   * fazer.
    */
   payments: {
     /** De quanto em quanto tempo o ecrã pergunta se já pagaram. */
     pollMs: 3_000,
     /**
-     * Quanto tempo o QR fica à espera antes de o ecrã desistir e mandar ao
-     * balcão. A ligação da Stripe vive um pouco mais (ver `server/api.js`),
+     * Quanto tempo o ecrã de pagar fica à espera antes de desistir e mandar ao
+     * balcão. A página do cartão vive mais (30 minutos, ver `server/api.js`),
      * para um pagamento começado no último segundo ainda poder acabar.
      */
     waitMs: 10 * 60_000,
     /**
-     * Ver o ecrã do QR sem Stripe: abrir a estação com `?pagamento=demo`.
-     * Mostra um QR a fingir e um botão para simular o pagamento. Não cobra
+     * Ver o ecrã de pagar sem servidor: abrir a estação com `?pagamento=demo`.
+     * Mostra o MB WAY e o QR do cartão a fingir, e um botão para simular o
+     * pagamento. Não cobra
      * nada e não fala com servidor nenhum — é para se ver o ecrã, não para
      * vender.
      */

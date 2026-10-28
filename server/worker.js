@@ -13,7 +13,7 @@
  * Deploy: ver `server/README.md`.
  */
 
-import { handleApi, isApi } from './api.js'
+import { GET_PATHS, handleApi, handleGet, isApi } from './api.js'
 
 /* ── O que a Cláudia pode e não pode dizer ─────────────────────────────────────
 
@@ -346,9 +346,16 @@ export default {
     const headers = cors(origin, allowed)
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
-    if (request.method !== 'POST') return json({ error: 'method' }, 405, headers)
 
     const path = new URL(request.url).pathname
+
+    // Os únicos GET: o aviso da ifthenpay e a página do fim do pagamento por
+    // cartão, que abre no telemóvel do cliente. Nenhum dos dois vem do tablet,
+    // e nenhum escreve nada por palavra de quem o chama — ver `handleGet`.
+    if (request.method === 'GET' && GET_PATHS.has(path)) {
+      return handleGet(request, env, path, request.headers.get('cf-connecting-ip') ?? 'sem-ip')
+    }
+    if (request.method !== 'POST') return json({ error: 'method' }, 405, headers)
 
     // O aviso da Stripe vem de um servidor, não de um browser: não traz
     // `Origin`, e o travão de cima recusava-o. Pode passar sem ele porque não

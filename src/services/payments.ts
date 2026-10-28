@@ -4,28 +4,36 @@ import { ApiError, apiEnabled, post } from './api'
 import { orderPayload } from './orders'
 
 /**
- * Pagar no próprio tablet: MB WAY pelo número, pela Stripe.
+ * Pagar no próprio tablet: MB WAY pelo número, ou cartão, Apple Pay e Google
+ * Pay por um QR que abre a página da Stripe no telemóvel do cliente.
  *
- * O tablet nunca fala com a Stripe. Manda o número ao servidor, que pede o
- * pagamento à Stripe; o pedido chega à app MB WAY do cliente com o valor, e
- * o tablet fica a perguntar ao servidor se já entrou. Quem diz «pago» é o
- * servidor, e só depois de a própria Stripe lho confirmar (ver
- * `server/api.js`) — um tablet que se pudesse convencer de que alguém pagou
- * entregava frascos de graça.
+ * O tablet nunca fala com quem cobra. O MB WAY vai pela ifthenpay ou pela
+ * Stripe — escolhe o servidor, conforme a chave que lá estiver; o cartão vai
+ * sempre pela Stripe. Em qualquer dos casos o tablet fica a perguntar ao
+ * servidor se já entrou. Quem diz «pago» é o servidor, e só depois de quem
+ * cobrou lho confirmar (ver `server/api.js`) — um tablet que se pudesse
+ * convencer de que alguém pagou entregava frascos de graça.
  *
  * Tudo o que falha aqui acaba no mesmo sítio: a ficha do balcão, onde se paga
  * como sempre se pagou. Um cliente de pé à frente do ecrã não fica preso por o
  * pagamento estar em baixo.
  *
- * Houve um QR antes disto. Abria uma página da Stripe, e quem o lia com a app
- * MB WAY — que é o que toda a gente faz com um QR que diz MB WAY — ficava com
- * «a operação não pode ser concluída». O número dá o mesmo pedido na app, sem
- * câmara pelo meio.
+ * O QR do cartão não é um QR do MB WAY, e o ecrã diz isso. Já houve um QR para
+ * o MB WAY que abria uma página da Stripe, e quem o lia com a app MB WAY — que
+ * é o que toda a gente faz com um QR que diz MB WAY — ficava com «a operação
+ * não pode ser concluída». Por isso o MB WAY é pelo número, e o QR só aparece
+ * do lado do cartão, para a câmara do telemóvel.
  */
 
+/** Quem trata o MB WAY. O ecrã diz ao cliente para onde vai o número. */
+export type MbwayVia = 'ifthenpay' | 'stripe'
+
 export type PaymentStart =
-  /** Pode-se pagar no tablet: mostrar o teclado do número. */
-  | { kind: 'ready'; demo: boolean }
+  /**
+   * Pode-se pagar no tablet. `mbway` é `null` quando só há cartão, e
+   * `card` é `false` quando só há MB WAY.
+   */
+  | { kind: 'ready'; demo: boolean; mbway: MbwayVia | null; card: boolean }
   /** Pagamento no tablet indisponível agora. Segue-se para o balcão. */
   | { kind: 'off'; reason: string }
 
@@ -33,7 +41,7 @@ export type PaymentStart =
 export type PaymentState = 'pending' | 'paid' | 'failed'
 
 export async function startPayment(order: Order): Promise<PaymentStart> {
-  if (config.payments.demo) return { kind: 'ready', demo: true }
+  if (config.payments.demo) return { kind: 'ready', demo: true, mbway: 'stripe', card: true }
   if (!apiEnabled()) return { kind: 'off', reason: 'sem-servidor' }
   // Um posto que o servidor não conhece não tem venda lá dentro para pagar.
   if (!stationIsRegistered()) return { kind: 'off', reason: 'posto-por-registar' }
@@ -43,8 +51,10 @@ export async function startPayment(order: Order): Promise<PaymentStart> {
     // lá que sai o valor a cobrar, não deste pedido. Repetir a criação é
     // seguro — o servidor tem um `ON CONFLICT` à espera.
     await post('/api/orders/create', { order: orderPayload(order) })
-    await post('/api/pay/start', { orderId: order.id })
-    return { kind: 'ready', demo: false }
+    const res = await post<{ mbway?: MbwayVia | null; card?: boolean }>('/api/pay/start', {
+      orderId: order.id,
+    })
+    return { kind: 'ready', demo: false, mbway: res?.mbway ?? null, card: Boolean(res?.card) }
   } catch (e) {
     return { kind: 'off', reason: e instanceof ApiError ? e.code : 'desconhecido' }
   }
@@ -69,7 +79,7 @@ export async function paymentStatus(orderId: string): Promise<PaymentState> {
 /**
  * Mandar o pedido de pagamento à app MB WAY do cliente, pelo número.
  *
- * O número segue para o servidor e daí para a Stripe; não fica guardado
+ * O número segue para o servidor e daí para quem cobra; não fica guardado
  * neste aparelho nem na nossa base.
  */
 export async function payByPhone(
@@ -82,6 +92,22 @@ export async function payByPhone(
     return 'sent'
   } catch (e) {
     return e instanceof ApiError && e.code === 'telemovel' ? 'invalid' : 'error'
+  }
+}
+
+/**
+ * Abrir uma página de pagamento por cartão, para o QR do ecrã.
+ *
+ * Devolve o endereço da página da Stripe, ou `null` se não foi possível — o
+ * ecrã diz isso e deixa pagar com MB WAY ou no balcão.
+ */
+export async function payByCard(orderId: string): Promise<string | null> {
+  if (config.payments.demo) return 'https://checkout.stripe.com/c/pay/demonstracao'
+  try {
+    const res = await post<{ url?: string }>('/api/pay/card', { orderId })
+    return res?.url ?? null
+  } catch {
+    return null
   }
 }
 

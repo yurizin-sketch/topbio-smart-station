@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS orders (
   nif           TEXT,                       -- para a fatura no weoInvoice; null = consumidor final
   invoice_name  TEXT,                       -- nome na fatura, se o cliente o deu
   invoice_email TEXT,                       -- para onde se envia a fatura; null = não pediu
-  pay_id        TEXT,                       -- a ligação de pagamento na Easypay, quando se pagou no tablet
-  pay_url       TEXT
+  pay_id        TEXT,                       -- o pagamento no tablet: pi_/cs_ (Stripe) ou ifthenpay:…
+  pay_url       TEXT                        -- já não se usa (era o QR da Easypay)
 );
 -- Numa base criada antes do pagamento no tablet, estas cinco colunas não
 -- existem e o `CREATE TABLE IF NOT EXISTS` não as acrescenta: corre-se uma vez

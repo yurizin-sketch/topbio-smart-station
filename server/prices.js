@@ -1,13 +1,14 @@
 /**
  * Os preços, do lado do servidor.
  *
- * O valor que se cobra na Easypay sai daqui e não do tablet. O tablet é código
- * público num aparelho que qualquer pessoa toca: se o preço viesse de lá,
- * bastava uma venda forjada a 0,01 € para levar um frasco pago a cêntimos.
+ * O valor que se cobra pela Stripe ou pela ifthenpay sai daqui e não do
+ * tablet. O tablet é código público num aparelho que qualquer pessoa toca: se
+ * o preço viesse de lá, bastava uma venda forjada a 0,01 € para levar um
+ * frasco pago a cêntimos.
  *
  * GERADO por `scripts/build-prices.ts` — não editar à mão. Mudar um preço é
  * mudar no catálogo e voltar a gerar; mexer só aqui deixa o ecrã a mostrar um
- * valor e a Easypay a cobrar outro.
+ * valor e o pagamento a cobrar outro.
  */
 export const PRICES = {
   'maca-peruana': 3000,

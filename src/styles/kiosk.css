@@ -702,6 +702,11 @@ img {
   margin: var(--tne-space-xs) 0 var(--tne-space-md);
 }
 
+/* MB WAY ou cartão: metade do ecrã para cada, que é um polegar a escolher. */
+.pay__via .tabs__btn {
+  flex: 1;
+}
+
 .pay__actions,
 .invoice__choices {
   display: grid;
