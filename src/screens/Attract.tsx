@@ -54,6 +54,16 @@ export function Attract() {
     navigate('/goals')
   }
 
+  /**
+   * Para quem já sabe o que quer: direto à lista dos produtos, sem a pergunta
+   * do objetivo. Num evento é a maior parte da fila — gente que provou ao
+   * balcão e vem buscar o frasco.
+   */
+  const rapida = () => {
+    track({ type: 'session_start' })
+    navigate('/catalog')
+  }
+
   return (
     <Frame dark bare legal={legal.supplement}>
       <div
@@ -119,6 +129,13 @@ export function Attract() {
 
         <div style={{ marginTop: 'var(--tne-space-xl)' }}>
           <Button onClick={start}>Toque para começar →</Button>
+        </div>
+        {/* O ecrã inteiro é o botão de começar; o `stopPropagation` impede o
+            toque de ir aos dois. */}
+        <div style={{ marginTop: 'var(--tne-space-md)' }} onClick={(e) => e.stopPropagation()}>
+          <Button variant="secondary" onClick={rapida}>
+            Já sei o que quero: compra rápida
+          </Button>
         </div>
 
         <span className="attract__hint">Toque em qualquer parte do ecrã</span>

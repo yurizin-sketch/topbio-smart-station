@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
 import { useSession } from '../state/session'
 import { isAvailable } from '../services/catalog'
-import { formatPrice } from '../config'
+import { config, formatPrice } from '../config'
 import { track } from '../services/telemetry'
 import { legal } from '../data/legal'
 
@@ -20,6 +20,7 @@ export function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const { products, product, selectProduct, createOrder } = useSession()
   const [tab, setTab] = useState<TabId>('beneficios')
+  const [quantidade, setQuantidade] = useState(1)
 
   // A ficha completa do site. Falta nos produtos que ainda não têm lá página,
   // e nesses os separadores mostram a versão curta do catálogo.
@@ -39,6 +40,8 @@ export function ProductDetail() {
   // sem isto quem tinha aberto o modo de uso de um caía no modo de uso do
   // seguinte — enquanto a Cláudia lhe estava a apresentar a descrição.
   useEffect(() => setTab('beneficios'), [product?.id])
+  // E a quantidade volta a um: dois frascos de um produto não passam ao outro.
+  useEffect(() => setQuantidade(1), [product?.id])
 
   // Permite abrir /product/xxx diretamente (útil para testes e QR internos).
   useEffect(() => {
@@ -55,7 +58,7 @@ export function ProductDetail() {
    * e quando o pagamento no tablet está desligado é para lá que vai sozinho.
    */
   const comprar = () => {
-    createOrder()
+    createOrder(quantidade)
     track({ type: 'checkout_started', productId: product!.id })
     navigate('/checkout/pay')
   }
@@ -192,8 +195,35 @@ export function ProductDetail() {
 
           <div className="price-row">
             <div>
-              <p className="section-label">Preço</p>
-              <span className="price">{formatPrice(product.priceCents)}</span>
+              <p className="section-label">
+                {quantidade > 1 ? `Total · ${formatPrice(product.priceCents)} cada` : 'Preço'}
+              </p>
+              <span className="price">{formatPrice(product.priceCents * quantidade)}</span>
+            </div>
+            {/* Num evento há quem leve dois ou três. Sem isto, cada frasco era
+                uma compra inteira de novo, com pagamento e tudo. */}
+            <div className="qty" role="group" aria-label="Quantidade">
+              <button
+                type="button"
+                className="qty__btn"
+                onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+                disabled={quantidade <= 1}
+                aria-label="Menos um"
+              >
+                −
+              </button>
+              <span className="qty__value" aria-live="polite">
+                {quantidade}
+              </span>
+              <button
+                type="button"
+                className="qty__btn"
+                onClick={() => setQuantidade((q) => Math.min(config.maxQuantity, q + 1))}
+                disabled={quantidade >= config.maxQuantity}
+                aria-label="Mais um"
+              >
+                +
+              </button>
             </div>
             <Button onClick={comprar} disabled={!isAvailable(product)}>
               Comprar →

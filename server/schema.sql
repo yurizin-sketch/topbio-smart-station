@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS orders (
   ticket_code   TEXT NOT NULL,              -- TB-XXXX, o que o cliente mostra
   product_id    TEXT NOT NULL,
   amount_cents  INTEGER NOT NULL,
+  quantity      INTEGER NOT NULL DEFAULT 1, -- frascos; amount_cents já é o total
   status        TEXT NOT NULL,              -- awaiting_counter|paid|delivered|cancelled|expired
   method        TEXT,                       -- dinheiro|mbway|cartao — null até alguém receber
   created_at    INTEGER NOT NULL,
@@ -65,9 +66,9 @@ CREATE TABLE IF NOT EXISTS orders (
   pay_id        TEXT,                       -- o pagamento no tablet: pi_/cs_ (Stripe) ou ifthenpay:…
   pay_url       TEXT                        -- já não se usa (era o QR da Easypay)
 );
--- Numa base criada antes do pagamento no tablet, estas cinco colunas não
+-- Numa base criada antes do pagamento no tablet, estas colunas não
 -- existem e o `CREATE TABLE IF NOT EXISTS` não as acrescenta: corre-se uma vez
--- o `server/migrations/0002_pagamento.sql`.
+-- o `server/migrations/0002_pagamento.sql` e o `0003_quantidade.sql`.
 
 -- Procurar pelo código é o que o balcão faz o dia todo.
 CREATE INDEX IF NOT EXISTS orders_by_code ON orders (ticket_code);

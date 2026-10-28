@@ -201,11 +201,18 @@ async function login(env, body, ip) {
  * o envio, o `ON CONFLICT` reescreve a mesma linha em vez de criar uma
  * segunda — e nunca deixa um envio repetido baixar um estado já avançado.
  */
+/** O máximo de frascos numa venda do tablet. Mais do que isto é no balcão. */
+const MAX_QTY = 5
+
 async function createOrder(env, body) {
   const o = body?.order
   if (!o?.id || !o?.stationId || !o?.ticketCode || !o?.productId) {
     return { erro: 'pedido-incompleto', status: 400 }
   }
+
+  // Quantos frascos. O tablet deixa escolher até `MAX_QTY`; aqui volta a
+  // apertar-se, porque o pedido vem de um aparelho público.
+  const quantity = Math.min(MAX_QTY, Math.max(1, Number(o.quantity) | 0 || 1))
 
   const station = await env.DB.prepare('SELECT id FROM stations WHERE id = ?1 AND active = 1')
     .bind(o.stationId)
@@ -214,8 +221,8 @@ async function createOrder(env, body) {
 
   await env.DB.prepare(
     `INSERT INTO orders (id, station_id, ticket_code, product_id, amount_cents,
-                         status, method, created_at, expires_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, 'awaiting_counter', NULL, ?6, ?7)
+                         status, method, created_at, expires_at, quantity)
+     VALUES (?1, ?2, ?3, ?4, ?5, 'awaiting_counter', NULL, ?6, ?7, ?8)
      ON CONFLICT(id) DO UPDATE SET expires_at = excluded.expires_at
      WHERE orders.status = 'awaiting_counter'`,
   )
@@ -227,6 +234,7 @@ async function createOrder(env, body) {
       Number(o.amountCents) | 0,
       Number(o.createdAt) || Date.now(),
       Number(o.expiresAt) || Date.now(),
+      quantity,
     )
     .run()
 
@@ -235,7 +243,7 @@ async function createOrder(env, body) {
 
 const ORDER_COLS = `id, station_id AS stationId, ticket_code AS ticketCode,
                     product_id AS productId, amount_cents AS amountCents,
-                    status, method, created_at AS createdAt,
+                    quantity, status, method, created_at AS createdAt,
                     expires_at AS expiresAt, paid_at AS paidAt, closed_at AS closedAt,
                     nif, invoice_name AS invoiceName, invoice_email AS invoiceEmail`
 
@@ -354,6 +362,7 @@ async function settle(env, claims, body) {
   if (order.status === 'cancelled') return { erro: 'cancelado', status: 409 }
 
   const owes = order.status === 'awaiting_counter'
+  const units = Math.max(1, Number(order.quantity) || 1)
   if (owes && !METHODS.has(method)) return { erro: 'metodo', status: 400 }
 
   const now = Date.now()
@@ -376,18 +385,18 @@ async function settle(env, claims, body) {
       env.DB.prepare(
         `INSERT OR IGNORE INTO stock_moves
            (station_id, product_id, delta, reason, order_id, actor, at)
-         VALUES (?1, ?2, -1, 'venda', ?3, ?4, ?5)`,
-      ).bind(order.stationId, order.productId, id, `balcao:${claims.stationId}`, now),
+         VALUES (?1, ?2, ?6, 'venda', ?3, ?4, ?5)`,
+      ).bind(order.stationId, order.productId, id, `balcao:${claims.stationId}`, now, -units),
     )
     // O número só desce onde há um número contado a que descer.
     if (posto?.tracksStock !== 0) {
       writes.push(
         env.DB.prepare(
           `INSERT INTO stock (station_id, product_id, qty, updated_at)
-           VALUES (?1, ?2, -1, ?3)
+           VALUES (?1, ?2, ?4, ?3)
            ON CONFLICT(station_id, product_id)
-           DO UPDATE SET qty = qty - 1, updated_at = ?3`,
-        ).bind(order.stationId, order.productId, now),
+           DO UPDATE SET qty = qty + ?4, updated_at = ?3`,
+        ).bind(order.stationId, order.productId, now, -units),
       )
     }
   }
@@ -503,7 +512,7 @@ async function overview(env, body) {
       .all(),
     env.DB.prepare(
       `SELECT station_id AS stationId, product_id AS productId,
-              COUNT(*) AS vendas, SUM(amount_cents) AS totalCents
+              SUM(quantity) AS vendas, SUM(amount_cents) AS totalCents
        FROM orders WHERE paid_at BETWEEN ?1 AND ?2
        GROUP BY station_id, product_id ORDER BY vendas DESC`,
     )
@@ -692,19 +701,24 @@ async function payReady(env, body) {
   return { ok: true, mbway, card }
 }
 
-/** A venda que se vai pagar, se ainda estiver por pagar e tiver preço. */
+/**
+ * A venda que se vai pagar, se ainda estiver por pagar e tiver preço.
+ * `unit` é o preço de um frasco; `cents` o total, já com a quantidade.
+ */
 async function payableOrder(env, id) {
   const order = await env.DB.prepare(
-    `SELECT id, station_id AS stationId, product_id AS productId, ticket_code AS ticketCode, status
+    `SELECT id, station_id AS stationId, product_id AS productId, ticket_code AS ticketCode, status,
+            quantity
      FROM orders WHERE id = ?1`,
   )
     .bind(id)
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
-  const cents = PRICES[order.productId]
-  if (!cents) return { erro: 'sem-preco', status: 409 }
-  return { order, cents }
+  const unit = PRICES[order.productId]
+  if (!unit) return { erro: 'sem-preco', status: 409 }
+  const units = Math.min(MAX_QTY, Math.max(1, Number(order.quantity) || 1))
+  return { order: { ...order, quantity: units }, unit, cents: unit * units }
 }
 
 /**
@@ -804,16 +818,16 @@ async function payCard(env, body, origin) {
 
   const found = await payableOrder(env, String(body?.orderId ?? ''))
   if (found.erro) return found
-  const { order, cents } = found
+  const { order, unit, cents } = found
 
   const session = {
     mode: 'payment',
     line_items: [
       {
-        quantity: 1,
+        quantity: order.quantity,
         price_data: {
           currency: 'eur',
-          unit_amount: cents,
+          unit_amount: unit,
           product_data: { name: `TopBio ${order.ticketCode}` },
         },
       },
@@ -967,21 +981,23 @@ async function markPaid(env, order, method = 'mbway') {
   if (!res.meta?.changes) return
 
   const actor = String(order.payId ?? '').startsWith(IFTHENPAY) ? 'ifthenpay' : 'stripe'
+  const row = await env.DB.prepare('SELECT quantity FROM orders WHERE id = ?1').bind(order.id).first()
+  const units = Math.max(1, Number(row?.quantity) || 1)
   const writes = [
     env.DB.prepare(
       `INSERT OR IGNORE INTO stock_moves
          (station_id, product_id, delta, reason, order_id, actor, at)
-       VALUES (?1, ?2, -1, 'venda', ?3, ?4, ?5)`,
-    ).bind(order.stationId, order.productId, order.id, actor, now),
+       VALUES (?1, ?2, ?6, 'venda', ?3, ?4, ?5)`,
+    ).bind(order.stationId, order.productId, order.id, actor, now, -units),
   ]
   if (posto?.tracksStock !== 0) {
     writes.push(
       env.DB.prepare(
         `INSERT INTO stock (station_id, product_id, qty, updated_at)
-         VALUES (?1, ?2, -1, ?3)
+         VALUES (?1, ?2, ?4, ?3)
          ON CONFLICT(station_id, product_id)
-         DO UPDATE SET qty = qty - 1, updated_at = ?3`,
-      ).bind(order.stationId, order.productId, now),
+         DO UPDATE SET qty = qty + ?4, updated_at = ?3`,
+      ).bind(order.stationId, order.productId, now, -units),
     )
   }
   await env.DB.batch(writes)

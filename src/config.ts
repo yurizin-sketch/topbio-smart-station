@@ -180,6 +180,12 @@ export const config = {
      */
     waitMs: 10 * 60_000,
     /**
+     * Quanto tempo um pedido MB WAY vive na app do cliente. É a ifthenpay que
+     * o diz (4 minutos); o ecrã conta o mesmo, para não mostrar «à espera»
+     * de um pedido que já morreu.
+     */
+    mbwayMs: 4 * 60_000,
+    /**
      * Ver o ecrã de pagar sem servidor: abrir a estação com `?pagamento=demo`.
      * Mostra o MB WAY e o QR do cartão a fingir, e um botão para simular o
      * pagamento. Não cobra
@@ -190,6 +196,9 @@ export const config = {
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).get('pagamento') === 'demo',
   },
+
+  /** O máximo de frascos numa compra no tablet. O servidor aperta o mesmo. */
+  maxQuantity: 5,
 
   /** Abaixo deste valor mostramos "últimas unidades". */
   lowStockThreshold: 3,
@@ -280,6 +289,14 @@ export const config = {
     cacheEntries: 40,
   },
 } as const
+
+/**
+ * «2 × Maca Peruana», ou só o nome quando é um frasco — que é quase sempre, e
+ * aí o «1 ×» era ruído.
+ */
+export function withQuantity(name: string, quantity = 1): string {
+  return quantity > 1 ? `${quantity} × ${name}` : name
+}
 
 export function formatPrice(cents: number): string {
   return new Intl.NumberFormat('pt-PT', {

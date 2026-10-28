@@ -155,6 +155,11 @@ export interface Order {
   id: string
   stationId: string
   productId: string
+  /**
+   * Quantos frascos. Falta nas vendas guardadas antes de haver quantidade, e
+   * aí é um. `amountCents` é sempre o total, já multiplicado.
+   */
+  quantity?: number
   amountCents: number
   /** Como pagaram. Preenchido pelo balcão ao receber; antes disso, `null`. */
   method: PaymentMethod | null

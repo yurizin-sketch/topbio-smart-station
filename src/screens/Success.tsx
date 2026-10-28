@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Frame, Receipt } from '../components/ui'
 import { useSession } from '../state/session'
 import { legal } from '../data/legal'
-import { config } from '../config'
+import { config, withQuantity } from '../config'
 
 /**
  * Pós-pagamento.
@@ -73,8 +73,10 @@ export function Success() {
         </span>
         <p className="eyebrow">Pagamento confirmado</p>
         <h1 className="display">Está pago!</h1>
-        <p className="subtitle" style={{ maxWidth: '32ch' }}>
-          Mostre este comprovante ao balcão e entregamos-lhe o {product.name}.
+        {/* Num evento ninguém sabe onde é «o balcão» nem que tem de ir lá.
+            Isto é a única coisa que falta fazer, por isso vai grande. */}
+        <p className="finish__next">
+          {`Vá agora ao balcão e mostre o código ${pickupCode}. Entregamos-lhe ${withQuantity(product.name, order.quantity)} na hora.`}
         </p>
 
         <Receipt code={pickupCode} order={order} productName={product.name} state="paid" />

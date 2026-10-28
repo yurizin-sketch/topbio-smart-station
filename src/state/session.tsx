@@ -94,7 +94,7 @@ function reducer(state: SessionState, action: Action): SessionState {
 interface SessionApi extends SessionState {
   selectGoal(goal: GoalId): void
   selectProduct(product: Product): void
-  createOrder(): Order
+  createOrder(quantity?: number): Order
   updateOrder(patch: Partial<Order>): void
   setOrderStatus(status: OrderStatus): void
   reset(): void
@@ -136,7 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       selectProduct: (product) => dispatch({ type: 'product_selected', product }),
 
-      createOrder: () => {
+      createOrder: (quantity = 1) => {
         const product = state.product
         if (!product) throw new Error('createOrder sem produto selecionado')
 
@@ -145,7 +145,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           id: crypto.randomUUID(),
           stationId: getStationId(),
           productId: product.id,
-          amountCents: product.priceCents,
+          quantity,
+          amountCents: product.priceCents * quantity,
           // Nasce a null e assim fica até uma pessoa receber o dinheiro.
           method: null,
           status: 'created',

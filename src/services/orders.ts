@@ -320,6 +320,7 @@ export function orderPayload(o: Order) {
     stationId: o.stationId,
     ticketCode: o.ticketCode ?? pickupCodeFor(o),
     productId: o.productId,
+    quantity: o.quantity ?? 1,
     amountCents: o.amountCents,
     createdAt: o.createdAt,
     expiresAt: o.expiresAt,

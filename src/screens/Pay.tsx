@@ -10,7 +10,7 @@ import {
   startPayment,
   type MbwayVia,
 } from '../services/payments'
-import { config, formatPrice } from '../config'
+import { config, formatPrice, withQuantity } from '../config'
 import { legal } from '../data/legal'
 import type { PaymentMethod } from '../types'
 
@@ -36,7 +36,14 @@ import type { PaymentMethod } from '../types'
  */
 type Fase = 'a-preparar' | 'pronto'
 
-type Telefone = 'a-escrever' | 'a-enviar' | 'enviado' | 'recusado' | 'invalido' | 'erro'
+type Telefone =
+  | 'a-escrever'
+  | 'a-enviar'
+  | 'enviado'
+  | 'expirado'
+  | 'recusado'
+  | 'invalido'
+  | 'erro'
 
 /** A página do cartão: por pedir, a pedir, aberta (com o endereço) ou falhada. */
 type Cartao = { estado: 'nada' } | { estado: 'a-abrir' } | { estado: 'aberto'; url: string } | { estado: 'erro' }
@@ -54,6 +61,7 @@ export function Pay() {
   const pago = useRef(false)
   const [telefone, setTelefone] = useState<Telefone>('a-escrever')
   const [digitos, setDigitos] = useState('')
+  const [enviadoEm, setEnviadoEm] = useState(0)
   const [mbway, setMbway] = useState<MbwayVia | null>(null)
   const [comCartao, setComCartao] = useState(false)
   const [via, setVia] = useState<Via>('mbway')
@@ -104,6 +112,7 @@ export function Pay() {
   }, [order?.id])
 
   // O relógio: quem fica parado à frente do ecrã sem pagar vai para o balcão.
+  // Conta desde o último gesto — quem acabou de pedir outra vez não está parado.
   useEffect(() => {
     if (fase !== 'pronto') return
     const fim = Date.now() + config.payments.waitMs
@@ -114,7 +123,18 @@ export function Pay() {
     }, 1_000)
     return () => window.clearInterval(relogio)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fase])
+  }, [fase, telefone, cartao.estado, via])
+
+  // O pedido MB WAY morre na app ao fim de `mbwayMs`. Aí o ecrã diz que
+  // expirou e deixa enviar outro, com o número ainda escrito.
+  useEffect(() => {
+    if (telefone !== 'enviado') return
+    const t = window.setTimeout(
+      () => setTelefone((agora) => (agora === 'enviado' ? 'expirado' : agora)),
+      config.payments.mbwayMs,
+    )
+    return () => window.clearTimeout(t)
+  }, [telefone, enviadoEm])
 
   // Abrir a página do cartão quando se escolhe esse lado. Uma vez: voltar ao
   // MB WAY e outra vez ao cartão mostra o mesmo QR. Volta a abrir-se só
@@ -132,8 +152,12 @@ export function Pay() {
   //
   // O servidor pergunta pelo último pedido feito, seja MB WAY ou cartão. O
   // método que vale para a fatura é o do lado que está aberto no ecrã.
+  //
+  // Depois de expirar continua-se a perguntar: quem confirmou no último
+  // segundo pagou, e a resposta pode chegar já com o aviso no ecrã.
   const aEsperar =
-    (via === 'mbway' && telefone === 'enviado') || (via === 'cartao' && cartao.estado === 'aberto')
+    (via === 'mbway' && (telefone === 'enviado' || telefone === 'expirado')) ||
+    (via === 'cartao' && cartao.estado === 'aberto')
   useEffect(() => {
     if (!aEsperar || demo || !order) return
     let vivo = true
@@ -165,12 +189,16 @@ export function Pay() {
     if (!numeroOk || telefone === 'a-enviar') return
     setTelefone('a-enviar')
     const res = await payByPhone(order.id, digitos)
+    if (res === 'sent') setEnviadoEm(Date.now())
     setTelefone(res === 'sent' ? 'enviado' : res === 'invalid' ? 'invalido' : 'erro')
   }
 
   const minutos = Math.floor(restante / 60_000)
   const segundos = Math.floor((restante % 60_000) / 1_000)
   const relogio = `${minutos}:${String(segundos).padStart(2, '0')}`
+  // O `restante` muda a cada segundo, e é isso que faz este voltar a contar.
+  const faltaMb = Math.max(0, enviadoEm + config.payments.mbwayMs - Date.now())
+  const relogioMb = `${Math.floor(faltaMb / 60_000)}:${String(Math.floor((faltaMb % 60_000) / 1_000)).padStart(2, '0')}`
 
   return (
     <Frame legal={legal.supplement}>
@@ -178,7 +206,7 @@ export function Pay() {
       <h1 className="title">{via === 'cartao' ? 'Pague com cartão' : 'Pague com MB WAY'}</h1>
 
       <div className="panel pay-phone">
-        <p className="section-label">{product.name}</p>
+        <p className="section-label">{withQuantity(product.name, order.quantity)}</p>
         <p className="pay__total">{formatPrice(order.amountCents)}</p>
 
         {fase === 'a-preparar' && <div className="notice notice--info">A preparar o pagamento…</div>}
@@ -220,6 +248,11 @@ export function Pay() {
                 O pagamento foi recusado ou cancelado na app. Pode tentar outra vez.
               </div>
             )}
+            {telefone === 'expirado' && (
+              <div className="notice notice--warn" role="alert">
+                O pedido expirou na app antes de ser confirmado. Envie outro: é só carregar no botão.
+              </div>
+            )}
             {telefone === 'invalido' && (
               <div className="notice notice--warn" role="alert">
                 Este número não parece certo. Confirme, por favor.
@@ -243,7 +276,7 @@ export function Pay() {
               {`Enviámos o pedido para o ${numeroBonito}. Abra a app MB WAY no telemóvel e confirme o pagamento.`}
             </div>
             <div className="notice notice--info" style={{ marginTop: 'var(--tne-space-md)' }}>
-              {`À espera da confirmação… ${relogio}`}
+              {`Tem ${relogioMb} para confirmar na app.`}
             </div>
           </>
         )}
@@ -286,7 +319,11 @@ export function Pay() {
               disabled={!numeroOk || telefone === 'a-enviar'}
               onClick={() => void enviarPedido()}
             >
-              {telefone === 'a-enviar' ? 'A enviar…' : 'Enviar pedido para a app'}
+              {telefone === 'a-enviar'
+                ? 'A enviar…'
+                : telefone === 'expirado' || telefone === 'recusado'
+                  ? 'Enviar outro pedido'
+                  : 'Enviar pedido para a app'}
             </Button>
           )}
           {fase === 'pronto' && via === 'mbway' && telefone === 'enviado' && (

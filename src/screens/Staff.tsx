@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Frame } from '../components/ui'
-import { formatPrice, getStationId, stationIsRegistered } from '../config'
+import { formatPrice, getStationId, stationIsRegistered, withQuantity } from '../config'
 import { getCatalog } from '../services/catalog'
 import { apiEnabled, loadSession } from '../services/api'
 import {
@@ -406,7 +406,7 @@ export function Staff() {
                     }}
                   >
                     <strong className="staff__row-code">{o.ticketCode ?? pickupCodeFor(o)}</strong>
-                    <span className="staff__row-name">{product?.name ?? o.productId}</span>
+                    <span className="staff__row-name">{withQuantity(product?.name ?? o.productId, o.quantity)}</span>
                     <span className="staff__row-state">
                       {o.status === 'paid' ? 'Pago' : `Falta cobrar ${formatPrice(o.amountCents)}`}
                     </span>
@@ -452,7 +452,9 @@ function OrderCard({
         </span>
       </div>
 
-      <p className="staff__product">{product?.name ?? order.productId}</p>
+      {/* A quantidade à frente do nome: é o que se entrega, e dois frascos
+          entregues como um é stock que deixa de bater certo. */}
+      <p className="staff__product">{withQuantity(product?.name ?? order.productId, order.quantity)}</p>
       <p className="staff__amount">{formatPrice(order.amountCents)}</p>
       {!owes && order.method === 'mbway' && <p className="staff__where">Pago no tablet, por MB WAY</p>}
 

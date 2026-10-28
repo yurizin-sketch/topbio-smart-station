@@ -599,6 +599,44 @@ img {
   line-height: 1;
 }
 
+/* Quantidade: alvos de polegar, como o teclado do número. */
+.qty {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--tne-cream);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.qty__btn {
+  width: 64px;
+  height: 64px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--tne-green);
+  cursor: pointer;
+}
+
+.qty__btn:active {
+  background: var(--tne-gold);
+}
+
+.qty__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.qty__value {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--tne-green);
+}
+
 /* ── Pagamento ───────────────────────────────────────────────────────── */
 
 .pay {
@@ -834,6 +872,14 @@ img {
 
 /* O aviso de fecho tem de se ver de pé, a um braço de distância, mas sem
    gritar: quem está a copiar o código não pode achar que perdeu a compra. */
+.finish__next {
+  max-width: 34ch;
+  margin: var(--tne-space-md) auto var(--tne-space-lg);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .finish__countdown {
   margin-top: var(--tne-space-sm);
   font-size: var(--station-small);
