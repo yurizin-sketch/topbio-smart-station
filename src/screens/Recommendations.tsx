@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
+import { CartSummary } from '../components/CartSummary'
 import { useSession } from '../state/session'
 import { recommendFor } from '../services/catalog'
 import { goalById } from '../data/goals'
@@ -46,6 +47,7 @@ export function Recommendations() {
         </>
       }
     >
+      <CartSummary />
       <p className="eyebrow">Seleção para {goalLabel}</p>
       <h1 className="title">Estas são as nossas sugestões</h1>
       <p className="subtitle">Toque numa opção para ver os detalhes.</p>

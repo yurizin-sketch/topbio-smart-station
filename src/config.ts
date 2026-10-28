@@ -197,8 +197,10 @@ export const config = {
       new URLSearchParams(window.location.search).get('pagamento') === 'demo',
   },
 
-  /** O máximo de frascos numa compra no tablet. O servidor aperta o mesmo. */
+  /** O máximo de frascos de um produto numa compra no tablet. O servidor aperta o mesmo. */
   maxQuantity: 5,
+  /** E o máximo de produtos diferentes no carrinho. */
+  maxCartLines: 10,
 
   /** Abaixo deste valor mostramos "últimas unidades". */
   lowStockThreshold: 3,
@@ -296,6 +298,24 @@ export const config = {
  */
 export function withQuantity(name: string, quantity = 1): string {
   return quantity > 1 ? `${quantity} × ${name}` : name
+}
+
+/**
+ * O que uma venda leva, numa linha: «2 × Maca Peruana, Top Hair».
+ *
+ * `nameOf` dá o nome de um produto quando a linha não o traz (as vendas que
+ * o balcão recebe do servidor). Uma venda sem linhas é de antes do carrinho.
+ */
+export function describeOrder(
+  order: { productId: string; quantity?: number; items?: { productId: string; quantity: number; name?: string }[] },
+  nameOf: (productId: string) => string | undefined = () => undefined,
+): string {
+  const items = order.items?.length
+    ? order.items
+    : [{ productId: order.productId, quantity: order.quantity ?? 1, name: undefined }]
+  return items
+    .map((i) => withQuantity(i.name ?? nameOf(i.productId) ?? i.productId, i.quantity))
+    .join(', ')
 }
 
 export function formatPrice(cents: number): string {

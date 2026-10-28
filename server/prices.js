@@ -34,3 +34,29 @@ export const PRICES = {
   'top-shot': 4000,
   'top-hair': 3500,
 }
+
+/** O nome de cada produto, para a página de pagamento da Stripe. */
+export const NAMES = {
+  'maca-peruana': "Maca Peruana",
+  'top-brain': "Top Brain",
+  'topcalm': "Top Calm",
+  'magnetop': "Magnetop",
+  'imune': "Imune+",
+  'vitamina-c': "Vitamina C",
+  'vitamina-d3-k2': "Vitamina D3+Z+K2",
+  'colageno-verisol': "Colagénio Verisol®",
+  'acido-hialuronico': "Ácido Hialurónico",
+  'articulacao': "Articulação+",
+  'termogenico': "Top Termo",
+  'vinagre-de-maca': "Vinagre de Maçã",
+  'top-omega3': "Top Ómega 3",
+  'topcoenzimaq10': "Top Coenzima Q10",
+  'top-woman-40': "Top Woman 40+",
+  'oleo-de-coco': "Óleo de Coco",
+  'feno-grego': "Feno-Grego",
+  'topbio-lip': "TopBio Lip",
+  'top-shape': "Top Shape",
+  'top-max': "Top Max",
+  'top-shot': "Top Shot Matinal",
+  'top-hair': "Top Hair",
+}

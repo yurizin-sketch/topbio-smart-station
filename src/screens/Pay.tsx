@@ -10,7 +10,7 @@ import {
   startPayment,
   type MbwayVia,
 } from '../services/payments'
-import { config, formatPrice, withQuantity } from '../config'
+import { config, describeOrder, formatPrice } from '../config'
 import { legal } from '../data/legal'
 import type { PaymentMethod } from '../types'
 
@@ -206,7 +206,7 @@ export function Pay() {
       <h1 className="title">{via === 'cartao' ? 'Pague com cartão' : 'Pague com MB WAY'}</h1>
 
       <div className="panel pay-phone">
-        <p className="section-label">{withQuantity(product.name, order.quantity)}</p>
+        <p className="section-label">{describeOrder(order)}</p>
         <p className="pay__total">{formatPrice(order.amountCents)}</p>
 
         {fase === 'a-preparar' && <div className="notice notice--info">A preparar o pagamento…</div>}

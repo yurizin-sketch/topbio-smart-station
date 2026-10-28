@@ -9,10 +9,9 @@
 import fs from 'node:fs'
 import { catalogSeed } from '../src/data/catalog.seed'
 
-const linhas = catalogSeed
-  .filter((p) => p.active && p.priceCents > 0)
-  .map((p) => `  '${p.id}': ${p.priceCents},`)
-  .join('\n')
+const aVenda = catalogSeed.filter((p) => p.active && p.priceCents > 0)
+const linhas = aVenda.map((p) => `  '${p.id}': ${p.priceCents},`).join('\n')
+const nomes = aVenda.map((p) => `  '${p.id}': ${JSON.stringify(p.name)},`).join('\n')
 
 const out = `/**
  * Os preços, do lado do servidor.
@@ -28,6 +27,11 @@ const out = `/**
  */
 export const PRICES = {
 ${linhas}
+}
+
+/** O nome de cada produto, para a página de pagamento da Stripe. */
+export const NAMES = {
+${nomes}
 }
 `
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Frame } from '../components/ui'
-import { formatPrice, getStationId, stationIsRegistered, withQuantity } from '../config'
+import { describeOrder, formatPrice, getStationId, stationIsRegistered } from '../config'
 import { getCatalog } from '../services/catalog'
 import { apiEnabled, loadSession } from '../services/api'
 import {
@@ -129,6 +129,7 @@ export function Staff() {
   }, [unlocked, expired])
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
+  const nome = (id: string) => productById.get(id)?.name
 
   // O pedido escolhido tem de acompanhar o livro: se outro tablet o entregou
   // entretanto, o cartão em cima tem de deixar de oferecer o botão de entregar.
@@ -379,7 +380,7 @@ export function Staff() {
       {current && (
         <OrderCard
           order={current}
-          product={productById.get(current.productId)}
+          what={describeOrder(current, nome)}
           busy={busy}
           onDeliver={(method) => deliver(current, method)}
           onCancel={() => cancel(current)}
@@ -393,7 +394,6 @@ export function Staff() {
         ) : (
           <ul className="staff__list">
             {open.map((o) => {
-              const product = productById.get(o.productId)
               return (
                 <li key={o.id}>
                   <button
@@ -406,7 +406,7 @@ export function Staff() {
                     }}
                   >
                     <strong className="staff__row-code">{o.ticketCode ?? pickupCodeFor(o)}</strong>
-                    <span className="staff__row-name">{withQuantity(product?.name ?? o.productId, o.quantity)}</span>
+                    <span className="staff__row-name">{describeOrder(o, nome)}</span>
                     <span className="staff__row-state">
                       {o.status === 'paid' ? 'Pago' : `Falta cobrar ${formatPrice(o.amountCents)}`}
                     </span>
@@ -425,13 +425,14 @@ export function Staff() {
 
 function OrderCard({
   order,
-  product,
+  what,
   busy,
   onDeliver,
   onCancel,
 }: {
   order: StoredOrder
-  product: Product | undefined
+  /** O que entregar, por extenso: «2 × Maca Peruana, Top Hair». */
+  what: string
   busy: boolean
   onDeliver: (method: PaymentMethod | null) => void
   onCancel: () => void
@@ -454,7 +455,7 @@ function OrderCard({
 
       {/* A quantidade à frente do nome: é o que se entrega, e dois frascos
           entregues como um é stock que deixa de bater certo. */}
-      <p className="staff__product">{withQuantity(product?.name ?? order.productId, order.quantity)}</p>
+      <p className="staff__product">{what}</p>
       <p className="staff__amount">{formatPrice(order.amountCents)}</p>
       {!owes && order.method === 'mbway' && <p className="staff__where">Pago no tablet, por MB WAY</p>}
 

@@ -22,7 +22,7 @@
 const SESSION_MS = 12 * 60 * 60 * 1000 // um dia de trabalho
 
 const REASONS = new Set(['venda', 'entrada', 'contagem', 'devolucao', 'correcao'])
-import { PRICES } from './prices.js'
+import { NAMES, PRICES } from './prices.js'
 
 const METHODS = new Set(['dinheiro', 'mbway', 'cartao'])
 
@@ -203,16 +203,20 @@ async function login(env, body, ip) {
  */
 /** O máximo de frascos numa venda do tablet. Mais do que isto é no balcão. */
 const MAX_QTY = 5
+/** E o máximo de produtos diferentes num carrinho. */
+const MAX_LINES = 10
 
 async function createOrder(env, body) {
   const o = body?.order
-  if (!o?.id || !o?.stationId || !o?.ticketCode || !o?.productId) {
+  if (!o?.id || !o?.stationId || !o?.ticketCode || !(o?.productId || o?.items?.length)) {
     return { erro: 'pedido-incompleto', status: 400 }
   }
 
-  // Quantos frascos. O tablet deixa escolher até `MAX_QTY`; aqui volta a
-  // apertar-se, porque o pedido vem de um aparelho público.
-  const quantity = Math.min(MAX_QTY, Math.max(1, Number(o.quantity) | 0 || 1))
+  // O carrinho. Uma venda antiga (ou de um tablet por atualizar) traz só um
+  // produto e a quantidade dele; uma nova traz as linhas todas.
+  const lines = cleanLines(o.items ?? [{ productId: o.productId, quantity: o.quantity }])
+  if (!lines.length) return { erro: 'pedido-incompleto', status: 400 }
+  const quantity = lines.reduce((n, l) => n + l.quantity, 0)
 
   const station = await env.DB.prepare('SELECT id FROM stations WHERE id = ?1 AND active = 1')
     .bind(o.stationId)
@@ -230,7 +234,9 @@ async function createOrder(env, body) {
       String(o.id),
       String(o.stationId),
       String(o.ticketCode),
-      String(o.productId),
+      // O primeiro produto fica na própria venda, para o que ainda lê só
+      // esta coluna. As linhas todas vão para `order_items`.
+      lines[0].productId,
       Number(o.amountCents) | 0,
       Number(o.createdAt) || Date.now(),
       Number(o.expiresAt) || Date.now(),
@@ -238,7 +244,56 @@ async function createOrder(env, body) {
     )
     .run()
 
+  // As linhas só se escrevem numa venda ainda por pagar: um tablet a repetir
+  // o envio de uma venda já paga não lhe muda o que se pagou.
+  const still = await env.DB.prepare(`SELECT status FROM orders WHERE id = ?1`).bind(String(o.id)).first()
+  if (still?.status === 'awaiting_counter') {
+    await env.DB.batch([
+      env.DB.prepare(`DELETE FROM order_items WHERE order_id = ?1`).bind(String(o.id)),
+      ...lines.map((l) =>
+        env.DB.prepare(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_cents) VALUES (?1, ?2, ?3, ?4)`,
+        ).bind(String(o.id), l.productId, l.quantity, PRICES[l.productId] ?? 0),
+      ),
+    ])
+  }
+
   return { ok: true }
+}
+
+/**
+ * As linhas de um carrinho que veio do tablet, apertadas: produtos repetidos
+ * juntam-se, cada linha fica entre 1 e `MAX_QTY` frascos, e no máximo
+ * `MAX_LINES` produtos diferentes.
+ */
+function cleanLines(raw) {
+  const byProduct = new Map()
+  for (const l of Array.isArray(raw) ? raw : []) {
+    const productId = String(l?.productId ?? '')
+    if (!productId) continue
+    const q = Math.max(1, Number(l?.quantity) | 0 || 1)
+    byProduct.set(productId, Math.min(MAX_QTY, (byProduct.get(productId) ?? 0) + q))
+  }
+  return [...byProduct].slice(0, MAX_LINES).map(([productId, quantity]) => ({ productId, quantity }))
+}
+
+/**
+ * O que uma venda leva: as linhas do `order_items`, ou — numa venda de antes
+ * do carrinho, que não as tem — o produto e a quantidade da própria venda.
+ */
+async function orderLines(env, order) {
+  const { results } = await env.DB.prepare(
+    `SELECT product_id AS productId, quantity FROM order_items WHERE order_id = ?1 ORDER BY rowid`,
+  )
+    .bind(order.id)
+    .all()
+  if (results?.length) return results
+  return [{ productId: order.productId, quantity: Math.max(1, Number(order.quantity) || 1) }]
+}
+
+/** Junta as linhas a cada venda, para o balcão saber o que entregar. */
+async function withItems(env, orders) {
+  return Promise.all(orders.map(async (o) => ({ ...o, items: await orderLines(env, o) })))
 }
 
 const ORDER_COLS = `id, station_id AS stationId, ticket_code AS ticketCode,
@@ -306,7 +361,7 @@ async function findOrder(env, claims, body) {
     order = await find()
   }
 
-  return order ? { ok: true, order } : { erro: 'nao-encontrado', status: 404 }
+  return order ? { ok: true, order: (await withItems(env, [order]))[0] } : { erro: 'nao-encontrado', status: 404 }
 }
 
 /** A fila do balcão: o que está por entregar neste posto. */
@@ -325,7 +380,7 @@ async function pending(env, claims) {
   )
     .bind(claims.stationId)
     .all()
-  return { ok: true, orders: results ?? [] }
+  return { ok: true, orders: await withItems(env, results ?? []) }
 }
 
 /**
@@ -358,11 +413,10 @@ async function settle(env, claims, body) {
       .first(),
   ])
   if (!order) return { erro: 'nao-encontrado', status: 404 }
-  if (order.status === 'delivered') return { ok: true, order, ja: true }
+  if (order.status === 'delivered') return { ok: true, order: (await withItems(env, [order]))[0], ja: true }
   if (order.status === 'cancelled') return { erro: 'cancelado', status: 409 }
 
   const owes = order.status === 'awaiting_counter'
-  const units = Math.max(1, Number(order.quantity) || 1)
   if (owes && !METHODS.has(method)) return { erro: 'metodo', status: 400 }
 
   const now = Date.now()
@@ -376,29 +430,16 @@ async function settle(env, claims, body) {
   ]
 
   // Só desconta quem ainda devia. Um pedido já pago noutro momento já
-  // descontou nessa altura, e o índice único em `order_id` é a rede que
-  // apanha o resto: dois toques no botão, duas tentativas do tablet.
+  // descontou nessa altura, e o índice único em `(order_id, product_id)` é a
+  // rede que apanha o resto: dois toques no botão, duas tentativas do tablet.
+  //
+  // A saída escreve-se sempre, mesmo no armazém: é o registo de o que saiu
+  // pela porta. O número só desce onde há um número contado a que descer.
   if (owes) {
-    // A saída escreve-se sempre, mesmo no armazém: é o registo de o que saiu
-    // pela porta, e é dele que se tira a conta no dia em que alguém contar.
+    const lines = await orderLines(env, order)
     writes.push(
-      env.DB.prepare(
-        `INSERT OR IGNORE INTO stock_moves
-           (station_id, product_id, delta, reason, order_id, actor, at)
-         VALUES (?1, ?2, ?6, 'venda', ?3, ?4, ?5)`,
-      ).bind(order.stationId, order.productId, id, `balcao:${claims.stationId}`, now, -units),
+      ...stockOut(env, order.stationId, id, lines, `balcao:${claims.stationId}`, now, posto?.tracksStock !== 0),
     )
-    // O número só desce onde há um número contado a que descer.
-    if (posto?.tracksStock !== 0) {
-      writes.push(
-        env.DB.prepare(
-          `INSERT INTO stock (station_id, product_id, qty, updated_at)
-           VALUES (?1, ?2, ?4, ?3)
-           ON CONFLICT(station_id, product_id)
-           DO UPDATE SET qty = qty + ?4, updated_at = ?3`,
-        ).bind(order.stationId, order.productId, now, -units),
-      )
-    }
   }
 
   await env.DB.batch(writes)
@@ -406,7 +447,7 @@ async function settle(env, claims, body) {
   const fresh = await env.DB.prepare(`SELECT ${ORDER_COLS} FROM orders WHERE id = ?1`)
     .bind(id)
     .first()
-  return { ok: true, order: fresh }
+  return { ok: true, order: (await withItems(env, [fresh]))[0] }
 }
 
 /** O cliente desistiu, ou o código expirou sem ninguém aparecer. */
@@ -511,10 +552,15 @@ async function overview(env, body) {
       .bind(from, to)
       .all(),
     env.DB.prepare(
-      `SELECT station_id AS stationId, product_id AS productId,
-              SUM(quantity) AS vendas, SUM(amount_cents) AS totalCents
-       FROM orders WHERE paid_at BETWEEN ?1 AND ?2
-       GROUP BY station_id, product_id ORDER BY vendas DESC`,
+      // Por produto, a partir das linhas do carrinho; uma venda de antes do
+      // carrinho não tem linhas e conta pela própria venda.
+      `SELECT o.station_id AS stationId,
+              COALESCE(i.product_id, o.product_id) AS productId,
+              SUM(COALESCE(i.quantity, o.quantity)) AS vendas,
+              SUM(COALESCE(i.quantity * i.unit_cents, o.amount_cents)) AS totalCents
+       FROM orders o LEFT JOIN order_items i ON i.order_id = o.id
+       WHERE o.paid_at BETWEEN ?1 AND ?2
+       GROUP BY 1, 2 ORDER BY vendas DESC`,
     )
       .bind(from, to)
       .all(),
@@ -692,18 +738,19 @@ async function payReady(env, body) {
   const mbway = ifthenpay(env) ? 'ifthenpay' : stripe(env) ? 'stripe' : null
   const card = Boolean(stripe(env))
   if (!mbway && !card) return { erro: 'pagamento-desligado', status: 503 }
-  const order = await env.DB.prepare(`SELECT status, product_id AS productId FROM orders WHERE id = ?1`)
+  const order = await env.DB.prepare(`SELECT id, status, product_id AS productId, quantity FROM orders WHERE id = ?1`)
     .bind(String(body?.orderId ?? ''))
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
-  if (!PRICES[order.productId]) return { erro: 'sem-preco', status: 409 }
+  const lines = await orderLines(env, order)
+  if (lines.some((l) => !PRICES[l.productId])) return { erro: 'sem-preco', status: 409 }
   return { ok: true, mbway, card }
 }
 
 /**
- * A venda que se vai pagar, se ainda estiver por pagar e tiver preço.
- * `unit` é o preço de um frasco; `cents` o total, já com a quantidade.
+ * A venda que se vai pagar, se ainda estiver por pagar e tudo tiver preço.
+ * `lines` leva o preço de um frasco de cada produto; `cents` é o total.
  */
 async function payableOrder(env, id) {
   const order = await env.DB.prepare(
@@ -715,10 +762,10 @@ async function payableOrder(env, id) {
     .first()
   if (!order) return { erro: 'nao-encontrado', status: 404 }
   if (order.status !== 'awaiting_counter') return { erro: 'estado', status: 409 }
-  const unit = PRICES[order.productId]
-  if (!unit) return { erro: 'sem-preco', status: 409 }
-  const units = Math.min(MAX_QTY, Math.max(1, Number(order.quantity) || 1))
-  return { order: { ...order, quantity: units }, unit, cents: unit * units }
+  const lines = (await orderLines(env, order)).map((l) => ({ ...l, unit: PRICES[l.productId] }))
+  if (lines.some((l) => !l.unit)) return { erro: 'sem-preco', status: 409 }
+  const cents = lines.reduce((n, l) => n + l.unit * l.quantity, 0)
+  return { order, lines, cents }
 }
 
 /**
@@ -818,20 +865,20 @@ async function payCard(env, body, origin) {
 
   const found = await payableOrder(env, String(body?.orderId ?? ''))
   if (found.erro) return found
-  const { order, unit, cents } = found
+  const { order, lines, cents } = found
 
   const session = {
     mode: 'payment',
-    line_items: [
-      {
-        quantity: order.quantity,
-        price_data: {
-          currency: 'eur',
-          unit_amount: unit,
-          product_data: { name: `TopBio ${order.ticketCode}` },
-        },
+    // Uma linha por produto, com o nome: é o que o cliente confere no
+    // telemóvel antes de pagar.
+    line_items: lines.map((l) => ({
+      quantity: l.quantity,
+      price_data: {
+        currency: 'eur',
+        unit_amount: l.unit,
+        product_data: { name: NAMES[l.productId] ?? `TopBio ${order.ticketCode}` },
       },
-    ],
+    })),
     // Só cartão: o Apple Pay e o Google Pay vêm com ele, no telemóvel que os
     // tiver. Os métodos com pagamento diferido (referência Multibanco, por
     // exemplo) não servem a quem está de pé à frente do balcão.
@@ -964,6 +1011,37 @@ async function payStatus(env, body) {
   return { ok: true, state: found.state }
 }
 
+/**
+ * O que sai do stock por uma venda: uma saída por produto, e o número da
+ * prateleira a descer onde há um número contado.
+ *
+ * O índice único em `stock_moves (order_id, product_id)` impede a mesma linha
+ * de sair duas vezes.
+ */
+function stockOut(env, stationId, orderId, lines, actor, now, counted) {
+  const writes = []
+  for (const l of lines) {
+    writes.push(
+      env.DB.prepare(
+        `INSERT OR IGNORE INTO stock_moves
+           (station_id, product_id, delta, reason, order_id, actor, at)
+         VALUES (?1, ?2, ?6, 'venda', ?3, ?4, ?5)`,
+      ).bind(stationId, l.productId, orderId, actor, now, -l.quantity),
+    )
+    if (counted) {
+      writes.push(
+        env.DB.prepare(
+          `INSERT INTO stock (station_id, product_id, qty, updated_at)
+           VALUES (?1, ?2, ?4, ?3)
+           ON CONFLICT(station_id, product_id)
+           DO UPDATE SET qty = qty + ?4, updated_at = ?3`,
+        ).bind(stationId, l.productId, now, -l.quantity),
+      )
+    }
+  }
+  return writes
+}
+
 async function markPaid(env, order, method = 'mbway') {
   const now = Date.now()
   const posto = await env.DB.prepare('SELECT tracks_stock AS tracksStock FROM stations WHERE id = ?1')
@@ -982,25 +1060,8 @@ async function markPaid(env, order, method = 'mbway') {
 
   const actor = String(order.payId ?? '').startsWith(IFTHENPAY) ? 'ifthenpay' : 'stripe'
   const row = await env.DB.prepare('SELECT quantity FROM orders WHERE id = ?1').bind(order.id).first()
-  const units = Math.max(1, Number(row?.quantity) || 1)
-  const writes = [
-    env.DB.prepare(
-      `INSERT OR IGNORE INTO stock_moves
-         (station_id, product_id, delta, reason, order_id, actor, at)
-       VALUES (?1, ?2, ?6, 'venda', ?3, ?4, ?5)`,
-    ).bind(order.stationId, order.productId, order.id, actor, now, -units),
-  ]
-  if (posto?.tracksStock !== 0) {
-    writes.push(
-      env.DB.prepare(
-        `INSERT INTO stock (station_id, product_id, qty, updated_at)
-         VALUES (?1, ?2, ?4, ?3)
-         ON CONFLICT(station_id, product_id)
-         DO UPDATE SET qty = qty + ?4, updated_at = ?3`,
-      ).bind(order.stationId, order.productId, now, -units),
-    )
-  }
-  await env.DB.batch(writes)
+  const lines = await orderLines(env, { ...order, quantity: row?.quantity })
+  await env.DB.batch(stockOut(env, order.stationId, order.id, lines, actor, now, posto?.tracksStock !== 0))
 }
 
 /**

@@ -7,6 +7,7 @@ import { ProductDetail } from './screens/Product'
 import { Ticket } from './screens/Ticket'
 import { Invoice } from './screens/Invoice'
 import { Pay } from './screens/Pay'
+import { Cart } from './screens/Cart'
 import { Success } from './screens/Success'
 import { Staff } from './screens/Staff'
 import { Matriz } from './screens/Matriz'
@@ -28,6 +29,7 @@ export function App() {
             tablet (sem a chave da Stripe no servidor), o QR segue sozinho
             para a ficha do balcão, e paga-se lá como sempre. */}
         <Route path="/checkout" element={<Navigate to="/checkout/pay" replace />} />
+        <Route path="/checkout/carrinho" element={<Cart />} />
         <Route path="/checkout/pay" element={<Pay />} />
         <Route path="/checkout/fatura" element={<Invoice />} />
         <Route path="/checkout/ticket" element={<Ticket />} />

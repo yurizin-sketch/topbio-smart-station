@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import QRCode from 'qrcode'
 import type { Order, Product } from '../types'
 import { isAvailable } from '../services/catalog'
-import { config, formatPrice, withQuantity } from '../config'
+import { config, formatPrice } from '../config'
 import { asset } from '../assets'
 
 /* ── Moldura ─────────────────────────────────────────────────────────── */
@@ -226,8 +226,8 @@ export function Receipt({
 
       <dl className="receipt__lines">
         <div>
-          <dt>Produto</dt>
-          <dd>{withQuantity(productName, order.quantity)}</dd>
+          <dt>{productName.includes(', ') ? 'Produtos' : 'Produto'}</dt>
+          <dd>{productName}</dd>
         </div>
         <div>
           <dt>Valor</dt>

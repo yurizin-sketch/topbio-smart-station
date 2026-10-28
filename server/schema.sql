@@ -68,7 +68,18 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 -- Numa base criada antes do pagamento no tablet, estas colunas não
 -- existem e o `CREATE TABLE IF NOT EXISTS` não as acrescenta: corre-se uma vez
--- o `server/migrations/0002_pagamento.sql` e o `0003_quantidade.sql`.
+-- o `server/migrations/0002_pagamento.sql`, o `0003_quantidade.sql` e o
+-- `0004_carrinho.sql`.
+
+-- As linhas de uma venda: um produto e quantos frascos. Uma venda de antes do
+-- carrinho não tem linhas e vale pelo `product_id` e `quantity` dela.
+CREATE TABLE IF NOT EXISTS order_items (
+  order_id    TEXT NOT NULL,
+  product_id  TEXT NOT NULL,
+  quantity    INTEGER NOT NULL,
+  unit_cents  INTEGER NOT NULL,           -- preço de um frasco no momento da venda
+  PRIMARY KEY (order_id, product_id)
+);
 
 -- Procurar pelo código é o que o balcão faz o dia todo.
 CREATE INDEX IF NOT EXISTS orders_by_code ON orders (ticket_code);
@@ -115,9 +126,9 @@ CREATE TABLE IF NOT EXISTS stock_moves (
 
 CREATE INDEX IF NOT EXISTS moves_by_station ON stock_moves (station_id, at);
 
--- Uma venda desconta uma vez e só uma. Se o balcão carregar duas vezes no
--- botão, ou a resposta se perder e o tablet repetir, esta regra é que impede
--- o stock de descer a dobrar — o segundo `INSERT` bate contra ela e o
--- `api.js` segue em frente sem descontar de novo.
-CREATE UNIQUE INDEX IF NOT EXISTS moves_one_per_sale
-  ON stock_moves (order_id) WHERE order_id IS NOT NULL;
+-- Cada produto de uma venda desconta uma vez e só uma. Se o balcão carregar
+-- duas vezes no botão, ou a resposta se perder e o tablet repetir, esta regra
+-- é que impede o stock de descer a dobrar — o segundo `INSERT` bate contra
+-- ela e o `api.js` segue em frente sem descontar de novo.
+CREATE UNIQUE INDEX IF NOT EXISTS moves_one_per_sale_line
+  ON stock_moves (order_id, product_id) WHERE order_id IS NOT NULL;

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Button, Frame } from '../components/ui'
+import { CartSummary } from '../components/CartSummary'
 import { goals } from '../data/goals'
 import { useSession } from '../state/session'
 import { track } from '../services/telemetry'
@@ -25,6 +26,7 @@ export function Goals() {
         </Button>
       }
     >
+      <CartSummary />
       <p className="eyebrow">Vamos encontrar a melhor opção</p>
       <h1 className="title">O que procura hoje?</h1>
       <p className="subtitle">Escolha o objetivo que mais combina com este momento.</p>

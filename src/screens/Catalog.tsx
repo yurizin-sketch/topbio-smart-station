@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
+import { CartSummary } from '../components/CartSummary'
 import { useSession } from '../state/session'
 import { formatPrice } from '../config'
 import { track } from '../services/telemetry'
@@ -34,6 +35,7 @@ export function Catalog() {
         </>
       }
     >
+      <CartSummary />
       <p className="eyebrow">Gama completa</p>
       <h1 className="title">Todos os produtos</h1>
       <p className="subtitle">

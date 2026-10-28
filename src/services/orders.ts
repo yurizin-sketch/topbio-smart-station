@@ -321,6 +321,7 @@ export function orderPayload(o: Order) {
     ticketCode: o.ticketCode ?? pickupCodeFor(o),
     productId: o.productId,
     quantity: o.quantity ?? 1,
+    items: o.items?.map((i) => ({ productId: i.productId, quantity: i.quantity })),
     amountCents: o.amountCents,
     createdAt: o.createdAt,
     expiresAt: o.expiresAt,

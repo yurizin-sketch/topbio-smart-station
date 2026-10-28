@@ -308,10 +308,12 @@ paga-se lá como sempre — ligar é pôr a chave.
 ```sh
 npx wrangler d1 execute topbio --remote --file=migrations/0002_pagamento.sql
 npx wrangler d1 execute topbio --remote --file=migrations/0003_quantidade.sql
+npx wrangler d1 execute topbio --remote --file=migrations/0004_carrinho.sql
 ```
 
-O `0003` (a quantidade de frascos) corre-se **antes** de publicar o worker que
-a usa: sem a coluna, o servidor novo não consegue gravar vendas.
+O `0003` (a quantidade de frascos) e o `0004` (o carrinho) correm-se **antes**
+de publicar o worker que os usa: sem eles, o servidor novo não consegue gravar
+vendas.
 
 **2. A Stripe.** No Dashboard da Stripe, em Definições → Métodos de
 pagamento, ligar o **MB WAY** (só faz falta enquanto o MB WAY for por lá), o

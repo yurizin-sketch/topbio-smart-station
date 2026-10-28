@@ -151,6 +151,18 @@ export type OrderStatus =
   | 'expired'
   | 'cancelled'
 
+/**
+ * Uma linha do carrinho: um produto e quantos frascos dele. O nome e o preço
+ * vêm do tablet, para o ecrã; no balcão, que recebe as linhas do servidor, só
+ * há o id e a quantidade, e o nome procura-se no catálogo.
+ */
+export interface OrderItem {
+  productId: string
+  quantity: number
+  name?: string
+  unitCents?: number
+}
+
 export interface Order {
   id: string
   stationId: string
@@ -160,6 +172,12 @@ export interface Order {
    * aí é um. `amountCents` é sempre o total, já multiplicado.
    */
   quantity?: number
+  /**
+   * As linhas do carrinho. Uma venda de antes do carrinho não as tem, e vale
+   * pelo `productId` e `quantity`. Numa nova, `productId` é o da primeira
+   * linha e `quantity` o total de frascos.
+   */
+  items?: OrderItem[]
   amountCents: number
   /** Como pagaram. Preenchido pelo balcão ao receber; antes disso, `null`. */
   method: PaymentMethod | null

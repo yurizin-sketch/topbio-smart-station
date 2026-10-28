@@ -4,6 +4,7 @@ import { Button, Frame, Receipt } from '../components/ui'
 import { useSession } from '../state/session'
 import { issueTicket } from '../services/tickets'
 import { legal } from '../data/legal'
+import { describeOrder } from '../config'
 import type { Ticket as TicketData } from '../services/tickets'
 
 /**
@@ -70,7 +71,7 @@ export function Ticket() {
             <Receipt
               code={intent.code}
               order={order}
-              productName={product.name}
+              productName={describeOrder(order)}
               state="to_pay"
             />
           ) : (

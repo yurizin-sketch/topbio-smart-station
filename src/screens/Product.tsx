@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AvailabilityBadge, Button, Frame, ProductImage } from '../components/ui'
+import { CartSummary } from '../components/CartSummary'
 import { useSession } from '../state/session'
 import { isAvailable } from '../services/catalog'
 import { config, formatPrice } from '../config'
@@ -18,7 +19,7 @@ const TABS: ReadonlyArray<{ id: TabId; label: string }> = [
 export function ProductDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { products, product, selectProduct, createOrder } = useSession()
+  const { products, product, cart, selectProduct, addToCart, createOrder } = useSession()
   const [tab, setTab] = useState<TabId>('beneficios')
   const [quantidade, setQuantidade] = useState(1)
 
@@ -52,16 +53,34 @@ export function ProductDetail() {
   }, [id, product, products, selectProduct, navigate])
 
   /**
-   * Comprar vai direto ao QR do MB WAY. A fatura pergunta-se depois de pago.
+   * Comprar vai direto ao pagamento. A fatura pergunta-se depois de pago.
    *
-   * Não se pergunta «MB WAY ou balcão?»: o QR já tem a saída para o balcão,
-   * e quando o pagamento no tablet está desligado é para lá que vai sozinho.
+   * Não se pergunta «MB WAY ou balcão?»: o ecrã de pagar já tem a saída para
+   * o balcão, e quando o pagamento no tablet está desligado é para lá que vai
+   * sozinho.
+   *
+   * Com outros produtos já no carrinho, junta-se este e mostra-se o carrinho
+   * antes de pagar: quem vai pagar três coisas quer vê-las juntas primeiro. Só
+   * um produto, que é o caso de quase toda a gente, paga já, sem passo a mais.
    */
   const comprar = () => {
-    createOrder(quantidade)
     track({ type: 'checkout_started', productId: product!.id })
+    if (cart.length) {
+      addToCart(product!, quantidade)
+      navigate('/checkout/carrinho')
+      return
+    }
+    createOrder([{ product: product!, quantity: quantidade }])
     navigate('/checkout/pay')
   }
+
+  /** Guardar este no carrinho e ir escolher outro. */
+  const juntarOutro = () => {
+    addToCart(product!, quantidade)
+    navigate('/catalog')
+  }
+
+  const noCarrinho = cart.find((l) => l.product.id === product?.id)?.quantity ?? 0
 
   if (!product) return null
 
@@ -83,6 +102,7 @@ export function ProductDetail() {
         </>
       }
     >
+      <CartSummary />
       <p className="eyebrow">Conheça a sugestão</p>
       <h1 className="title">{product.name}</h1>
 
@@ -226,8 +246,16 @@ export function ProductDetail() {
               </button>
             </div>
             <Button onClick={comprar} disabled={!isAvailable(product)}>
-              Comprar →
+              {cart.length ? 'Juntar e ver o carrinho →' : 'Comprar →'}
             </Button>
+          </div>
+          <div className="product__more">
+            <Button variant="secondary" onClick={juntarOutro} disabled={!isAvailable(product)}>
+              + Juntar ao carrinho e escolher outro produto
+            </Button>
+            {noCarrinho > 0 && (
+              <p className="product__in-cart">{`Já tem ${noCarrinho} no carrinho.`}</p>
+            )}
           </div>
 
           <p
