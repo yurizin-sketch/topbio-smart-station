@@ -1,5 +1,6 @@
 import type { GoalId, Product, ProductDetail, ProductPack } from '../types'
 import { config } from '../config'
+import { goals } from '../data/goals'
 
 /**
  * O cérebro da assistente.
@@ -92,20 +93,16 @@ const OPENINGS: [string, ...string[]] = [
 /**
  * Os botões da primeira pergunta.
  *
- * O `label` é a palavra do cliente — o que ele diria que quer. O `value` é a
- * secção do catálogo onde isso se encontra, e tem de ser um `GoalId`: é por
- * ele que o `selectGoal` abre a lista. Os dois não têm de coincidir, e no
- * emagrecimento de propósito não coincidem — quem chega diz «emagrecer», a
- * secção chama-se «Controlo de peso».
+ * Saem todos de `data/goals.ts`, com o mesmo nome que têm na loja: a pessoa
+ * toca em «Controlo de peso» aqui e chega a uma secção que se chama igual.
+ * Uma lista à parte, escrita à mão, ficava com objetivos a menos e nomes que
+ * não existiam no resto do quiosque.
  *
  * `browse` não é objetivo nenhum: é a saída para quem não quer ser ajudado.
  * Fica sempre em último, porque é a resposta a uma pergunta que não se fez.
  */
 const GOAL_CHOICES: AssistantChoice[] = [
-  { label: 'Dormir melhor', value: 'sono' },
-  { label: 'Mais energia', value: 'energia' },
-  { label: 'Treino', value: 'performance' },
-  { label: 'Emagrecimento', value: 'peso' },
+  ...goals.map((g) => ({ label: g.label, value: g.id })),
   { label: 'Só quero ver', value: 'browse' },
 ]
 
