@@ -1207,7 +1207,7 @@ async function orderInvoice(env, body) {
 
   const res = await env.DB.prepare(
     `UPDATE orders SET invoice_name = ?2, nif = ?3, invoice_email = ?4
-     WHERE id = ?1 AND method = 'mbway' AND pay_id IS NOT NULL
+     WHERE id = ?1 AND method IN ('mbway', 'cartao') AND pay_id IS NOT NULL
        AND status IN ('paid', 'delivered') AND paid_at > ?5
        AND invoice_email IS NULL`,
   )
